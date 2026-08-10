@@ -1,0 +1,227 @@
+// Perpustakaan Jendela Ilmu - Database Schema
+// Inspired by SLiMS (Senayan Library Management System)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ===== Users & Auth =====
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("STUDENT") // LIBRARIAN | TEACHER | STUDENT
+  member       Member?
+  announcements Announcement[]
+  proposals     BookProposal[]     @relation("ProposalReviewer")
+  notifications Notification[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ===== Members =====
+model Member {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberNumber String   @unique // Nomor Anggota Perpustakaan
+  fullName     String
+  category     String   @default("STUDENT") // LIBRARIAN | TEACHER | STUDENT
+  status       String   @default("ACTIVE")  // ACTIVE | INACTIVE
+  gender       String?  // L | P
+  birthDate    DateTime?
+  phone        String?
+  address      String?
+  photo        String?  // URL or base64
+  classGrade   String?  // untuk siswa: kelas, untuk guru: mata pelajaran
+  joinDate     DateTime @default(now())
+  expiryDate   DateTime?
+  loans        Loan[]
+  reservations Reservation[]
+  wishlists    Wishlist[]
+  proposals    BookProposal[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ===== Categories (GMD / Klasifikasi) =====
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  code        String   @unique // kode klasifikasi mirip Dewey sederhana
+  description String?
+  books       Book[]
+  createdAt   DateTime @default(now())
+}
+
+// ===== Locations / Rak =====
+model Location {
+  id          String   @id @default(cuid())
+  name        String   @unique // mis. "Rak A - Fiksi"
+  code        String   @unique // mis. "A-01"
+  description String?
+  books       Book[]
+  createdAt   DateTime @default(now())
+}
+
+// ===== Books (Bibliografi) =====
+model Book {
+  id          String   @id @default(cuid())
+  title       String
+  author      String
+  publisher   String?
+  isbn        String?
+  year        Int?
+  pages       Int?
+  synopsis    String?
+  coverImage  String?  // URL gambar cover
+  coverColor  String   @default("#1e3a5f") // warna gradient untuk cover placeholder
+  language    String   @default("Indonesia")
+  subject     String?  // mata pelajaran / subjek
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  locationId  String?
+  location    Location? @relation(fields: [locationId], references: [id])
+  items       BookItem[]
+  reservations Reservation[]
+  wishlists   Wishlist[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([locationId])
+}
+
+// ===== Book Items (Eksemplar) =====
+model BookItem {
+  id          String   @id @default(cuid())
+  bookId      String
+  book        Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  itemCode    String   @unique // kode barcode unik per eksemplar
+  status      String   @default("AVAILABLE") // AVAILABLE | BORROWED | DAMAGED | LOST | RESERVED
+  condition   String   @default("BAIK") // BAIK | RUSAK_RINGAN | RUSAK_BERAT
+  loans       Loan[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([bookId])
+  @@index([status])
+}
+
+// ===== Loans (Sirkulasi) =====
+model Loan {
+  id           String    @id @default(cuid())
+  memberId     String
+  member       Member    @relation(fields: [memberId], references: [id])
+  bookItemId   String
+  bookItem     BookItem  @relation(fields: [bookItemId], references: [id])
+  bookId       String    // denormalized for easy queries
+  loanDate     DateTime  @default(now())
+  dueDate      DateTime
+  returnDate   DateTime?
+  status       String    @default("LOANED") // LOANED | RETURNED | OVERDUE
+  fineAmount   Int       @default(0) // dalam Rupiah
+  finePaid     Int       @default(0)
+  renewedCount Int       @default(0)
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([memberId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+// ===== Reservations / Booking =====
+model Reservation {
+  id          String   @id @default(cuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id])
+  bookId      String
+  book        Book     @relation(fields: [bookId], references: [id])
+  status      String   @default("PENDING") // PENDING | READY | FULFILLED | CANCELLED | EXPIRED
+  queueOrder  Int      @default(1)
+  reservedAt  DateTime @default(now())
+  expiresAt   DateTime?
+  note        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([memberId])
+  @@index([bookId])
+  @@index([status])
+}
+
+// ===== Wishlist / Favorit =====
+model Wishlist {
+  id        String   @id @default(cuid())
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([memberId, bookId])
+}
+
+// ===== Book Proposals (Usulan Koleksi) =====
+model BookProposal {
+  id           String    @id @default(cuid())
+  memberId     String
+  member       Member    @relation(fields: [memberId], references: [id])
+  title        String
+  author       String?
+  publisher    String?
+  isbn         String?
+  reason       String?
+  status       String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  reviewedBy   String?
+  reviewer     User?     @relation("ProposalReviewer", fields: [reviewedBy], references: [id])
+  reviewNote   String?
+  reviewedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([status])
+}
+
+// ===== Announcements / Pengumuman =====
+model Announcement {
+  id          String    @id @default(cuid())
+  title       String
+  content     String
+  authorId    String?
+  author      User?     @relation(fields: [authorId], references: [id])
+  isPinned    Boolean   @default(false)
+  publishedAt DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ===== Notifications =====
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("INFO") // INFO | WARNING | DUE_DATE | OVERDUE | ANNOUNCEMENT
+  isRead    Boolean  @default(false)
+  relatedId String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ===== Settings (aturan perpustakaan) =====
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}
