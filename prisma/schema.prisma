@@ -240,3 +240,21 @@ model LibraryHoliday {
 
   @@index([date])
 }
+
+// ===== Master Publisher & Author — Tahap 15-C =====
+// Sumber saran autocomplete untuk form buku. Field publisher/author di Book
+// TETAP teks bebas (bukan foreign key wajib) — supaya tidak ada risiko
+// migrasi data. Tabel ini hanya sebagai daftar nilai unik untuk autocomplete.
+// Saat buku disimpan dengan nama penerbit/pengarang baru, otomatis ditambahkan
+// ke master tabel ini (upsert by name).
+model Publisher {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+}
+
+model Author {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+}
