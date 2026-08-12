@@ -147,7 +147,7 @@ export function BookFormView({ bookId }: { bookId?: string }) {
   }, [isEdit, existingBook]);
 
   // Guard: librarian only
-  if (user?.role !== "LIBRARIAN") {
+  if (user?.role !== "LIBRARIAN" && user?.role !== "PUSTAKAWAN_JUNIOR") {
     return (
       <div className="space-y-4">
         <BackButton onClick={() => setView("catalog")} />

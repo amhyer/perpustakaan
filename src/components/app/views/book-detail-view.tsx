@@ -160,7 +160,8 @@ export function BookDetailView({ bookId }: { bookId: string }) {
   const firstAvailable = availableItems[0];
 
   const isMember = user?.role === "TEACHER" || user?.role === "STUDENT";
-  const isLibrarian = user?.role === "LIBRARIAN";
+  const isLibrarian = user?.role === "LIBRARIAN" || user?.role === "PUSTAKAWAN_JUNIOR";
+  const isFullLibrarian = user?.role === "LIBRARIAN";
 
   async function handleBorrow() {
     if (!firstAvailable) return;
@@ -373,46 +374,46 @@ export function BookDetailView({ bookId }: { bookId: string }) {
             )}
 
             {isLibrarian && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => setView("book-form", { id: book.id })}
-                >
-                  <Edit className="h-4 w-4" />
-                  Edit Buku
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" disabled={actionLoading}>
-                      <Trash2 className="h-4 w-4" />
-                      Hapus Buku
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Hapus buku ini?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Tindakan ini tidak dapat dibatalkan. Buku “{book.title}”
-                        beserta seluruh eksemplar akan dihapus permanen.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Batal</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDelete}
-                        className="bg-destructive hover:bg-destructive/90"
-                      >
-                        {actionLoading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                        Hapus
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </>
+              <Button
+                variant="outline"
+                onClick={() => setView("book-form", { id: book.id })}
+              >
+                <Edit className="h-4 w-4" />
+                Edit Buku
+              </Button>
+            )}
+            {isFullLibrarian && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" disabled={actionLoading}>
+                    <Trash2 className="h-4 w-4" />
+                    Hapus Buku
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Hapus buku ini?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tindakan ini tidak dapat dibatalkan. Buku “{book.title}”
+                      beserta seluruh eksemplar akan dihapus permanen.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDelete}
+                      className="bg-destructive hover:bg-destructive/90"
+                    >
+                      {actionLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                      Hapus
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
 
@@ -644,7 +645,7 @@ export function BookDetailView({ bookId }: { bookId: string }) {
                         >
                           <Download className="h-4 w-4" />
                         </a>
-                        {isLibrarian && (
+                        {isFullLibrarian && (
                           <button
                             type="button"
                             onClick={() => setDeleteAttachmentId(att.id)}

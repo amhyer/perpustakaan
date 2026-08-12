@@ -54,7 +54,12 @@ const MEMBER_NAV: NavItem[] = [
 
 export function Sidebar() {
   const { user, view, setView, sidebarOpen, setSidebarOpen } = useAppStore();
-  const nav = user?.role === "LIBRARIAN" ? LIBRARIAN_NAV : MEMBER_NAV;
+  const isLibrarianRole = user?.role === "LIBRARIAN" || user?.role === "PUSTAKAWAN_JUNIOR";
+  // PUSTAKAWAN_JUNIOR tidak bisa akses Pengaturan — filter dari nav
+  const fullNav = isLibrarianRole
+    ? LIBRARIAN_NAV.filter((item) => user?.role === "PUSTAKAWAN_JUNIOR" ? item.key !== "settings" : true)
+    : MEMBER_NAV;
+  const nav = fullNav;
   const activeKey = view.key;
 
   return (
@@ -75,7 +80,7 @@ export function Sidebar() {
       >
         {/* Header */}
         <div className="px-5 py-5 border-b border-sidebar-border">
-          <button onClick={() => setView(user?.role === "LIBRARIAN" ? "dashboard" : "my-dashboard")}>
+          <button onClick={() => setView(isLibrarianRole ? "dashboard" : "my-dashboard")}>
             <Logo variant="light" />
           </button>
         </div>
@@ -90,7 +95,7 @@ export function Sidebar() {
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold truncate">{user.name}</div>
                 <div className="text-[11px] text-sidebar-foreground/70 flex items-center gap-1">
-                  {user.role === "LIBRARIAN" ? (
+                  {user.role === "LIBRARIAN" || user.role === "PUSTAKAWAN_JUNIOR" ? (
                     <Library className="h-3 w-3" />
                   ) : user.role === "TEACHER" ? (
                     <BookMarked className="h-3 w-3" />

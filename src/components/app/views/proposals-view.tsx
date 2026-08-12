@@ -101,7 +101,7 @@ const EMPTY_FORM: SubmitFormState = {
 
 export function ProposalsView() {
   const user = useAppStore((s) => s.user);
-  const isLibrarian = user?.role === "LIBRARIAN";
+  const isLibrarian = user?.role === "LIBRARIAN" || user?.role === "PUSTAKAWAN_JUNIOR";
 
   const [filter, setFilter] = useState<FilterKey>("all");
 

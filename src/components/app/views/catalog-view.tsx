@@ -138,7 +138,7 @@ export function CatalogView() {
         description="Telusuri koleksi perpustakaan kami"
         icon={BookOpen}
         actions={
-          user?.role === "LIBRARIAN" ? (
+          (user?.role === "LIBRARIAN" || user?.role === "PUSTAKAWAN_JUNIOR") ? (
             <Button onClick={() => setView("book-form")} size="sm">
               <Plus className="h-4 w-4" />
               Tambah Buku

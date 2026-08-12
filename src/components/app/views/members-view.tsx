@@ -102,7 +102,7 @@ function getInitials(name: string): string {
 function suggestMemberNumber(role: Role): string {
   const year = new Date().getFullYear();
   const prefix =
-    role === "LIBRARIAN" ? "LIB" : role === "TEACHER" ? "TCH" : "STD";
+    role === "LIBRARIAN" ? "LIB" : role === "PUSTAKAWAN_JUNIOR" ? "PJR" : role === "TEACHER" ? "TCH" : "STD";
   const rand = Math.floor(Math.random() * 900 + 100);
   return `${prefix}-${year}-${rand}`;
 }
@@ -503,7 +503,8 @@ export function MembersView() {
                     <SelectValue placeholder="Pilih role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="LIBRARIAN">Pustakawan</SelectItem>
+                    <SelectItem value="LIBRARIAN">Pustakawan (Penuh)</SelectItem>
+                    <SelectItem value="PUSTAKAWAN_JUNIOR">Pustakawan Junior</SelectItem>
                     <SelectItem value="TEACHER">Guru</SelectItem>
                     <SelectItem value="STUDENT">Siswa</SelectItem>
                   </SelectContent>

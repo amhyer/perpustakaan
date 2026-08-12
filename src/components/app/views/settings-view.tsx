@@ -192,7 +192,7 @@ export function SettingsView() {
     setRulesReady(true);
   }
 
-  // Guard
+  // Guard: hanya pustakawan PENUH yang bisa akses (PUSTAKAWAN_JUNIOR ditolak)
   if (user?.role !== "LIBRARIAN") {
     return (
       <div className="space-y-6">
@@ -205,7 +205,7 @@ export function SettingsView() {
           <EmptyState
             icon={ShieldAlert}
             title="Akses Ditolak"
-            description="Hanya pustakawan yang dapat mengakses pengaturan sistem. Hubungi pustakawan jika Anda memerlukan perubahan."
+            description="Hanya pustakawan penuh yang dapat mengakses pengaturan sistem. Hubungi pustakawan penuh jika Anda memerlukan perubahan."
           />
         </Card>
       </div>

@@ -88,7 +88,8 @@ function relativeTime(date: string | Date): string {
 
 export function AnnouncementsView() {
   const user = useAppStore((s) => s.user);
-  const isLibrarian = user?.role === "LIBRARIAN";
+  const isLibrarian = user?.role === "LIBRARIAN" || user?.role === "PUSTAKAWAN_JUNIOR";
+  const isFullLibrarian = user?.role === "LIBRARIAN";
 
   const { data, loading, error, refetch } = useFetch<Announcement[]>(
     "/api/announcements",
@@ -327,15 +328,17 @@ export function AnnouncementsView() {
                         )}
                         {a.isPinned ? "Lepas Sematan" : "Sematkan"}
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 gap-1.5 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950/30"
-                        onClick={() => setDeleteTarget(a)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        Hapus
-                      </Button>
+                      {isFullLibrarian && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 gap-1.5 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950/30"
+                          onClick={() => setDeleteTarget(a)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Hapus
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>

@@ -54,7 +54,7 @@ export const useAppStore = create<AppStore>((set) => ({
       user: u,
       view: {
         key:
-          u?.role === "LIBRARIAN"
+          u?.role === "LIBRARIAN" || u?.role === "PUSTAKAWAN_JUNIOR"
             ? "dashboard"
             : "my-dashboard",
         params: {},
