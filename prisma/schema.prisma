@@ -91,6 +91,7 @@ model Book {
   items       BookItem[]
   reservations Reservation[]
   wishlists   Wishlist[]
+  attachments BookAttachment[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -257,4 +258,20 @@ model Author {
   id        String   @id @default(cuid())
   name      String   @unique
   createdAt DateTime @default(now())
+}
+
+// ===== Book Attachments (Lampiran Digital) — Tahap 15-D =====
+// File digital terlampir per buku (PDF, gambar, audio — TANPA video).
+// Reuse UPLOAD_DIR infrastruktur. Batas 15MB per file, disk Render 1GB.
+model BookAttachment {
+  id             String   @id @default(cuid())
+  bookId         String
+  book           Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  fileName       String   // nama file asli saat di-upload
+  fileUrl        String   // path relatif untuk akses (mis. /uploads/attachments/xxx.pdf)
+  fileType       String   // MIME type (application/pdf, image/jpeg, audio/mpeg)
+  fileSizeBytes  Int
+  uploadedAt     DateTime @default(now())
+
+  @@index([bookId])
 }
