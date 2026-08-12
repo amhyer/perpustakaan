@@ -20,6 +20,8 @@ import {
   Users,
   Building2,
   PenTool,
+  Database,
+  Download,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -165,6 +167,9 @@ export function SettingsView() {
   const [savingAuthor, setSavingAuthor] = useState(false);
   const [deleteAuthorId, setDeleteAuthorId] = useState<string | null>(null);
   const [deletingAuthor, setDeletingAuthor] = useState(false);
+
+  // Backup database
+  const [downloadingBackup, setDownloadingBackup] = useState(false);
 
   // Sync settings → form state when settings load (one-shot via flag)
   if (
@@ -401,6 +406,41 @@ export function SettingsView() {
       toast.error(err instanceof Error ? err.message : "Gagal menghapus pengarang");
     } finally {
       setDeletingAuthor(false);
+    }
+  }
+
+  // ===== Backup database handler =====
+  async function handleDownloadBackup() {
+    setDownloadingBackup(true);
+    try {
+      const res = await fetch("/api/admin/backup", { method: "GET" });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || `Gagal mengunduh backup (${res.status})`);
+      }
+      // Dapatkan nama file dari header Content-Disposition
+      const contentDisp = res.headers.get("content-disposition") || "";
+      const fileNameMatch = contentDisp.match(/filename="([^"]+)"/);
+      const fileName = fileNameMatch
+        ? fileNameMatch[1]
+        : `jendela-ilmu-backup-${new Date().toISOString().slice(0, 10)}.db`;
+
+      // Convert response ke blob dan trigger download
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Backup "${fileName}" berhasil diunduh.`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal mengunduh backup");
+    } finally {
+      setDownloadingBackup(false);
     }
   }
 
@@ -943,6 +983,58 @@ export function SettingsView() {
             <p className="text-xs text-muted-foreground mt-4 italic">
               Catatan: menghapus dari master tidak menghapus data di buku. Daftar ini
               otomatis terisi dari nilai unik yang ada di data buku saat halaman dibuka.
+            </p>
+          </Card>
+
+          {/* SECTION 7: Backup Database */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                <Database className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-foreground">Backup & Pemulihan</h2>
+                <p className="text-xs text-muted-foreground">
+                  Unduh snapshot database SQLite untuk cadangan atau migrasi.
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Download className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">
+                    Unduh Backup Database
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    File <code className="text-[11px] bg-background px-1 py-0.5 rounded">.db</code> berisi
+                    seluruh data perpustakaan (anggota, buku, peminjaman, dst.).
+                    Nama file menyertakan tanggal unduhan. Bisa dibuka dengan
+                    tool SQLite (DB Browser, sqlite3 CLI, dll).
+                  </p>
+                </div>
+                <Button
+                  onClick={handleDownloadBackup}
+                  disabled={downloadingBackup}
+                  className="gap-2 shrink-0"
+                >
+                  {downloadingBackup ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  {downloadingBackup ? "Mengunduh..." : "Unduh Backup"}
+                </Button>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-3">
+              Disarankan mengunduh backup secara berkala (mis. mingguan) dan
+              menyimpannya di tempat terpisah. Backup otomatis harian dengan
+              rotasi 7 hari tersedia via cron job (konfigurasi admin server).
             </p>
           </Card>
         </>
