@@ -17,6 +17,9 @@ import {
   CalendarDays,
   Trash2,
   CalendarX,
+  Users,
+  Building2,
+  PenTool,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -83,6 +86,11 @@ interface Holiday {
   description: string;
   createdAt: string;
 }
+interface MasterEntry {
+  id: string;
+  name: string;
+  createdAt: string;
+}
 
 type SettingsMap = Record<string, string>;
 
@@ -104,6 +112,10 @@ export function SettingsView() {
     useFetch<Location[]>("/api/locations", {});
   const { data: holidays, refetch: refetchHolidays } =
     useFetch<Holiday[]>("/api/holidays", {});
+  const { data: publishers, refetch: refetchPublishers } =
+    useFetch<MasterEntry[]>("/api/publishers", {});
+  const { data: authors, refetch: refetchAuthors } =
+    useFetch<MasterEntry[]>("/api/authors", {});
 
   // Section 1: identity
   const [identity, setIdentity] = useState({
@@ -140,6 +152,19 @@ export function SettingsView() {
   const [savingHoliday, setSavingHoliday] = useState(false);
   const [deleteHolidayId, setDeleteHolidayId] = useState<string | null>(null);
   const [deletingHoliday, setDeletingHoliday] = useState(false);
+
+  // Section 6: master publisher & author (autocomplete sources)
+  const [publisherOpen, setPublisherOpen] = useState(false);
+  const [publisherName, setPublisherName] = useState("");
+  const [savingPublisher, setSavingPublisher] = useState(false);
+  const [deletePublisherId, setDeletePublisherId] = useState<string | null>(null);
+  const [deletingPublisher, setDeletingPublisher] = useState(false);
+
+  const [authorOpen, setAuthorOpen] = useState(false);
+  const [authorName, setAuthorName] = useState("");
+  const [savingAuthor, setSavingAuthor] = useState(false);
+  const [deleteAuthorId, setDeleteAuthorId] = useState<string | null>(null);
+  const [deletingAuthor, setDeletingAuthor] = useState(false);
 
   // Sync settings → form state when settings load (one-shot via flag)
   if (
@@ -304,6 +329,78 @@ export function SettingsView() {
       toast.error(err instanceof Error ? err.message : "Gagal menghapus hari libur");
     } finally {
       setDeletingHoliday(false);
+    }
+  }
+
+  // ===== Master Publisher handlers =====
+  async function savePublisher(e: React.FormEvent) {
+    e.preventDefault();
+    if (!publisherName.trim()) {
+      toast.error("Nama penerbit wajib diisi");
+      return;
+    }
+    setSavingPublisher(true);
+    try {
+      await api.post("/api/publishers", { name: publisherName.trim() });
+      toast.success("Penerbit ditambahkan.");
+      setPublisherOpen(false);
+      setPublisherName("");
+      refetchPublishers();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal menambah penerbit");
+    } finally {
+      setSavingPublisher(false);
+    }
+  }
+
+  async function deletePublisher() {
+    if (!deletePublisherId) return;
+    setDeletingPublisher(true);
+    try {
+      await api.delete(`/api/publishers/${deletePublisherId}`);
+      toast.success("Penerbit dihapus dari master.");
+      setDeletePublisherId(null);
+      refetchPublishers();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal menghapus penerbit");
+    } finally {
+      setDeletingPublisher(false);
+    }
+  }
+
+  // ===== Master Author handlers =====
+  async function saveAuthor(e: React.FormEvent) {
+    e.preventDefault();
+    if (!authorName.trim()) {
+      toast.error("Nama pengarang wajib diisi");
+      return;
+    }
+    setSavingAuthor(true);
+    try {
+      await api.post("/api/authors", { name: authorName.trim() });
+      toast.success("Pengarang ditambahkan.");
+      setAuthorOpen(false);
+      setAuthorName("");
+      refetchAuthors();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal menambah pengarang");
+    } finally {
+      setSavingAuthor(false);
+    }
+  }
+
+  async function deleteAuthor() {
+    if (!deleteAuthorId) return;
+    setDeletingAuthor(true);
+    try {
+      await api.delete(`/api/authors/${deleteAuthorId}`);
+      toast.success("Pengarang dihapus dari master.");
+      setDeleteAuthorId(null);
+      refetchAuthors();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal menghapus pengarang");
+    } finally {
+      setDeletingAuthor(false);
     }
   }
 
@@ -726,6 +823,128 @@ export function SettingsView() {
               </p>
             )}
           </Card>
+
+          {/* SECTION 6: Master Penerbit & Pengarang */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                <Building2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-foreground">Master Penerbit & Pengarang</h2>
+                <p className="text-xs text-muted-foreground">
+                  Sumber saran autocomplete di form buku. Field di buku tetap teks bebas —
+                  tabel ini hanya daftar nilai unik.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Penerbit */}
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <h3 className="text-sm font-medium flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    Penerbit
+                    {publishers && publishers.length > 0 && (
+                      <Badge variant="secondary">{publishers.length}</Badge>
+                    )}
+                  </h3>
+                  <Button
+                    onClick={() => {
+                      setPublisherName("");
+                      setPublisherOpen(true);
+                    }}
+                    size="sm"
+                    variant="outline"
+                    className="gap-1"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Tambah
+                  </Button>
+                </div>
+                {!publishers || publishers.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-3 text-center bg-muted/30 rounded-lg">
+                    Belum ada penerbit. Daftar akan terisi otomatis dari data buku saat dibuka.
+                  </p>
+                ) : (
+                  <div className="space-y-1.5 max-h-64 overflow-y-auto scrollbar-thin pr-1">
+                    {publishers.map((p) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center gap-2 rounded-lg border bg-card px-3 py-1.5 hover:shadow-sm transition-shadow"
+                      >
+                        <span className="flex-1 text-sm text-foreground truncate">{p.name}</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setDeletePublisherId(p.id)}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 h-7 w-7 p-0"
+                          aria-label="Hapus penerbit"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Pengarang */}
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <h3 className="text-sm font-medium flex items-center gap-2">
+                    <PenTool className="h-4 w-4 text-muted-foreground" />
+                    Pengarang
+                    {authors && authors.length > 0 && (
+                      <Badge variant="secondary">{authors.length}</Badge>
+                    )}
+                  </h3>
+                  <Button
+                    onClick={() => {
+                      setAuthorName("");
+                      setAuthorOpen(true);
+                    }}
+                    size="sm"
+                    variant="outline"
+                    className="gap-1"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Tambah
+                  </Button>
+                </div>
+                {!authors || authors.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-3 text-center bg-muted/30 rounded-lg">
+                    Belum ada pengarang. Daftar akan terisi otomatis dari data buku saat dibuka.
+                  </p>
+                ) : (
+                  <div className="space-y-1.5 max-h-64 overflow-y-auto scrollbar-thin pr-1">
+                    {authors.map((a) => (
+                      <div
+                        key={a.id}
+                        className="flex items-center gap-2 rounded-lg border bg-card px-3 py-1.5 hover:shadow-sm transition-shadow"
+                      >
+                        <span className="flex-1 text-sm text-foreground truncate">{a.name}</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setDeleteAuthorId(a.id)}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 h-7 w-7 p-0"
+                          aria-label="Hapus pengarang"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-4 italic">
+              Catatan: menghapus dari master tidak menghapus data di buku. Daftar ini
+              otomatis terisi dari nilai unik yang ada di data buku saat halaman dibuka.
+            </p>
+          </Card>
         </>
       )}
 
@@ -967,6 +1186,156 @@ export function SettingsView() {
             >
               {deletingHoliday && <Loader2 className="h-4 w-4 animate-spin" />}
               {deletingHoliday ? "Menghapus..." : "Hapus"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog: Tambah Penerbit */}
+      <Dialog
+        open={publisherOpen}
+        onOpenChange={(o) => {
+          setPublisherOpen(o);
+          if (!o) setPublisherName("");
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Tambah Penerbit</DialogTitle>
+            <DialogDescription>
+              Tambah penerbit ke daftar master untuk autocomplete di form buku.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={savePublisher} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="publisher-name">Nama Penerbit *</Label>
+              <Input
+                id="publisher-name"
+                required
+                value={publisherName}
+                onChange={(e) => setPublisherName(e.target.value)}
+                placeholder="Mis. Bentang Pustaka"
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setPublisherOpen(false);
+                  setPublisherName("");
+                }}
+                disabled={savingPublisher}
+              >
+                Batal
+              </Button>
+              <Button type="submit" disabled={savingPublisher} className="gap-2">
+                {savingPublisher && <Loader2 className="h-4 w-4 animate-spin" />}
+                {savingPublisher ? "Menyimpan..." : "Tambah"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* AlertDialog: Konfirmasi Hapus Penerbit */}
+      <AlertDialog
+        open={!!deletePublisherId}
+        onOpenChange={(o) => { if (!o) setDeletePublisherId(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Penerbit dari Master?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Penerbit akan dihapus dari daftar master autocomplete. Data penerbit
+              di buku yang sudah ada TIDAK akan terpengaruh.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingPublisher}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletingPublisher}
+              onClick={(e) => { e.preventDefault(); deletePublisher(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
+            >
+              {deletingPublisher && <Loader2 className="h-4 w-4 animate-spin" />}
+              {deletingPublisher ? "Menghapus..." : "Hapus"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog: Tambah Pengarang */}
+      <Dialog
+        open={authorOpen}
+        onOpenChange={(o) => {
+          setAuthorOpen(o);
+          if (!o) setAuthorName("");
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Tambah Pengarang</DialogTitle>
+            <DialogDescription>
+              Tambah pengarang ke daftar master untuk autocomplete di form buku.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={saveAuthor} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="author-name">Nama Pengarang *</Label>
+              <Input
+                id="author-name"
+                required
+                value={authorName}
+                onChange={(e) => setAuthorName(e.target.value)}
+                placeholder="Mis. Andrea Hirata"
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setAuthorOpen(false);
+                  setAuthorName("");
+                }}
+                disabled={savingAuthor}
+              >
+                Batal
+              </Button>
+              <Button type="submit" disabled={savingAuthor} className="gap-2">
+                {savingAuthor && <Loader2 className="h-4 w-4 animate-spin" />}
+                {savingAuthor ? "Menyimpan..." : "Tambah"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* AlertDialog: Konfirmasi Hapus Pengarang */}
+      <AlertDialog
+        open={!!deleteAuthorId}
+        onOpenChange={(o) => { if (!o) setDeleteAuthorId(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Pengarang dari Master?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Pengarang akan dihapus dari daftar master autocomplete. Data pengarang
+              di buku yang sudah ada TIDAK akan terpengaruh.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingAuthor}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletingAuthor}
+              onClick={(e) => { e.preventDefault(); deleteAuthor(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
+            >
+              {deletingAuthor && <Loader2 className="h-4 w-4 animate-spin" />}
+              {deletingAuthor ? "Menghapus..." : "Hapus"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

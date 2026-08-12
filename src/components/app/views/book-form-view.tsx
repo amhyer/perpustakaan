@@ -18,6 +18,7 @@ import { useAppStore } from "@/store/use-app-store";
 
 import { BookCover } from "@/components/app/shared/book-cover";
 import { PageHeader } from "@/components/app/shared/page-header";
+import { AutocompleteInput } from "@/components/app/shared/autocomplete-input";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +43,10 @@ interface Location {
   id: string;
   name: string;
   code: string;
+}
+interface MasterEntry {
+  id: string;
+  name: string;
 }
 
 interface BookDetail {
@@ -103,6 +108,11 @@ export function BookFormView({ bookId }: { bookId?: string }) {
 
   const { data: categories } = useFetch<Category[]>("/api/categories");
   const { data: locations } = useFetch<Location[]>("/api/locations");
+  // Master data untuk autocomplete (Tahap 15-C)
+  const { data: publishers } = useFetch<MasterEntry[]>("/api/publishers");
+  const { data: authors } = useFetch<MasterEntry[]>("/api/authors");
+  const publisherSuggestions = (publishers ?? []).map((p) => p.name);
+  const authorSuggestions = (authors ?? []).map((a) => a.name);
 
   // Fetch existing book in edit mode
   const { data: existingBook, loading: loadingBook } = useFetch<BookDetail>(
@@ -282,21 +292,23 @@ export function BookFormView({ bookId }: { bookId?: string }) {
                 <Label htmlFor="author">
                   Pengarang <span className="text-destructive">*</span>
                 </Label>
-                <Input
+                <AutocompleteInput
                   id="author"
                   value={form.author}
-                  onChange={(e) => update("author", e.target.value)}
+                  onChange={(v) => update("author", v)}
                   placeholder="cth. Andrea Hirata"
+                  suggestions={authorSuggestions}
                   required
                 />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="publisher">Penerbit</Label>
-                <Input
+                <AutocompleteInput
                   id="publisher"
                   value={form.publisher}
-                  onChange={(e) => update("publisher", e.target.value)}
+                  onChange={(v) => update("publisher", v)}
                   placeholder="cth. Bentang Pustaka"
+                  suggestions={publisherSuggestions}
                 />
               </div>
               <div className="space-y-1.5">
