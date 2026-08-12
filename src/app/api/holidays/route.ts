@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireRole } from "@/lib/auth";
+import { requireFullLibrarian } from "@/lib/auth";
 
 // GET /api/holidays — daftar semua hari libur (sorted by date asc)
 export async function GET() {
-  const { error } = await requireRole("LIBRARIAN");
+  const { error } = await requireFullLibrarian();
   if (error) return error;
 
   const holidays = await db.libraryHoliday.findMany({
@@ -17,7 +17,7 @@ export async function GET() {
 // POST /api/holidays — tambah hari libur baru
 // Body: { date: string (ISO), description: string }
 export async function POST(req: Request) {
-  const { error } = await requireRole("LIBRARIAN");
+  const { error } = await requireFullLibrarian();
   if (error) return error;
 
   try {

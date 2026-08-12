@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, isLibrarian } from "@/lib/auth";
 
 export async function GET(req: Request) {
   const { user, error } = await requireAuth();
@@ -87,9 +87,9 @@ export async function PUT(req: Request) {
   });
   if (!reservation) return NextResponse.json({ error: "Reservasi tidak ditemukan" }, { status: 404 });
 
-  // Cancel: anggota sendiri atau pustakawan
+  // Cancel: anggota sendiri atau pustakawan (penuh/junior)
   if (body.action === "cancel") {
-    if (user!.role !== "LIBRARIAN" && reservation.memberId !== user!.member?.id) {
+    if (!isLibrarian(user!.role) && reservation.memberId !== user!.member?.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     await db.reservation.update({ where: { id: body.id }, data: { status: "CANCELLED" } });
@@ -103,9 +103,9 @@ export async function PUT(req: Request) {
     return NextResponse.json({ success: true });
   }
 
-  // Fulfill (pustakawan): saat anggota mengambil buku dan meminjamnya
+  // Fulfill (pustakawan penuh/junior): saat anggota mengambil buku dan meminjamnya
   if (body.action === "fulfill") {
-    if (user!.role !== "LIBRARIAN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!isLibrarian(user!.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     await db.reservation.update({ where: { id: body.id }, data: { status: "FULFILLED" } });
     return NextResponse.json({ success: true });
   }

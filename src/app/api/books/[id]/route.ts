@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, requireLibrarian, requireFullLibrarian } from "@/lib/auth";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth();
@@ -22,11 +22,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { user, error } = await requireAuth();
+  const { error } = await requireLibrarian();
   if (error) return error;
-  if (user!.role !== "LIBRARIAN") {
-    return NextResponse.json({ error: "Hanya pustakawan yang dapat mengubah buku" }, { status: 403 });
-  }
   const { id } = await params;
   const body = await req.json();
 
@@ -70,11 +67,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { user, error } = await requireAuth();
+  const { error } = await requireFullLibrarian();
   if (error) return error;
-  if (user!.role !== "LIBRARIAN") {
-    return NextResponse.json({ error: "Hanya pustakawan yang dapat menghapus buku" }, { status: 403 });
-  }
   const { id } = await params;
 
   // Cek apakah ada peminjaman aktif

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, requireFullLibrarian } from "@/lib/auth";
 import { LOAN_RULES, calculateFine, formatDate } from "@/lib/constants";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -16,9 +16,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { user, error } = await requireAuth();
+  const { error } = await requireFullLibrarian();
   if (error) return error;
-  if (user!.role !== "LIBRARIAN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const { id } = await params;
 
   const loan = await db.loan.findUnique({ where: { id } });

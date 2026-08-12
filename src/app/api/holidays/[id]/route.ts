@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireRole } from "@/lib/auth";
+import { requireFullLibrarian } from "@/lib/auth";
 
 // DELETE /api/holidays/[id] — hapus hari libur
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireRole("LIBRARIAN");
+  const { error } = await requireFullLibrarian();
   if (error) return error;
 
   const { id } = await params;

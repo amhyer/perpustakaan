@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, requireFullLibrarian, isLibrarian } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -34,10 +34,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params;
   const body = await req.json();
 
-  // Pustakawan bisa edit semua; anggota hanya bisa edit sendiri sebagian
-  const isLibrarian = user!.role === "LIBRARIAN";
+  // Pustakawan (penuh/junior) bisa edit semua; anggota hanya bisa edit sendiri sebagian
+  const isLibrarianRole = isLibrarian(user!.role);
   const isOwner = user!.member?.id === id;
-  if (!isLibrarian && !isOwner) {
+  if (!isLibrarianRole && !isOwner) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -54,7 +54,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (body.birthDate !== undefined) data.birthDate = body.birthDate ? new Date(body.birthDate) : null;
   if (body.expiryDate !== undefined) data.expiryDate = body.expiryDate ? new Date(body.expiryDate) : null;
 
-  if (isLibrarian) {
+  if (isLibrarianRole) {
     if (body.status !== undefined) data.status = body.status;
     if (body.category !== undefined) data.category = body.category;
     if (body.memberNumber !== undefined) data.memberNumber = body.memberNumber;
@@ -67,7 +67,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   });
 
   // Update email/password jika pustakawan
-  if (isLibrarian) {
+  if (isLibrarianRole) {
     if (body.email) {
       await db.user.update({ where: { id: member.userId }, data: { email: body.email.toLowerCase(), name: body.fullName || updated.fullName } });
     }
@@ -81,11 +81,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { user, error } = await requireAuth();
+  const { error } = await requireFullLibrarian();
   if (error) return error;
-  if (user!.role !== "LIBRARIAN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
   const { id } = await params;
 
   // Nonaktifkan alih-alih hapus (untuk menjaga integritas data)

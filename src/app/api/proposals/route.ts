@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, requireLibrarian } from "@/lib/auth";
 
 export async function GET(req: Request) {
   const { user, error } = await requireAuth();
@@ -61,9 +61,8 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
-  const { user, error } = await requireAuth();
+  const { user, error } = await requireLibrarian();
   if (error) return error;
-  if (user!.role !== "LIBRARIAN") return NextResponse.json({ error: "Hanya pustakawan" }, { status: 403 });
 
   const body = await req.json();
   const proposal = await db.bookProposal.findUnique({

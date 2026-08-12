@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import path from "path";
-import { requireRole } from "@/lib/auth";
+import { requireLibrarian } from "@/lib/auth";
 import {
   UPLOAD_DIR,
   COVER_ALLOWED_MIME,
@@ -13,7 +13,7 @@ import {
 // Body: FormData dengan field "file"
 // Response: { url: string }
 export async function POST(req: Request) {
-  const { error } = await requireRole("LIBRARIAN");
+  const { error } = await requireLibrarian();
   if (error) return error;
 
   try {

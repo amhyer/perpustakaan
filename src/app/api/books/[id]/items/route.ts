@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requireLibrarian, requireFullLibrarian } from "@/lib/auth";
 
 // Tambah eksemplar baru
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { user, error } = await requireAuth();
+  const { error } = await requireLibrarian();
   if (error) return error;
-  if (user!.role !== "LIBRARIAN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
   const { id } = await params;
   const body = await req.json().catch(() => ({}));
 
@@ -30,11 +27,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
 // Update status eksemplar
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { user, error } = await requireAuth();
+  const { error } = await requireLibrarian();
   if (error) return error;
-  if (user!.role !== "LIBRARIAN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
   const { id } = await params;
   const body = await req.json();
 
@@ -51,11 +45,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { user, error } = await requireAuth();
+  const { error } = await requireFullLibrarian();
   if (error) return error;
-  if (user!.role !== "LIBRARIAN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
   const { id } = await params;
   const { searchParams } = new URL(req.url);
   const itemId = searchParams.get("itemId");

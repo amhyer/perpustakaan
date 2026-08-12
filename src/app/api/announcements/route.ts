@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, requireLibrarian, requireFullLibrarian } from "@/lib/auth";
 
 export async function GET() {
   const { error } = await requireAuth();
@@ -13,9 +13,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { user, error } = await requireAuth();
+  const { user, error } = await requireLibrarian();
   if (error) return error;
-  if (user!.role !== "LIBRARIAN") return NextResponse.json({ error: "Hanya pustakawan" }, { status: 403 });
 
   const body = await req.json();
   if (!body.title || !body.content) return NextResponse.json({ error: "Judul dan isi wajib diisi" }, { status: 400 });
@@ -46,9 +45,8 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
-  const { user, error } = await requireAuth();
+  const { error } = await requireLibrarian();
   if (error) return error;
-  if (user!.role !== "LIBRARIAN") return NextResponse.json({ error: "Hanya pustakawan" }, { status: 403 });
 
   const body = await req.json();
   const announcement = await db.announcement.update({
@@ -64,9 +62,8 @@ export async function PUT(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const { user, error } = await requireAuth();
+  const { error } = await requireFullLibrarian();
   if (error) return error;
-  if (user!.role !== "LIBRARIAN") return NextResponse.json({ error: "Hanya pustakawan" }, { status: 403 });
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");

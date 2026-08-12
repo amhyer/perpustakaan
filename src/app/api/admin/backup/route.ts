@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import path from "path";
 import { promises as fs } from "fs";
-import { requireRole } from "@/lib/auth";
+import { requireFullLibrarian } from "@/lib/auth";
 
 // GET /api/admin/backup — unduh file database SQLite
 // Hanya LIBRARIAN yang boleh mengakses endpoint ini.
 // Return file sebagai attachment dengan nama menyertakan tanggal hari ini.
 export async function GET() {
-  const { error } = await requireRole("LIBRARIAN");
+  const { error } = await requireFullLibrarian();
   if (error) return error;
 
   try {

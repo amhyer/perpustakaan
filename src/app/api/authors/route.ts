@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireRole } from "@/lib/auth";
+import { requireFullLibrarian } from "@/lib/auth";
 
 // GET /api/authors — daftar semua pengarang master
 // Sekaligus auto-seed: ambil nilai unik author dari Book yang belum ada di master
 export async function GET() {
-  const { error } = await requireRole("LIBRARIAN");
+  const { error } = await requireFullLibrarian();
   if (error) return error;
 
   // Auto-seed: ambil semua author unik dari Book
@@ -40,7 +40,7 @@ export async function GET() {
 // POST /api/authors — tambah pengarang baru ke master
 // Body: { name: string }
 export async function POST(req: Request) {
-  const { error } = await requireRole("LIBRARIAN");
+  const { error } = await requireFullLibrarian();
   if (error) return error;
 
   try {

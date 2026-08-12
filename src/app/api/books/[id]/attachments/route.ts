@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import path from "path";
 import { db } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, requireLibrarian } from "@/lib/auth";
 import {
   ATTACHMENTS_DIR,
   ATTACHMENTS_URL_PREFIX,
@@ -36,17 +36,14 @@ export async function GET(
   return NextResponse.json(attachments);
 }
 
-// POST /api/books/[id]/attachments — upload lampiran baru (LIBRARIAN only)
+// POST /api/books/[id]/attachments — upload lampiran baru (LIBRARIAN or JUNIOR)
 // Body: FormData dengan field "file"
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { user, error } = await requireAuth();
+  const { error } = await requireLibrarian();
   if (error) return error;
-  if (user!.role !== "LIBRARIAN") {
-    return NextResponse.json({ error: "Hanya pustakawan yang dapat mengunggah lampiran" }, { status: 403 });
-  }
 
   const { id } = await params;
 

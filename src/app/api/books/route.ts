@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, requireLibrarian } from "@/lib/auth";
 
 export async function GET(req: Request) {
   const { error } = await requireAuth();
@@ -44,11 +44,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const { user, error } = await requireAuth();
+  const { error } = await requireLibrarian();
   if (error) return error;
-  if (user!.role !== "LIBRARIAN") {
-    return NextResponse.json({ error: "Hanya pustakawan yang dapat menambah buku" }, { status: 403 });
-  }
 
   const body = await req.json();
   const { title, author, publisher, isbn, year, pages, synopsis, coverImage, coverColor, language, subject, categoryId, locationId, itemCount } = body;

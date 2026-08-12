@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, requireLibrarian } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth";
 import { COVER_COLORS } from "@/lib/constants";
 
@@ -36,11 +36,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const { user, error } = await requireAuth();
+  const { error } = await requireLibrarian();
   if (error) return error;
-  if (user!.role !== "LIBRARIAN") {
-    return NextResponse.json({ error: "Hanya pustakawan yang dapat menambah anggota" }, { status: 403 });
-  }
 
   const body = await req.json();
   const { email, password, name, role, fullName, memberNumber, category, gender, birthDate, phone, address, photo, classGrade, expiryDate } = body;

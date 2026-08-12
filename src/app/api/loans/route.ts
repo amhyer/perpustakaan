@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, isLibrarian } from "@/lib/auth";
 import { LOAN_RULES, calculateFine } from "@/lib/constants";
 import { computeDueDateWithHolidays } from "@/lib/loan-rules";
 
@@ -55,9 +55,9 @@ export async function POST(req: Request) {
   if (error) return error;
   const body = await req.json();
 
-  // Pustakawan bisa meminjamkan untuk anggota lain; guru/siswa hanya untuk diri sendiri
+  // Pustakawan (penuh atau junior) bisa meminjamkan untuk anggota lain; guru/siswa hanya untuk diri sendiri
   let memberId = body.memberId;
-  if (user!.role !== "LIBRARIAN") {
+  if (!isLibrarian(user!.role)) {
     if (!user!.member) return NextResponse.json({ error: "Anda belum terdaftar sebagai anggota" }, { status: 400 });
     memberId = user!.member.id;
   }

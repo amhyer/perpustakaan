@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import path from "path";
 import { db } from "@/lib/db";
-import { requireRole } from "@/lib/auth";
+import { requireFullLibrarian } from "@/lib/auth";
 import { UPLOAD_DIR, deleteFileIfExists } from "@/lib/upload";
 
 // DELETE /api/books/[id]/attachments/[attachmentId] — hapus lampiran
@@ -10,7 +10,7 @@ export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string; attachmentId: string }> }
 ) {
-  const { error } = await requireRole("LIBRARIAN");
+  const { error } = await requireFullLibrarian();
   if (error) return error;
 
   const { id, attachmentId } = await params;
