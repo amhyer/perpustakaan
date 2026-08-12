@@ -5,14 +5,19 @@ import {
   ArrowLeft,
   BookOpen,
   Calendar,
+  Download,
   Edit,
   FileText,
   Heart,
   HeartCrack,
+  Image as ImageIcon,
   Loader2,
   MapPin,
+  Music,
   Package,
+  Paperclip,
   Trash2,
+  Upload,
   User,
   Users,
 } from "lucide-react";
@@ -83,6 +88,16 @@ interface WishlistRow {
   bookId: string;
 }
 
+interface BookAttachment {
+  id: string;
+  bookId: string;
+  fileName: string;
+  fileUrl: string;
+  fileType: string;
+  fileSizeBytes: number;
+  uploadedAt: string;
+}
+
 export function BookDetailView({ bookId }: { bookId: string }) {
   const user = useAppStore((s) => s.user);
   const setView = useAppStore((s) => s.setView);
@@ -96,7 +111,15 @@ export function BookDetailView({ bookId }: { bookId: string }) {
     "/api/wishlist?mine=1"
   );
 
+  const { data: attachments, refetch: refetchAttachments } = useFetch<BookAttachment[]>(
+    `/api/books/${bookId}/attachments`,
+    { deps: [bookId] }
+  );
+
   const [actionLoading, setActionLoading] = useState(false);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [deleteAttachmentId, setDeleteAttachmentId] = useState<string | null>(null);
+  const [deletingAttachment, setDeletingAttachment] = useState(false);
 
   const isWishlisted = useMemo(
     () => (wishlist ?? []).some((w) => w.bookId === bookId),
@@ -181,6 +204,44 @@ export function BookDetailView({ bookId }: { bookId: string }) {
       toast.error(e instanceof Error ? e.message : "Gagal mengubah wishlist");
     } finally {
       setActionLoading(false);
+    }
+  }
+
+  // ===== Attachment handlers (Tahap 15-D) =====
+  async function handleUploadAttachment(file: File) {
+    setUploadingAttachment(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`/api/books/${bookId}/attachments`, {
+        method: "POST",
+        body: fd,
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || `Gagal mengunggah (${res.status})`);
+      }
+      toast.success(`Lampiran "${file.name}" berhasil diunggah`);
+      refetchAttachments();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal mengunggah lampiran");
+    } finally {
+      setUploadingAttachment(false);
+    }
+  }
+
+  async function handleDeleteAttachment() {
+    if (!deleteAttachmentId) return;
+    setDeletingAttachment(true);
+    try {
+      await api.delete(`/api/books/${bookId}/attachments/${deleteAttachmentId}`);
+      toast.success("Lampiran dihapus.");
+      setDeleteAttachmentId(null);
+      refetchAttachments();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal menghapus lampiran");
+    } finally {
+      setDeletingAttachment(false);
     }
   }
 
@@ -491,8 +552,154 @@ export function BookDetailView({ bookId }: { bookId: string }) {
               </CardContent>
             </Card>
           )}
+
+          {/* Lampiran Digital (Tahap 15-D) */}
+          <Card>
+            <CardHeader className="flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Paperclip className="h-4 w-4" />
+                Lampiran Digital
+                {attachments && attachments.length > 0 && (
+                  <Badge variant="secondary">{attachments.length}</Badge>
+                )}
+              </CardTitle>
+              {isLibrarian && (
+                <label
+                  htmlFor="attachment-upload"
+                  className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border bg-background px-3 text-xs font-medium shadow-xs hover:bg-accent hover:text-accent-foreground"
+                >
+                  {uploadingAttachment ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Upload className="h-3.5 w-3.5" />
+                  )}
+                  {uploadingAttachment ? "Mengunggah..." : "Unggah"}
+                </label>
+              )}
+              {isLibrarian && (
+                <input
+                  id="attachment-upload"
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.mp3,.wav,.ogg"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleUploadAttachment(f);
+                    // reset input supaya bisa upload file yang sama lagi
+                    e.target.value = "";
+                  }}
+                />
+              )}
+            </CardHeader>
+            <CardContent>
+              {!attachments || attachments.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">
+                  Belum ada lampiran untuk buku ini.
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto scrollbar-thin pr-1">
+                  {attachments.map((att) => {
+                    // Tentukan icon berdasarkan tipe file
+                    let Icon = FileText;
+                    let iconColor = "text-muted-foreground";
+                    if (att.fileType.startsWith("application/pdf")) {
+                      Icon = FileText;
+                      iconColor = "text-red-500";
+                    } else if (att.fileType.startsWith("image/")) {
+                      Icon = ImageIcon;
+                      iconColor = "text-blue-500";
+                    } else if (att.fileType.startsWith("audio/")) {
+                      Icon = Music;
+                      iconColor = "text-purple-500";
+                    }
+                    const sizeStr = att.fileSizeBytes < 1024
+                      ? `${att.fileSizeBytes} B`
+                      : att.fileSizeBytes < 1024 * 1024
+                      ? `${(att.fileSizeBytes / 1024).toFixed(1)} KB`
+                      : `${(att.fileSizeBytes / (1024 * 1024)).toFixed(2)} MB`;
+                    return (
+                      <div
+                        key={att.id}
+                        className="flex items-center gap-3 rounded-lg border px-3 py-2"
+                      >
+                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted ${iconColor}`}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {att.fileName}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {att.fileType.split("/")[1]?.toUpperCase()} · {sizeStr}
+                          </p>
+                        </div>
+                        <a
+                          href={att.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          download={att.fileName}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent"
+                          aria-label={`Unduh ${att.fileName}`}
+                          title="Unduh / Buka"
+                        >
+                          <Download className="h-4 w-4" />
+                        </a>
+                        {isLibrarian && (
+                          <button
+                            type="button"
+                            onClick={() => setDeleteAttachmentId(att.id)}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-destructive hover:bg-destructive/10"
+                            aria-label={`Hapus ${att.fileName}`}
+                            title="Hapus lampiran"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {isLibrarian && (
+                <p className="text-xs text-muted-foreground mt-3">
+                  Tipe diizinkan: PDF, gambar (JPG/PNG/WEBP/GIF), audio (MP3/WAV/OGG).
+                  Maks 15MB per file.
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
+
+      {/* AlertDialog: Konfirmasi Hapus Lampiran */}
+      <AlertDialog
+        open={!!deleteAttachmentId}
+        onOpenChange={(o) => { if (!o) setDeleteAttachmentId(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Lampiran?</AlertDialogTitle>
+            <AlertDialogDescription>
+              File akan dihapus permanen dari disk dan tidak bisa dikembalikan.
+              Anggota tidak akan bisa mengunduh lampiran ini lagi.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingAttachment}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletingAttachment}
+              onClick={(e) => {
+                e.preventDefault();
+                handleDeleteAttachment();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
+            >
+              {deletingAttachment && <Loader2 className="h-4 w-4 animate-spin" />}
+              {deletingAttachment ? "Menghapus..." : "Hapus"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
