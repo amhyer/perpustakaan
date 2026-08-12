@@ -30,9 +30,11 @@ export async function DELETE(
     }
 
     // Hapus file dari disk
-    // fileUrl format: /uploads/attachments/xxx.pdf
-    // Kita perlu convert ke path absolut di disk
-    const relativePath = attachment.fileUrl.replace(/^\/uploads\//, "");
+    // fileUrl format: /api/uploads/attachments/xxx.pdf
+    // Convert ke path absolut: UPLOAD_DIR + attachments/xxx.pdf
+    const relativePath = attachment.fileUrl
+      .replace(/^\/api\/uploads\//, "") // hapus prefix /api/uploads/
+      .replace(/^\/uploads\//, "");     // fallback kalau pakai /uploads/ prefix
     const absolutePath = path.join(UPLOAD_DIR, relativePath);
     await deleteFileIfExists(absolutePath);
 

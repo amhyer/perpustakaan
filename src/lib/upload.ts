@@ -2,8 +2,11 @@ import path from "path";
 import { promises as fs } from "fs";
 
 // UPLOAD_DIR: direktori root untuk semua file upload.
-// Default: public/uploads (di-serve statis oleh Next.js).
-// Bisa di-override via env UPLOAD_DIR (untuk deployment Render dll).
+// - Development (next dev): cwd = project root, pakai public/uploads di sana
+// - Production standalone (next start): WAJIB set env UPLOAD_DIR ke path absolut
+//   yang writable (mis. /home/z/my-project/public/uploads). Kalau tidak di-set,
+//   fallback ke cwd/public/uploads (cwd standalone = .next/standalone, jadi
+//   file akan di .next/standalone/public/uploads — tidak ideal tapi jalan).
 export const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), "public", "uploads");
 
 // Sub-direktori untuk lampiran buku (dibedakan dari cover gambar)
@@ -12,9 +15,12 @@ export const ATTACHMENTS_SUBDIR = "attachments";
 // Path absolut ke folder attachments
 export const ATTACHMENTS_DIR = path.join(UPLOAD_DIR, ATTACHMENTS_SUBDIR);
 
-// URL prefix untuk akses file attachments via HTTP
-// Jika UPLOAD_DIR = public/uploads, maka file diakses via /uploads/attachments/xxx
-export const ATTACHMENTS_URL_PREFIX = `/uploads/${ATTACHMENTS_SUBDIR}`;
+// URL prefix untuk akses file attachments via HTTP.
+// Pakai /api/uploads/... route (bukan /uploads/... statis) supaya file bisa
+// di-serve dari UPLOAD_DIR di mana pun lokasinya (dev: project root public,
+// prod standalone: project root public — selalu di luar .next/standalone).
+// Route /api/uploads/[file] akan baca dari UPLOAD_DIR.
+export const ATTACHMENTS_URL_PREFIX = `/api/uploads/${ATTACHMENTS_SUBDIR}`;
 
 /**
  * Batasan tipe & ukuran file lampiran (Tahap 15-D)

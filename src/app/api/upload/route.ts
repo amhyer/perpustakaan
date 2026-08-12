@@ -52,14 +52,9 @@ export async function POST(req: Request) {
     const { writeFile } = await import("fs/promises");
     await writeFile(filePath, buffer);
 
-    // URL relatif untuk akses via HTTP
-    // Jika UPLOAD_DIR = public/uploads, maka akses via /uploads/covers/xxx
-    const isPublicDir = UPLOAD_DIR.includes(path.join("public", "uploads"));
-    const urlPrefix = isPublicDir
-      ? `/uploads/covers`
-      : `/api/uploads`; // fallback: serve via API route
-
-    const url = `${urlPrefix}/${uniqueName}`;
+    // URL relatif untuk akses via HTTP via route /api/uploads (bukan statis)
+    // supaya file bisa di-serve dari UPLOAD_DIR di mana pun lokasinya.
+    const url = `/api/uploads/covers/${uniqueName}`;
 
     return NextResponse.json({ url });
   } catch {
