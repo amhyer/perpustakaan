@@ -76,6 +76,23 @@ export async function POST(req: Request) {
     include: { category: true, location: true, items: true },
   });
 
+  // Auto-add author & publisher ke master tabel (Tahap 15-C)
+  // Upsert by name — kalau sudah ada, no-op; kalau baru, create
+  if (author && author.trim()) {
+    await db.author.upsert({
+      where: { name: author.trim() },
+      update: {},
+      create: { name: author.trim() },
+    }).catch(() => { /* ignore dup race */ });
+  }
+  if (publisher && publisher.trim()) {
+    await db.publisher.upsert({
+      where: { name: publisher.trim() },
+      update: {},
+      create: { name: publisher.trim() },
+    }).catch(() => { /* ignore dup race */ });
+  }
+
   // Buat eksemplar
   const count = Math.max(1, parseInt(itemCount || "1"));
   for (let i = 1; i <= count; i++) {

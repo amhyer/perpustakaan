@@ -49,6 +49,23 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     },
     include: { category: true, location: true, items: true },
   });
+
+  // Auto-add author & publisher ke master tabel (Tahap 15-C)
+  if (body.author && typeof body.author === "string" && body.author.trim()) {
+    await db.author.upsert({
+      where: { name: body.author.trim() },
+      update: {},
+      create: { name: body.author.trim() },
+    }).catch(() => { /* ignore dup race */ });
+  }
+  if (body.publisher && typeof body.publisher === "string" && body.publisher.trim()) {
+    await db.publisher.upsert({
+      where: { name: body.publisher.trim() },
+      update: {},
+      create: { name: body.publisher.trim() },
+    }).catch(() => { /* ignore dup race */ });
+  }
+
   return NextResponse.json(book);
 }
 
