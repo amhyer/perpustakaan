@@ -14,6 +14,9 @@ import {
   MapPin,
   Tag,
   Hash,
+  CalendarDays,
+  Trash2,
+  CalendarX,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -32,6 +35,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -49,6 +62,7 @@ import {
   LOAN_RULES,
   ROLE_LABELS,
   formatRupiah,
+  formatDate,
 } from "@/lib/constants";
 
 interface Category {
@@ -62,6 +76,12 @@ interface Location {
   name: string;
   code: string;
   description: string | null;
+}
+interface Holiday {
+  id: string;
+  date: string;
+  description: string;
+  createdAt: string;
 }
 
 type SettingsMap = Record<string, string>;
@@ -82,6 +102,8 @@ export function SettingsView() {
     useFetch<Category[]>("/api/categories", {});
   const { data: locations, refetch: refetchLocations } =
     useFetch<Location[]>("/api/locations", {});
+  const { data: holidays, refetch: refetchHolidays } =
+    useFetch<Holiday[]>("/api/holidays", {});
 
   // Section 1: identity
   const [identity, setIdentity] = useState({
@@ -111,6 +133,13 @@ export function SettingsView() {
   const [locOpen, setLocOpen] = useState(false);
   const [locForm, setLocForm] = useState<SimpleEntryForm>(EMPTY_ENTRY);
   const [savingLoc, setSavingLoc] = useState(false);
+
+  // Section 5: holidays
+  const [holidayOpen, setHolidayOpen] = useState(false);
+  const [holidayForm, setHolidayForm] = useState({ date: "", description: "" });
+  const [savingHoliday, setSavingHoliday] = useState(false);
+  const [deleteHolidayId, setDeleteHolidayId] = useState<string | null>(null);
+  const [deletingHoliday, setDeletingHoliday] = useState(false);
 
   // Sync settings → form state when settings load (one-shot via flag)
   if (
@@ -233,6 +262,48 @@ export function SettingsView() {
       toast.error(err instanceof Error ? err.message : "Gagal menambah rak");
     } finally {
       setSavingLoc(false);
+    }
+  }
+
+  async function saveHoliday(e: React.FormEvent) {
+    e.preventDefault();
+    if (!holidayForm.date) {
+      toast.error("Tanggal wajib diisi");
+      return;
+    }
+    if (!holidayForm.description.trim()) {
+      toast.error("Keterangan wajib diisi");
+      return;
+    }
+    setSavingHoliday(true);
+    try {
+      await api.post("/api/holidays", {
+        date: holidayForm.date,
+        description: holidayForm.description.trim(),
+      });
+      toast.success("Hari libur ditambahkan.");
+      setHolidayOpen(false);
+      setHolidayForm({ date: "", description: "" });
+      refetchHolidays();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal menambah hari libur");
+    } finally {
+      setSavingHoliday(false);
+    }
+  }
+
+  async function deleteHoliday() {
+    if (!deleteHolidayId) return;
+    setDeletingHoliday(true);
+    try {
+      await api.delete(`/api/holidays/${deleteHolidayId}`);
+      toast.success("Hari libur dihapus.");
+      setDeleteHolidayId(null);
+      refetchHolidays();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal menghapus hari libur");
+    } finally {
+      setDeletingHoliday(false);
     }
   }
 
@@ -580,6 +651,81 @@ export function SettingsView() {
               </div>
             )}
           </Card>
+
+          {/* SECTION 5: Hari Libur */}
+          <Card className="p-6">
+            <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                  <CalendarDays className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="font-semibold text-foreground">Hari Libur</h2>
+                  <p className="text-xs text-muted-foreground">
+                    Tanggal libur perpustakaan. Jatuh tempo yang jatuh di tanggal
+                    ini akan otomatis digeser ke hari kerja berikutnya.
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() => {
+                  setHolidayForm({ date: "", description: "" });
+                  setHolidayOpen(true);
+                }}
+                size="sm"
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Tambah Hari Libur
+              </Button>
+            </div>
+
+            {!holidays || holidays.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <CalendarX className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Belum ada hari libur terdaftar.</p>
+                <p className="text-xs mt-1">
+                  Tambahkan tanggal libur untuk menyesuaikan jatuh tempo peminjaman.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-96 overflow-y-auto scrollbar-thin pr-1">
+                {holidays.map((h) => (
+                  <div
+                    key={h.id}
+                    className="flex items-center gap-3 rounded-lg border bg-card p-3 hover:shadow-sm transition-shadow"
+                  >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                      <CalendarDays className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm text-foreground">
+                        {formatDate(h.date)}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {h.description}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setDeleteHolidayId(h.id)}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
+                      aria-label="Hapus hari libur"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {holidays && holidays.length > 0 && (
+              <p className="text-xs text-muted-foreground mt-3 italic">
+                Catatan: menghapus hari libur tidak memengaruhi peminjaman yang
+                sudah terlanjur dibuat sebelumnya.
+              </p>
+            )}
+          </Card>
         </>
       )}
 
@@ -730,6 +876,101 @@ export function SettingsView() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog: Tambah Hari Libur */}
+      <Dialog
+        open={holidayOpen}
+        onOpenChange={(o) => {
+          setHolidayOpen(o);
+          if (!o) setHolidayForm({ date: "", description: "" });
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Tambah Hari Libur</DialogTitle>
+            <DialogDescription>
+              Tanggal libur perpustakaan. Peminjaman dengan jatuh tempo yang jatuh
+              di tanggal ini akan otomatis digeser ke hari kerja berikutnya.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={saveHoliday} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="holiday-date">Tanggal *</Label>
+              <Input
+                id="holiday-date"
+                type="date"
+                required
+                value={holidayForm.date}
+                onChange={(e) =>
+                  setHolidayForm((prev) => ({ ...prev, date: e.target.value }))
+                }
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="holiday-desc">Keterangan *</Label>
+              <Input
+                id="holiday-desc"
+                required
+                value={holidayForm.description}
+                onChange={(e) =>
+                  setHolidayForm((prev) => ({ ...prev, description: e.target.value }))
+                }
+                placeholder="Mis. Hari Raya, Libur Nasional, Libur Semester..."
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setHolidayOpen(false);
+                  setHolidayForm({ date: "", description: "" });
+                }}
+                disabled={savingHoliday}
+              >
+                Batal
+              </Button>
+              <Button type="submit" disabled={savingHoliday} className="gap-2">
+                {savingHoliday && <Loader2 className="h-4 w-4 animate-spin" />}
+                {savingHoliday ? "Menyimpan..." : "Tambah Hari Libur"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* AlertDialog: Konfirmasi Hapus Hari Libur */}
+      <AlertDialog
+        open={!!deleteHolidayId}
+        onOpenChange={(o) => {
+          if (!o) setDeleteHolidayId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Hari Libur?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hari libur akan dihapus dari daftar. Peminjaman yang sudah dibuat
+              sebelumnya TIDAK akan terpengaruh — due date mereka tetap seperti
+              yang sudah ditetapkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingHoliday}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletingHoliday}
+              onClick={(e) => {
+                e.preventDefault();
+                deleteHoliday();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
+            >
+              {deletingHoliday && <Loader2 className="h-4 w-4 animate-spin" />}
+              {deletingHoliday ? "Menghapus..." : "Hapus"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

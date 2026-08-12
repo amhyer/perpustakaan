@@ -565,8 +565,17 @@ export function CirculationView() {
         memberId: borrowMember.id,
         bookItemId: borrowItemId,
       });
+      // Cek apakah dueDate digeser karena hari libur (Tahap 15-B)
+      // Bandingkan dueDate aktual dengan loanDate + loanDays (per kategori)
+      const rule = LOAN_RULES[borrowMember.category] ?? LOAN_RULES.STUDENT;
+      const expectedDue = new Date(new Date(loan.loanDate).getTime() + rule.loanDays * 86400000);
+      const actualDue = new Date(loan.dueDate);
+      const shiftedDays = Math.round((actualDue.getTime() - expectedDue.getTime()) / 86400000);
+      const shiftedNote = shiftedDays > 0
+        ? ` (disesuaikan +${shiftedDays} hari karena jatuh di hari libur)`
+        : "";
       toast.success(
-        `Peminjaman berhasil: "${loan.bookItem.book.title}". Jatuh tempo ${formatDate(loan.dueDate)}.`
+        `Peminjaman berhasil: "${loan.bookItem.book.title}". Jatuh tempo ${formatDate(loan.dueDate)}${shiftedNote}.`
       );
       handleBorrowBookSelect(null);
       refetchBorrowLoans();
