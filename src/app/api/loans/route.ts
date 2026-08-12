@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 import { LOAN_RULES, calculateFine } from "@/lib/constants";
+import { computeDueDateWithHolidays } from "@/lib/loan-rules";
 
 export async function GET(req: Request) {
   const { user, error } = await requireAuth();
@@ -96,7 +97,9 @@ export async function POST(req: Request) {
   }
 
   const loanDate = new Date();
-  const dueDate = new Date(loanDate.getTime() + rule.loanDays * 86400000);
+  // Hitung dueDate dengan menyesuaikan hari libur (Tahap 15-B)
+  // Jika dueDate awal jatuh di hari libur, geser maju ke hari kerja berikutnya
+  const { dueDate, shiftedDays } = await computeDueDateWithHolidays(loanDate, member.category);
 
   const loan = await db.loan.create({
     data: {
@@ -117,11 +120,14 @@ export async function POST(req: Request) {
   await db.bookItem.update({ where: { id: item.id }, data: { status: "BORROWED" } });
 
   // Notifikasi
+  const shiftedNote = shiftedDays > 0
+    ? ` (disesuaikan +${shiftedDays} hari karena jatuh di hari libur)`
+    : "";
   await db.notification.create({
     data: {
       userId: member.userId,
       title: "Peminjaman Berhasil",
-      message: `Anda meminjam "${item.book.title}". Jatuh tempo ${dueDate.toLocaleDateString("id-ID")}.`,
+      message: `Anda meminjam "${item.book.title}". Jatuh tempo ${dueDate.toLocaleDateString("id-ID")}${shiftedNote}.`,
       type: "INFO",
       relatedId: loan.id,
     },

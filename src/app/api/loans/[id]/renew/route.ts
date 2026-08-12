@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 import { LOAN_RULES } from "@/lib/constants";
+import { computeDueDateWithHolidays } from "@/lib/loan-rules";
 
 export async function PUT(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { user, error } = await requireAuth();
@@ -30,7 +31,8 @@ export async function PUT(_req: Request, { params }: { params: Promise<{ id: str
   }
 
   const baseDate = loan.dueDate > new Date() ? loan.dueDate : new Date();
-  const newDueDate = new Date(baseDate.getTime() + rule.loanDays * 86400000);
+  // Hitung dueDate baru dengan menyesuaikan hari libur (Tahap 15-B)
+  const { dueDate: newDueDate, shiftedDays } = await computeDueDateWithHolidays(baseDate, loan.member.category);
 
   const updated = await db.loan.update({
     where: { id },
@@ -42,11 +44,14 @@ export async function PUT(_req: Request, { params }: { params: Promise<{ id: str
     include: { member: true, bookItem: { include: { book: true } } },
   });
 
+  const shiftedNote = shiftedDays > 0
+    ? ` (disesuaikan +${shiftedDays} hari karena jatuh di hari libur)`
+    : "";
   await db.notification.create({
     data: {
       userId: loan.member.userId,
       title: "Perpanjangan Berhasil",
-      message: `"${loan.bookItem.book.title}" diperpanjang hingga ${newDueDate.toLocaleDateString("id-ID")}.`,
+      message: `"${loan.bookItem.book.title}" diperpanjang hingga ${newDueDate.toLocaleDateString("id-ID")}${shiftedNote}.`,
       type: "INFO",
       relatedId: loan.id,
     },
