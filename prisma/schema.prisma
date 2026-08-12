@@ -225,3 +225,18 @@ model Setting {
   key   String @unique
   value String
 }
+
+// ===== Library Holidays (Hari Libur) — Tahap 15-B =====
+// Tanggal spesifik yang didaftarkan pustakawan sebagai hari libur.
+// Hanya tanggal di sini yang dianggap libur — TIDAK otomatis meniadakan
+// akhir pekan (Sabtu/Minggu), karena jam operasional tiap sekolah bisa beda.
+// Dipakai di perhitungan dueDate: kalau jatuh tempo jatuh di salah satu
+// tanggal ini, geser maju ke hari berikutnya yang bukan hari libur.
+model LibraryHoliday {
+  id          String   @id @default(cuid())
+  date        DateTime @unique // tanggal libur (tanpa jam, pakai awal hari)
+  description String
+  createdAt   DateTime @default(now())
+
+  @@index([date])
+}
