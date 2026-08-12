@@ -102,4 +102,53 @@ export async function requireRole(...roles: string[]) {
   return result;
 }
 
+// ===== Helper role permission (Tahap 15-F) =====
+// PUSTAKAWAN_JUNIOR = tingkat akses terbatas: bisa sirkulasi/anggota/stock
+// opname, TAPI tidak bisa Pengaturan, hapus data, atau backup database.
+
+/**
+ * Cek apakah role adalah pustakawan (penuh ATAU junior).
+ * Dipakai untuk akses yang diizinkan untuk junior:
+ * sirkulasi, anggota (read/create/edit), stock opname, catalog, dll.
+ */
+export function isLibrarian(role: string | undefined | null): boolean {
+  return role === "LIBRARIAN" || role === "PUSTAKAWAN_JUNIOR";
+}
+
+/**
+ * Cek apakah role adalah pustakawan PENUH (bukan junior).
+ * Dipakai untuk akses yang DIBLOKIR untuk junior:
+ * Pengaturan, hapus data, backup database, CRUD hari libur,
+ * CRUD master penerbit/pengarang, hapus lampiran.
+ */
+export function isFullLibrarian(role: string | undefined | null): boolean {
+  return role === "LIBRARIAN";
+}
+
+// Helper untuk API routes: wajib login sebagai pustakawan (penuh atau junior)
+export async function requireLibrarian() {
+  const result = await requireAuth();
+  if (result.error || !result.user) return result;
+  if (!isLibrarian(result.user.role)) {
+    return {
+      user: result.user,
+      error: Response.json({ error: "Forbidden" }, { status: 403 }),
+    };
+  }
+  return result;
+}
+
+// Helper untuk API routes: wajib login sebagai pustakawan PENUH (bukan junior)
+export async function requireFullLibrarian() {
+  const result = await requireAuth();
+  if (result.error || !result.user) return result;
+  if (!isFullLibrarian(result.user.role)) {
+    return {
+      user: result.user,
+      error: Response.json({ error: "Akses ditolak. Hanya pustakawan penuh yang dapat melakukan operasi ini." }, { status: 403 }),
+    };
+  }
+  return result;
+}
+
 export { COOKIE_NAME };

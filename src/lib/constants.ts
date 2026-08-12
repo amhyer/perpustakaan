@@ -2,6 +2,7 @@
 
 export const ROLES = {
   LIBRARIAN: "LIBRARIAN",
+  PUSTAKAWAN_JUNIOR: "PUSTAKAWAN_JUNIOR",
   TEACHER: "TEACHER",
   STUDENT: "STUDENT",
 } as const;
@@ -10,12 +11,14 @@ export type Role = (typeof ROLES)[keyof typeof ROLES];
 
 export const ROLE_LABELS: Record<string, string> = {
   LIBRARIAN: "Pustakawan",
+  PUSTAKAWAN_JUNIOR: "Pustakawan Junior",
   TEACHER: "Guru",
   STUDENT: "Siswa",
 };
 
 export const ROLE_COLORS: Record<string, string> = {
   LIBRARIAN: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  PUSTAKAWAN_JUNIOR: "bg-teal-100 text-teal-700 border-teal-200",
   TEACHER: "bg-amber-100 text-amber-700 border-amber-200",
   STUDENT: "bg-sky-100 text-sky-700 border-sky-200",
 };
@@ -26,6 +29,7 @@ export const LOAN_RULES: Record<
   { maxBooks: number; loanDays: number; finePerDay: number; maxRenewals: number }
 > = {
   LIBRARIAN: { maxBooks: 10, loanDays: 30, finePerDay: 0, maxRenewals: 2 },
+  PUSTAKAWAN_JUNIOR: { maxBooks: 10, loanDays: 30, finePerDay: 0, maxRenewals: 2 },
   TEACHER: { maxBooks: 5, loanDays: 14, finePerDay: 500, maxRenewals: 2 },
   STUDENT: { maxBooks: 3, loanDays: 7, finePerDay: 1000, maxRenewals: 1 },
 };
