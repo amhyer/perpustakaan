@@ -11,6 +11,10 @@ export async function GET(req: Request) {
   const q = searchParams.get("q") || "";
   const category = searchParams.get("category");
   const status = searchParams.get("status");
+  // Pagination (Tahap 16 #26) — backward compatible
+  const pageParam = searchParams.get("page");
+  const page = pageParam ? parseInt(pageParam) : null;
+  const pageSize = parseInt(searchParams.get("pageSize") || "12");
 
   const where: Record<string, unknown> = {};
   if (q) {
@@ -24,12 +28,30 @@ export async function GET(req: Request) {
   if (category) where.category = category;
   if (status) where.status = status;
 
+  const include = {
+    user: { select: { email: true, role: true } },
+    _count: { select: { loans: true } },
+  };
+
+  // Mode pagination: return { data, total, page, pageSize }
+  if (page !== null && !isNaN(page)) {
+    const [members, total] = await Promise.all([
+      db.member.findMany({
+        where,
+        include,
+        orderBy: { fullName: "asc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      db.member.count({ where }),
+    ]);
+    return NextResponse.json({ data: members, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
+  }
+
+  // Mode lama (tanpa pagination): return array biasa
   const members = await db.member.findMany({
     where,
-    include: {
-      user: { select: { email: true, role: true } },
-      _count: { select: { loans: true } },
-    },
+    include,
     orderBy: { fullName: "asc" },
   });
   return NextResponse.json(members);

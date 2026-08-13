@@ -68,10 +68,15 @@ export function CatalogView() {
   const [year, setYear] = useState<string>("");
   const [sort, setSort] = useState<SortKey>("title-asc");
   const [showFilters, setShowFilters] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 12;
 
   // Debounce 300ms
   useEffect(() => {
-    const t = setTimeout(() => setSearchQuery(searchInput.trim()), 300);
+    const t = setTimeout(() => {
+      setSearchQuery(searchInput.trim());
+      setPage(1); // Reset ke halaman 1 saat search berubah
+    }, 300);
     return () => clearTimeout(t);
   }, [searchInput]);
 
@@ -79,22 +84,25 @@ export function CatalogView() {
   const { data: categories } = useFetch<Category[]>("/api/categories");
   const { data: locations } = useFetch<Location[]>("/api/locations");
 
-  // Build books URL
+  // Build books URL with pagination
   const booksUrl = useMemo(() => {
     const params = new URLSearchParams();
     if (searchQuery) params.set("q", searchQuery);
     if (categoryId) params.set("categoryId", categoryId);
     if (locationId) params.set("locationId", locationId);
     if (year) params.set("year", year);
-    params.set("limit", "200");
+    params.set("page", String(page));
+    params.set("pageSize", String(pageSize));
     const qs = params.toString();
     return `/api/books${qs ? `?${qs}` : ""}`;
-  }, [searchQuery, categoryId, locationId, year]);
+  }, [searchQuery, categoryId, locationId, year, page]);
 
-  const { data: books, loading, error } = useFetch<BookWithDetails[]>(
+  const { data: booksResp, loading, error } = useFetch<{ data: BookWithDetails[]; total: number; page: number; pageSize: number; totalPages: number }>(
     booksUrl,
     { deps: [booksUrl] }
   );
+  const books = booksResp?.data ?? [];
+  const totalPages = booksResp?.totalPages ?? 1;
 
   // Client-side sort
   const sortedBooks = useMemo(() => {
@@ -210,7 +218,7 @@ export function CatalogView() {
                 </Label>
                 <Select
                   value={categoryId || "ALL"}
-                  onValueChange={(v) => setCategoryId(v === "ALL" ? "" : v)}
+                  onValueChange={(v) => { setCategoryId(v === "ALL" ? "" : v); setPage(1); }}
                 >
                   <SelectTrigger id="filter-category" className="w-full">
                     <SelectValue placeholder="Semua kategori" />
@@ -232,7 +240,7 @@ export function CatalogView() {
                 </Label>
                 <Select
                   value={locationId || "ALL"}
-                  onValueChange={(v) => setLocationId(v === "ALL" ? "" : v)}
+                  onValueChange={(v) => { setLocationId(v === "ALL" ? "" : v); setPage(1); }}
                 >
                   <SelectTrigger id="filter-location" className="w-full">
                     <SelectValue placeholder="Semua lokasi" />
@@ -257,7 +265,7 @@ export function CatalogView() {
                   type="number"
                   placeholder="cth. 2023"
                   value={year}
-                  onChange={(e) => setYear(e.target.value)}
+                  onChange={(e) => { setYear(e.target.value); setPage(1); }}
                   min={1900}
                   max={2100}
                 />
@@ -324,11 +332,37 @@ export function CatalogView() {
           }
         />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {sortedBooks.map((book) => (
-            <BookCard key={book.id} book={book} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {sortedBooks.map((book) => (
+              <BookCard key={book.id} book={book} />
+            ))}
+          </div>
+          {/* Pagination (Tahap 16 #26) */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-6">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+              >
+                ← Sebelumnya
+              </Button>
+              <span className="text-sm text-muted-foreground px-2">
+                Hal. {page} / {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages}
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              >
+                Berikutnya →
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

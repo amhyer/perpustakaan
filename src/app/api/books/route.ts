@@ -13,6 +13,10 @@ export async function GET(req: Request) {
   const year = searchParams.get("year");
   const subject = searchParams.get("subject");
   const limit = parseInt(searchParams.get("limit") || "100");
+  // Pagination (Tahap 16 #26) — backward compatible
+  const pageParam = searchParams.get("page");
+  const page = pageParam ? parseInt(pageParam) : null;
+  const pageSize = parseInt(searchParams.get("pageSize") || "12");
 
   const where: Record<string, unknown> = {};
   if (q) {
@@ -29,6 +33,26 @@ export async function GET(req: Request) {
   if (year) where.year = parseInt(year);
   if (subject) where.subject = { contains: subject };
 
+  // Mode pagination: return { data, total, page, pageSize }
+  if (page !== null && !isNaN(page)) {
+    const [books, total] = await Promise.all([
+      db.book.findMany({
+        where,
+        include: {
+          category: true,
+          location: true,
+          items: { select: { id: true, status: true, itemCode: true, condition: true } },
+        },
+        orderBy: { title: "asc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      db.book.count({ where }),
+    ]);
+    return NextResponse.json({ data: books, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
+  }
+
+  // Mode lama (tanpa pagination): return array biasa
   const books = await db.book.findMany({
     where,
     include: {
