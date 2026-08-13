@@ -54,6 +54,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Judul dan pengarang wajib diisi" }, { status: 400 });
   }
 
+  // Validasi ISBN format (Tahap 16 #23) — ISBN-10 atau ISBN-13
+  if (isbn) {
+    const cleaned = isbn.replace(/[-\s]/g, "");
+    const isValidISBN = /^(\d{10}|\d{13})$/.test(cleaned) && (cleaned.length === 10 || cleaned.length === 13);
+    if (!isValidISBN) {
+      return NextResponse.json({ error: "Format ISBN tidak valid (harus 10 atau 13 digit)" }, { status: 400 });
+    }
+  }
+
+  // Validasi tahun terbit (Tahap 16 #24) — range 1900 sampai tahun depan
+  if (year !== null && year !== undefined && year !== "") {
+    const yearNum = parseInt(year, 10);
+    const currentYear = new Date().getFullYear();
+    if (isNaN(yearNum) || yearNum < 1900 || yearNum > currentYear + 1) {
+      return NextResponse.json({ error: `Tahun terbit harus antara 1900 dan ${currentYear + 1}` }, { status: 400 });
+    }
+  }
+
   const book = await db.book.create({
     data: {
       title,
