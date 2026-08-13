@@ -3,9 +3,10 @@ import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 
 export async function GET() {
-  const { error } = await requireAuth();
+  const { user, error } = await requireAuth();
   if (error) return error;
   const notifications = await db.notification.findMany({
+    where: { userId: user!.id },
     orderBy: { createdAt: "desc" },
     take: 50,
   });
