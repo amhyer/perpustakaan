@@ -25,6 +25,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Tabs,
@@ -467,21 +478,50 @@ export function MemberDetailView({ memberId }: { memberId: string }) {
                 <KeyRound className="h-4 w-4" />
                 Reset Password
               </Button>
-              <Button
-                variant={member.status === "ACTIVE" ? "destructive" : "default"}
-                className="gap-2"
-                onClick={handleToggleStatus}
-                disabled={statusSubmitting}
-              >
-                {statusSubmitting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Power className="h-4 w-4" />
-                )}
-                {member.status === "ACTIVE"
-                  ? "Nonaktifkan"
-                  : "Aktifkan Kembali"}
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant={member.status === "ACTIVE" ? "destructive" : "default"}
+                    className="gap-2"
+                    disabled={statusSubmitting}
+                  >
+                    {statusSubmitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Power className="h-4 w-4" />
+                    )}
+                    {member.status === "ACTIVE"
+                      ? "Nonaktifkan"
+                      : "Aktifkan Kembali"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      {member.status === "ACTIVE" ? "Nonaktifkan Anggota?" : "Aktifkan Kembali Anggota?"}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {member.status === "ACTIVE"
+                        ? `Anggota "${member.fullName}" tidak akan bisa login atau meminjam buku setelah dinonaktifkan. Anda bisa mengaktifkan kembali nanti.`
+                        : `Anggota "${member.fullName}" akan bisa login dan meminjam buku lagi setelah diaktifkan.`}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                    <AlertDialogAction
+                      disabled={statusSubmitting}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleToggleStatus();
+                      }}
+                      className={member.status === "ACTIVE" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+                    >
+                      {statusSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                      {member.status === "ACTIVE" ? "Ya, Nonaktifkan" : "Ya, Aktifkan"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </Card>
         </TabsContent>
