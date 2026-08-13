@@ -164,15 +164,28 @@ export function formatDateShort(date: Date | string): string {
   });
 }
 
-export function daysBetween(a: Date, b: Date): number {
-  const ms = a.getTime() - b.getTime();
-  return Math.ceil(ms / (1000 * 60 * 60 * 24));
+// Normalisasi Date ke awal hari (buang jam/menit/detik/ms) untuk perhitungan kalender
+function startOfDay(d: Date): Date {
+  const n = new Date(d);
+  n.setHours(0, 0, 0, 0);
+  return n;
 }
 
-// Hitung denda berdasarkan tanggal jatuh tempo
+// Hitung selisih HARI KALENDER antara dua tanggal (normalisasi ke awal hari dulu)
+export function daysBetween(a: Date, b: Date): number {
+  const dayA = startOfDay(a);
+  const dayB = startOfDay(b);
+  const ms = dayA.getTime() - dayB.getTime();
+  return Math.round(ms / (1000 * 60 * 60 * 24));
+}
+
+// Hitung denda berdasarkan tanggal jatuh tempo (berbasis kalender, bukan timestamp)
 export function calculateFine(dueDate: Date, returnDate: Date | null, finePerDay: number): number {
   const ref = returnDate ?? new Date();
-  if (ref <= dueDate) return 0;
-  const overdueDays = daysBetween(ref, dueDate);
+  // Normalisasi kedua tanggal ke awal hari, lalu bandingkan
+  const refDay = startOfDay(ref);
+  const dueDay = startOfDay(dueDate);
+  if (refDay <= dueDay) return 0;
+  const overdueDays = Math.round((refDay.getTime() - dueDay.getTime()) / (1000 * 60 * 60 * 24));
   return Math.max(0, overdueDays) * finePerDay;
 }
