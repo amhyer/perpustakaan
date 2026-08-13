@@ -298,7 +298,7 @@ export function ReportsView() {
   }, [loans, period]);
 
   function handleExportCSV() {
-    if (!loans || loans.length === 0) {
+    if (!displayLoans || displayLoans.length === 0) {
       toast.error("Tidak ada data peminjaman untuk diekspor.");
       return;
     }
@@ -319,7 +319,7 @@ export function ReportsView() {
         "Denda Dibayar",
       ];
       const rows = [header];
-      for (const l of loans) {
+      for (const l of displayLoans) {
         rows.push([
           formatDateShort(l.loanDate),
           formatDateShort(l.dueDate),
@@ -340,7 +340,8 @@ export function ReportsView() {
       const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const today = new Date().toISOString().slice(0, 10);
-      const filename = `laporan-peminjaman-${today}.csv`;
+      const periodLabel = period === "daily" ? "7hari" : period === "monthly" ? "30hari" : "365hari";
+      const filename = `laporan-${periodLabel}-${today}.csv`;
       const a = document.createElement("a");
       a.href = url;
       a.download = filename;
