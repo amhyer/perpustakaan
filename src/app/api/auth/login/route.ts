@@ -19,8 +19,18 @@ export async function POST(req: Request) {
     }
 
     const member = user.member;
+    // Auto-deactivate expired members at login (Tahap 16 #4)
+    if (member && member.status === "ACTIVE" && member.expiryDate) {
+      if (new Date(member.expiryDate) < new Date()) {
+        await db.member.update({
+          where: { id: member.id },
+          data: { status: "INACTIVE" },
+        });
+        member.status = "INACTIVE";
+      }
+    }
     if (member && member.status !== "ACTIVE") {
-      return NextResponse.json({ error: "Akun Anda dinonaktifkan. Hubungi pustakawan." }, { status: 403 });
+      return NextResponse.json({ error: "Akun Anda dinonaktifkan atau kedaluwarsa. Hubungi pustakawan." }, { status: 403 });
     }
 
     const token = await createSessionToken({

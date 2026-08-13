@@ -72,6 +72,19 @@ export async function getCurrentUser() {
     include: { member: true },
   });
   if (!user) return null;
+
+  // Auto-deactivate expired members (Tahap 16 #4 — expiryDate gated)
+  if (user.member && user.member.status === "ACTIVE" && user.member.expiryDate) {
+    if (new Date(user.member.expiryDate) < new Date()) {
+      await db.member.update({
+        where: { id: user.member.id },
+        data: { status: "INACTIVE" },
+      });
+      user.member.status = "INACTIVE";
+    }
+  }
+
+  if (user.member && user.member.status !== "ACTIVE") return null;
   return {
     id: user.id,
     email: user.email,
