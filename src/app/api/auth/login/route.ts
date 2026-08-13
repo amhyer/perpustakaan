@@ -20,7 +20,13 @@ export async function POST(req: Request) {
 
     const member = user.member;
     // Auto-deactivate expired members at login (Tahap 16 #4)
-    if (member && member.status === "ACTIVE" && member.expiryDate) {
+    // Pengecualian: LIBRARIAN & PUSTAKAWAN_JUNIOR TIDAK PERNAH auto-deactivate
+    if (
+      member &&
+      member.status === "ACTIVE" &&
+      member.expiryDate &&
+      (user.role === "TEACHER" || user.role === "STUDENT")
+    ) {
       if (new Date(member.expiryDate) < new Date()) {
         await db.member.update({
           where: { id: member.id },

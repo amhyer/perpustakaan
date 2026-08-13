@@ -76,7 +76,14 @@ export async function getCurrentUser() {
   if (!user) return null;
 
   // Auto-deactivate expired members (Tahap 16 #4 — expiryDate gated)
-  if (user.member && user.member.status === "ACTIVE" && user.member.expiryDate) {
+  // Pengecualian: LIBRARIAN & PUSTAKAWAN_JUNIOR TIDAK PERNAH auto-deactivate
+  // (cegah deadlock: semua akun staf terkunci bersamaan, tidak ada yang bisa login)
+  if (
+    user.member &&
+    user.member.status === "ACTIVE" &&
+    user.member.expiryDate &&
+    (user.role === "TEACHER" || user.role === "STUDENT")
+  ) {
     if (new Date(user.member.expiryDate) < new Date()) {
       await db.member.update({
         where: { id: user.member.id },

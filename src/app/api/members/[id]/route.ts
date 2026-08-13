@@ -52,7 +52,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (body.classGrade !== undefined) data.classGrade = body.classGrade;
   if (body.gender !== undefined) data.gender = body.gender;
   if (body.birthDate !== undefined) data.birthDate = body.birthDate ? new Date(body.birthDate) : null;
-  if (body.expiryDate !== undefined) data.expiryDate = body.expiryDate ? new Date(body.expiryDate) : null;
+  // expiryDate hanya bisa diedit oleh pustakawan (Tahap 16 #4) — anggota tidak boleh set sendiri
+  if (isLibrarianRole && body.expiryDate !== undefined) data.expiryDate = body.expiryDate ? new Date(body.expiryDate) : null;
 
   if (isLibrarianRole) {
     if (body.status !== undefined) data.status = body.status;
