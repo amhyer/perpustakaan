@@ -56,6 +56,7 @@ export function MyCardView() {
   const { data: member, loading, error } = useFetch<MyCardMember>(
     memberId ? `/api/members/${memberId}` : null
   );
+  const { data: settings } = useFetch<Record<string, string>>(`/api/settings`);
 
   if (!user || !user.member) {
     return (
@@ -160,7 +161,7 @@ export function MyCardView() {
               {/* Glow di belakang kartu */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[230px] w-[360px] rounded-full bg-primary/20 blur-3xl" />
               <div className="relative shadow-2xl shadow-primary/30 rounded-2xl">
-                <MemberCardPrint member={member} />
+                <MemberCardPrint member={member} headLibrarian={settings?.head_librarian} />
               </div>
               <p className="text-xs text-muted-foreground text-center max-w-sm">
                 Kartu Anggota Perpustakaan {LIBRARY_NAME}

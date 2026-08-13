@@ -4,7 +4,7 @@ import { forwardRef } from "react";
 import { QrCode } from "@/components/app/shared/qr-code";
 import { Logo } from "@/components/app/logo";
 import { formatDate, HEAD_LIBRARIAN_NAME, LIBRARY_NAME, LIBRARY_TAGLINE } from "@/lib/constants";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface MemberCardData {
   id: string;
@@ -16,6 +16,14 @@ interface MemberCardData {
   joinDate: string | Date;
   expiryDate: string | Date | null;
   gender?: string | null;
+}
+
+interface MemberCardPrintProps {
+  member: MemberCardData;
+  single?: boolean;
+  headLibrarian?: string; // dari Settings (Tahap 16 #13)
+  cardBackText?: string;  // untuk Tahap 13 nanti
+  side?: "front" | "back" | "both"; // untuk Tahap 13 nanti
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -30,8 +38,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   STUDENT: "from-sky-700 to-blue-900",
 };
 
-export const MemberCardPrint = forwardRef<HTMLDivElement, { member: MemberCardData; single?: boolean }>(
-  ({ member, single = true }, ref) => {
+export const MemberCardPrint = forwardRef<HTMLDivElement, MemberCardPrintProps>(
+  ({ member, single = true, headLibrarian }, ref) => {
     const qrValue = JSON.stringify({
       t: "JENDela-ILMU-MEMBER",
       id: member.id,
@@ -84,9 +92,10 @@ export const MemberCardPrint = forwardRef<HTMLDivElement, { member: MemberCardDa
 
           {/* Body */}
           <div className="relative z-10 px-4 py-3 flex gap-3">
-            {/* Foto */}
+            {/* Foto (Tahap 16 #14 — tampilkan member.photo kalau ada) */}
             <div className="shrink-0">
               <Avatar className="h-16 w-16 rounded-lg border-2 border-white/40">
+                {member.photo && <AvatarImage src={member.photo} alt={`Foto ${member.fullName}`} />}
                 <AvatarFallback className="rounded-lg bg-white/20 text-white font-bold text-lg">
                   {initials}
                 </AvatarFallback>
@@ -135,7 +144,7 @@ export const MemberCardPrint = forwardRef<HTMLDivElement, { member: MemberCardDa
             <div className="text-right">
               <div className="text-[6px] text-white/60 uppercase">Kepala Perpustakaan</div>
               <div className="text-[9px] font-semibold italic" style={{ fontFamily: "Georgia, serif" }}>
-                {HEAD_LIBRARIAN_NAME}
+                {headLibrarian || HEAD_LIBRARIAN_NAME}
               </div>
             </div>
           </div>

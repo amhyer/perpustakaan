@@ -153,6 +153,7 @@ export function MemberDetailView({ memberId }: { memberId: string }) {
   const { data: member, loading, error, refetch } = useFetch<MemberDetail>(
     `/api/members/${memberId}`
   );
+  const { data: settings } = useFetch<Record<string, string>>(`/api/settings`);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState<EditForm | null>(null);
@@ -588,7 +589,7 @@ export function MemberDetailView({ memberId }: { memberId: string }) {
         <TabsContent value="kartu">
           <Card className="p-6">
             <div className="flex flex-col items-center gap-4">
-              <MemberCardPrint member={member} />
+              <MemberCardPrint member={member} headLibrarian={settings?.head_librarian} />
               <p className="text-sm text-muted-foreground text-center max-w-md">
                 Kartu anggota resmi Perpustakaan {`Jendela Ilmu`}. Tunjukkan
                 kartu ini saat transaksi di perpustakaan.
