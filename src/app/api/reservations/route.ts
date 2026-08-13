@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth, isLibrarian } from "@/lib/auth";
 import { LOAN_RULES } from "@/lib/constants";
-import { computeDueDateWithHolidays } from "@/lib/loan-rules";
+import { computeDueDateWithHolidays, getLoanRule } from "@/lib/loan-rules";
 
 export async function GET(req: Request) {
   const { user, error } = await requireAuth();
@@ -137,7 +137,7 @@ export async function PUT(req: Request) {
     // Hitung dueDate dengan libur (Tahap 15-B)
     const loanDate = new Date();
     const { dueDate } = await computeDueDateWithHolidays(loanDate, reservation.member.category);
-    const rule = LOAN_RULES[reservation.member.category] ?? LOAN_RULES.STUDENT;
+    const rule = await getLoanRule(reservation.member.category);
 
     // Eksekusi dalam transaction: buat loan + update item + update reservasi
     const loan = await db.$transaction(async (tx) => {

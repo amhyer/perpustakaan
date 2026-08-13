@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 import { LOAN_RULES } from "@/lib/constants";
-import { computeDueDateWithHolidays } from "@/lib/loan-rules";
+import { computeDueDateWithHolidays, getLoanRule } from "@/lib/loan-rules";
 
 export async function PUT(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { user, error } = await requireAuth();
@@ -16,7 +16,7 @@ export async function PUT(_req: Request, { params }: { params: Promise<{ id: str
   if (!loan) return NextResponse.json({ error: "Peminjaman tidak ditemukan" }, { status: 404 });
   if (loan.status === "RETURNED") return NextResponse.json({ error: "Buku sudah dikembalikan" }, { status: 400 });
 
-  const rule = LOAN_RULES[loan.member.category] ?? LOAN_RULES.STUDENT;
+  const rule = await getLoanRule(loan.member.category);
 
   if (loan.renewedCount >= rule.maxRenewals) {
     return NextResponse.json({ error: `Batas perpanjangan tercapai (maksimal ${rule.maxRenewals}x)` }, { status: 400 });

@@ -2,6 +2,63 @@ import { db } from "@/lib/db";
 import { LOAN_RULES } from "@/lib/constants";
 
 /**
+ * Ambil aturan peminjaman dari Settings (Tahap 16 #12).
+ * Override nilai default LOAN_RULES dengan settings dari DB:
+ * - fine_per_day_student, fine_per_day_teacher
+ * - loan_days_student, loan_days_teacher
+ *
+ * LIBRARIAN & PUSTAKAWAN_JUNIOR selalu pakai default (tidak di-override).
+ * Return Record<category, {maxBooks, loanDays, finePerDay, maxRenewals}>.
+ */
+export async function getLoanRules(): Promise<typeof LOAN_RULES> {
+  const settings = await db.setting.findMany({
+    where: {
+      key: {
+        in: [
+          "fine_per_day_student",
+          "fine_per_day_teacher",
+          "loan_days_student",
+          "loan_days_teacher",
+        ],
+      },
+    },
+  });
+
+  const map: Record<string, string> = {};
+  for (const s of settings) map[s.key] = s.value;
+
+  // Clone default, override dengan settings kalau ada
+  const rules = JSON.parse(JSON.stringify(LOAN_RULES)) as typeof LOAN_RULES;
+
+  if (map.fine_per_day_student) {
+    const v = parseInt(map.fine_per_day_student, 10);
+    if (!isNaN(v)) rules.STUDENT.finePerDay = v;
+  }
+  if (map.fine_per_day_teacher) {
+    const v = parseInt(map.fine_per_day_teacher, 10);
+    if (!isNaN(v)) rules.TEACHER.finePerDay = v;
+  }
+  if (map.loan_days_student) {
+    const v = parseInt(map.loan_days_student, 10);
+    if (!isNaN(v) && v > 0) rules.STUDENT.loanDays = v;
+  }
+  if (map.loan_days_teacher) {
+    const v = parseInt(map.loan_days_teacher, 10);
+    if (!isNaN(v) && v > 0) rules.TEACHER.loanDays = v;
+  }
+
+  return rules;
+}
+
+/**
+ * Helper: ambil rule untuk satu kategori, sudah di-override dengan Settings.
+ */
+export async function getLoanRule(category: string): Promise<typeof LOAN_RULES.STUDENT> {
+  const rules = await getLoanRules();
+  return rules[category as keyof typeof rules] ?? rules.STUDENT;
+}
+
+/**
  * Ambil semua tanggal hari libur dari database.
  * Return sebagai Set<string> dengan format "YYYY-MM-DD" untuk lookup cepat.
  */
@@ -71,7 +128,7 @@ export async function computeDueDateWithHolidays(
   baseDate: Date,
   category: string
 ): Promise<{ dueDate: Date; shiftedDays: number; rule: typeof LOAN_RULES.STUDENT }> {
-  const rule = LOAN_RULES[category as keyof typeof LOAN_RULES] ?? LOAN_RULES.STUDENT;
+  const rule = await getLoanRule(category);
   const holidaySet = await getHolidayDateSet();
   return { ...computeDueDate(baseDate, rule.loanDays, holidaySet), rule };
 }

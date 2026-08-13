@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth, isLibrarian } from "@/lib/auth";
 import { LOAN_RULES, calculateFine } from "@/lib/constants";
-import { computeDueDateWithHolidays } from "@/lib/loan-rules";
+import { computeDueDateWithHolidays, getLoanRules, getLoanRule } from "@/lib/loan-rules";
 
 export async function GET(req: Request) {
   const { user, error } = await requireAuth();
@@ -34,6 +34,7 @@ export async function GET(req: Request) {
 
   // Update status overdue secara dinamis & hitung denda
   const now = new Date();
+  const rules = await getLoanRules();
   const result = loans.map((l) => {
     let dynamicStatus = l.status;
     let dynamicFine = l.fineAmount;
@@ -41,7 +42,7 @@ export async function GET(req: Request) {
       dynamicStatus = "OVERDUE";
     }
     if (l.status !== "RETURNED") {
-      const rule = LOAN_RULES[l.member.category] ?? LOAN_RULES.STUDENT;
+      const rule = rules[l.member.category as keyof typeof rules] ?? rules.STUDENT;
       dynamicFine = calculateFine(l.dueDate, null, rule.finePerDay);
     }
     return { ...l, status: dynamicStatus, fineAmount: dynamicFine };
@@ -79,8 +80,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Eksemplar tidak tersedia untuk dipinjam" }, { status: 400 });
   }
 
-  // Cek kuota peminjaman
-  const rule = LOAN_RULES[member.category] ?? LOAN_RULES.STUDENT;
+  // Cek kuota peminjaman (pakai rule dari Settings)
+  const rule = await getLoanRule(member.category);
   const activeLoans = await db.loan.count({
     where: { memberId, status: { in: ["LOANED", "OVERDUE"] } },
   });

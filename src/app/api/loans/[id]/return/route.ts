@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 import { LOAN_RULES, calculateFine } from "@/lib/constants";
+import { getLoanRule } from "@/lib/loan-rules";
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { user, error } = await requireAuth();
@@ -16,7 +17,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (!loan) return NextResponse.json({ error: "Peminjaman tidak ditemukan" }, { status: 404 });
   if (loan.status === "RETURNED") return NextResponse.json({ error: "Buku sudah dikembalikan" }, { status: 400 });
 
-  const rule = LOAN_RULES[loan.member.category] ?? LOAN_RULES.STUDENT;
+  const rule = await getLoanRule(loan.member.category);
   const now = new Date();
   const fine = calculateFine(loan.dueDate, now, rule.finePerDay);
   const finePaid = body.finePaid !== undefined ? parseInt(body.finePaid) : fine;
