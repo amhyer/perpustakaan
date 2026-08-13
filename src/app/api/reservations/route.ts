@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth, isLibrarian } from "@/lib/auth";
+import { LOAN_RULES } from "@/lib/constants";
+import { computeDueDateWithHolidays } from "@/lib/loan-rules";
 
 export async function GET(req: Request) {
   const { user, error } = await requireAuth();
@@ -104,10 +106,74 @@ export async function PUT(req: Request) {
   }
 
   // Fulfill (pustakawan penuh/junior): saat anggota mengambil buku dan meminjamnya
+  // Buat Loan baru, ubah BookItem RESERVED → BORROWED, reservasi → FULFILLED
   if (body.action === "fulfill") {
     if (!isLibrarian(user!.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    await db.reservation.update({ where: { id: body.id }, data: { status: "FULFILLED" } });
-    return NextResponse.json({ success: true });
+
+    // Pre-check: reservasi harus berstatus READY
+    if (reservation.status !== "READY") {
+      return NextResponse.json(
+        { error: `Reservasi harus berstatus READY untuk diambil. Status saat ini: ${reservation.status}` },
+        { status: 400 }
+      );
+    }
+
+    // Pre-check: anggota harus ACTIVE
+    if (reservation.member.status !== "ACTIVE") {
+      return NextResponse.json({ error: "Anggota tidak aktif. Tidak dapat meminjam." }, { status: 400 });
+    }
+
+    // Cari item yang RESERVED untuk buku ini
+    const reservedItem = await db.bookItem.findFirst({
+      where: { bookId: reservation.bookId, status: "RESERVED" },
+    });
+    if (!reservedItem) {
+      return NextResponse.json(
+        { error: "Tidak ada eksemplar berstatus RESERVED untuk buku ini. Mungkin sudah diambil." },
+        { status: 400 }
+      );
+    }
+
+    // Hitung dueDate dengan libur (Tahap 15-B)
+    const loanDate = new Date();
+    const { dueDate } = await computeDueDateWithHolidays(loanDate, reservation.member.category);
+    const rule = LOAN_RULES[reservation.member.category] ?? LOAN_RULES.STUDENT;
+
+    // Eksekusi dalam transaction: buat loan + update item + update reservasi
+    const loan = await db.$transaction(async (tx) => {
+      const newLoan = await tx.loan.create({
+        data: {
+          memberId: reservation.memberId,
+          bookItemId: reservedItem.id,
+          bookId: reservation.bookId,
+          loanDate,
+          dueDate,
+          status: "LOANED",
+        },
+      });
+      await tx.bookItem.update({
+        where: { id: reservedItem.id },
+        data: { status: "BORROWED" },
+      });
+      await tx.reservation.update({
+        where: { id: body.id },
+        data: { status: "FULFILLED" },
+      });
+      return newLoan;
+    });
+
+    // Notifikasi ke anggota
+    await db.notification.create({
+      data: {
+        userId: reservation.member.userId,
+        title: "Reservasi Dipenuhi",
+        message: `Reservasi "${reservation.book.title}" telah dipenuhi. Buku berhasil dipinjam, jatuh tempo ${dueDate.toLocaleDateString("id-ID")}.`,
+        type: "INFO",
+        relatedId: loan.id,
+      },
+    });
+
+    return NextResponse.json({ success: true, loanId: loan.id });
   }
 
   return NextResponse.json({ error: "Aksi tidak dikenal" }, { status: 400 });
