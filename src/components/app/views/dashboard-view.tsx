@@ -53,7 +53,6 @@ import {
 import { Spinner } from "@/components/app/shared/loading";
 import { EmptyState } from "@/components/app/shared/page-header";
 import { StatCard } from "@/components/app/shared/stat-card";
-import { Card } from "@/components/ui/card";
 import { BookCover } from "@/components/app/shared/book-cover";
 import { useFetch } from "@/hooks/use-fetch";
 import { useAppStore } from "@/store/use-app-store";
@@ -208,13 +207,13 @@ export function DashboardView() {
 
   if (user?.role !== "LIBRARIAN" && user?.role !== "PUSTAKAWAN_JUNIOR") {
     return (
-      <Card className="p-6">
+      <div className="p-6">
         <EmptyState
           icon={ShieldAlert}
           title="Akses Ditolak"
           description="Halaman ini hanya tersedia untuk pustakawan."
         />
-      </Card>
+      </div>
     );
   }
 
