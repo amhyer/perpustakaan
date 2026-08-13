@@ -12,6 +12,7 @@ import {
   User,
   BookOpen,
   ShieldAlert,
+  Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -120,6 +121,7 @@ function LoansViewContent() {
   const [search, setSearch] = useState("");
   const [returnTarget, setReturnTarget] = useState<Loan | null>(null);
   const [returning, setReturning] = useState<string | null>(null);
+  const [payingFine, setPayingFine] = useState<string | null>(null);
   const setView = useAppStore((s) => s.setView);
 
   const activeParam = FILTERS.find((f) => f.key === filter)?.param ?? "";
@@ -152,6 +154,19 @@ function LoansViewContent() {
         l.bookItem.book.author.toLowerCase().includes(q)
     );
   }, [data, search]);
+
+  async function handlePayFine(loanId: string) {
+    setPayingFine(loanId);
+    try {
+      await api.put(`/api/loans/${loanId}/pay-fine`, {});
+      toast.success("Denda ditandai lunas.");
+      refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal menandai denda lunas");
+    } finally {
+      setPayingFine(null);
+    }
+  }
 
   async function handleReturn() {
     if (!returnTarget) return;
@@ -315,15 +330,38 @@ function LoansViewContent() {
                       </TableCell>
                       <TableCell className="text-right text-xs">
                         {(loan.fineAmount ?? 0) > 0 ? (
-                          <span className="font-semibold text-red-600 dark:text-red-400">
-                            {formatRupiah(loan.fineAmount)}
-                          </span>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="font-semibold text-red-600 dark:text-red-400">
+                              {formatRupiah(loan.fineAmount)}
+                            </span>
+                            {(loan.finePaid ?? 0) >= (loan.fineAmount ?? 0) ? (
+                              <span className="text-[10px] text-emerald-600">Lunas</span>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground">Belum dibayar</span>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1 justify-end">
+                          {(loan.fineAmount ?? 0) > 0 && (loan.finePaid ?? 0) < (loan.fineAmount ?? 0) && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                              disabled={payingFine === loan.id}
+                              onClick={() => handlePayFine(loan.id)}
+                            >
+                              {payingFine === loan.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Wallet className="h-3.5 w-3.5" />
+                              )}
+                              <span className="hidden sm:inline">Lunas</span>
+                            </Button>
+                          )}
                           {canReturn ? (
                             <Button
                               size="sm"
