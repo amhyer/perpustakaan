@@ -21,6 +21,7 @@ import { ProposalsView } from "@/components/app/views/proposals-view";
 import { AnnouncementsView } from "@/components/app/views/announcements-view";
 import { ReportsView } from "@/components/app/views/reports-view";
 import { SettingsView } from "@/components/app/views/settings-view";
+import { BatchCardsView } from "@/components/app/views/batch-cards-view";
 import { MyDashboardView } from "@/components/app/views/my-dashboard-view";
 import { MyLoansView } from "@/components/app/views/my-loans-view";
 import { MyCardView } from "@/components/app/views/my-card-view";
@@ -82,6 +83,8 @@ export default function Page() {
         return <AnnouncementsView />;
       case "reports":
         return <ReportsView />;
+      case "batch-cards":
+        return <BatchCardsView />;
       case "settings":
         return <SettingsView />;
       case "my-dashboard":

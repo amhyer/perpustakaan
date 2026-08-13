@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   Library,
   Megaphone,
+  Printer,
   ScanLine,
   Settings,
   Users,
@@ -39,6 +40,7 @@ const LIBRARIAN_NAV: NavItem[] = [
   { key: "proposals", label: "Usulan Buku", icon: BookPlus },
   { key: "announcements", label: "Pengumuman", icon: Megaphone },
   { key: "reports", label: "Laporan", icon: FileBarChart },
+  { key: "batch-cards", label: "Cetak Kartu Massal", icon: Printer },
   { key: "settings", label: "Pengaturan", icon: Settings },
 ];
 

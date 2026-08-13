@@ -18,6 +18,7 @@ export type ViewKey =
   | "announcements"
   | "reports"
   | "settings"
+  | "batch-cards"
   // Member (teacher/student)
   | "my-dashboard"
   | "my-loans"
