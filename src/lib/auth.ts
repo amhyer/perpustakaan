@@ -3,9 +3,11 @@ import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 
-const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "jendela-ilmu-secret-key-change-in-production"
-);
+// JWT_SECRET wajib di-set (Tahap 16 #28) — tidak ada fallback default
+if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable belum diset. Generate secret baru (mis: openssl rand -base64 32) dan set sebagai env var.");
+}
+const SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 const COOKIE_NAME = "ji_session";
 const SESSION_DAYS = 7;
 
@@ -52,7 +54,7 @@ export async function setSessionCookie(token: string) {
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: false,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * SESSION_DAYS,
