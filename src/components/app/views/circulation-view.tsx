@@ -13,6 +13,7 @@ import {
   RotateCcw,
   CalendarClock,
   Info,
+  ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -43,6 +44,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
+import { useAppStore } from "@/store/use-app-store";
 import { BookCover } from "@/components/app/shared/book-cover";
 import { Spinner } from "@/components/app/shared/loading";
 import { useFetch } from "@/hooks/use-fetch";
@@ -489,6 +491,24 @@ function ActiveLoansList({
 
 // ===== Main view =====
 export function CirculationView() {
+  const user = useAppStore((s) => s.user);
+
+  if (user?.role !== "LIBRARIAN" && user?.role !== "PUSTAKAWAN_JUNIOR") {
+    return (
+      <Card className="p-6">
+        <EmptyState
+          icon={ShieldAlert}
+          title="Akses Ditolak"
+          description="Halaman ini hanya tersedia untuk pustakawan."
+        />
+      </Card>
+    );
+  }
+
+  return <CirculationViewContent />;
+}
+
+function CirculationViewContent() {
   // Borrow state
   const [borrowMember, setBorrowMember] = useState<MemberSearchResult | null>(null);
   const [borrowBook, setBorrowBook] = useState<BookSearchResult | null>(null);

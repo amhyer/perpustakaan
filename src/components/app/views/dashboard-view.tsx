@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Clock,
   CalendarClock,
+  ShieldAlert,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -52,6 +53,7 @@ import {
 import { Spinner } from "@/components/app/shared/loading";
 import { EmptyState } from "@/components/app/shared/page-header";
 import { StatCard } from "@/components/app/shared/stat-card";
+import { Card } from "@/components/ui/card";
 import { BookCover } from "@/components/app/shared/book-cover";
 import { useFetch } from "@/hooks/use-fetch";
 import { useAppStore } from "@/store/use-app-store";
@@ -203,7 +205,26 @@ function initials(name: string): string {
 // ===== Main view =====
 export function DashboardView() {
   const user = useAppStore((s) => s.user);
+
+  if (user?.role !== "LIBRARIAN" && user?.role !== "PUSTAKAWAN_JUNIOR") {
+    return (
+      <Card className="p-6">
+        <EmptyState
+          icon={ShieldAlert}
+          title="Akses Ditolak"
+          description="Halaman ini hanya tersedia untuk pustakawan."
+        />
+      </Card>
+    );
+  }
+
+  return <DashboardViewContent />;
+}
+
+function DashboardViewContent() {
+  const user = useAppStore((s) => s.user);
   const setView = useAppStore((s) => s.setView);
+
   const { data, loading, error } = useFetch<StatsResponse>("/api/stats");
 
   const today = useMemo(() => {

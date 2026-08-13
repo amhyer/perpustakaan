@@ -11,6 +11,7 @@ import {
   Clock,
   User,
   BookOpen,
+  ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -97,6 +98,24 @@ const FILTERS: { key: FilterKey; label: string; param: string }[] = [
 ];
 
 export function LoansView() {
+  const user = useAppStore((s) => s.user);
+
+  if (user?.role !== "LIBRARIAN" && user?.role !== "PUSTAKAWAN_JUNIOR") {
+    return (
+      <Card className="p-6">
+        <EmptyState
+          icon={ShieldAlert}
+          title="Akses Ditolak"
+          description="Halaman ini hanya tersedia untuk pustakawan."
+        />
+      </Card>
+    );
+  }
+
+  return <LoansViewContent />;
+}
+
+function LoansViewContent() {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
   const [returnTarget, setReturnTarget] = useState<Loan | null>(null);

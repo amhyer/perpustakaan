@@ -12,6 +12,7 @@ import {
   CalendarClock,
   Bell,
   Hash,
+  ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -96,6 +97,24 @@ const FILTERS: { key: FilterKey; label: string }[] = [
 type ActionTarget = { reservation: Reservation; action: "fulfill" | "cancel" };
 
 export function ReservationsView() {
+  const user = useAppStore((s) => s.user);
+
+  if (user?.role !== "LIBRARIAN" && user?.role !== "PUSTAKAWAN_JUNIOR") {
+    return (
+      <Card className="p-6">
+        <EmptyState
+          icon={ShieldAlert}
+          title="Akses Ditolak"
+          description="Halaman ini hanya tersedia untuk pustakawan."
+        />
+      </Card>
+    );
+  }
+
+  return <ReservationsViewContent />;
+}
+
+function ReservationsViewContent() {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
   const [actionTarget, setActionTarget] = useState<ActionTarget | null>(null);

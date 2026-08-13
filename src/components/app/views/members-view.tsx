@@ -12,6 +12,7 @@ import {
   Eye,
   Loader2,
   Filter,
+  ShieldAlert,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -138,7 +139,26 @@ const EMPTY_FORM: AddFormState = {
 };
 
 export function MembersView() {
+  const user = useAppStore((s) => s.user);
+
+  if (user?.role !== "LIBRARIAN" && user?.role !== "PUSTAKAWAN_JUNIOR") {
+    return (
+      <Card className="p-6">
+        <EmptyState
+          icon={ShieldAlert}
+          title="Akses Ditolak"
+          description="Halaman ini hanya tersedia untuk pustakawan."
+        />
+      </Card>
+    );
+  }
+
+  return <MembersViewContent />;
+}
+
+function MembersViewContent() {
   const setView = useAppStore((s) => s.setView);
+
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
   const [status, setStatus] = useState<string>("all");
