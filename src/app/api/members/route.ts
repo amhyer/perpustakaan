@@ -46,6 +46,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Email, password, nama, dan nomor anggota wajib diisi" }, { status: 400 });
   }
 
+  // Validasi format email (Tahap 16 #21)
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return NextResponse.json({ error: "Format email tidak valid" }, { status: 400 });
+  }
+
+  // Validasi password minimal 6 karakter (Tahap 16 #22)
+  if (password.length < 6) {
+    return NextResponse.json({ error: "Password minimal 6 karakter" }, { status: 400 });
+  }
+
   const existing = await db.user.findUnique({ where: { email: email.toLowerCase() } });
   if (existing) return NextResponse.json({ error: "Email sudah terdaftar" }, { status: 400 });
 
