@@ -176,6 +176,19 @@
   @page {
     margin: 10mm;
   }
+
+  /* Presisi ukuran fisik CR80 untuk kartu anggota (Tahap 14) */
+  .cr80-card {
+    width: 85.6mm !important;
+    height: 53.98mm !important;
+    border-radius: 3mm !important;
+    overflow: hidden !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    /* Paksa cetak warna latar/gradient */
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
 }
 
 /* Pola jendela dekoratif */

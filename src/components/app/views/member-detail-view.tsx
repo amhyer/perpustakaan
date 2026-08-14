@@ -18,6 +18,7 @@ import {
   Power,
   BookOpen,
   Clock,
+  RotateCw,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -70,7 +71,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 import { Spinner } from "@/components/app/shared/loading";
-import { MemberCardPrint } from "@/components/app/shared/member-card-print";
+import { MemberCardPrint, type PrintSide } from "@/components/app/shared/member-card-print";
 
 import { useFetch } from "@/hooks/use-fetch";
 import { api } from "@/lib/api-client";
@@ -175,6 +176,8 @@ export function MemberDetailView({ memberId }: { memberId: string }) {
   const [pwdSubmitting, setPwdSubmitting] = useState(false);
 
   const [statusSubmitting, setStatusSubmitting] = useState(false);
+  const [cardShowBack, setCardShowBack] = useState(false);
+  const [cardPrintSide, setCardPrintSide] = useState<PrintSide>("front");
 
   function openEditDialog() {
     if (!member) return;
@@ -629,20 +632,55 @@ export function MemberDetailView({ memberId }: { memberId: string }) {
         <TabsContent value="kartu">
           <Card className="p-6">
             <div className="flex flex-col items-center gap-4">
-              <MemberCardPrint member={member} headLibrarian={settings?.head_librarian} />
+              <MemberCardPrint
+                member={member}
+                headLibrarian={settings?.head_librarian}
+                cardBackText={settings?.card_back_text}
+                side={cardShowBack ? "back" : "front"}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 no-print"
+                onClick={() => setCardShowBack(!cardShowBack)}
+              >
+                <RotateCw className="h-3.5 w-3.5" />
+                {cardShowBack ? "Lihat Sisi Depan" : "Lihat Sisi Belakang"}
+              </Button>
               <p className="text-sm text-muted-foreground text-center max-w-md">
                 Kartu anggota resmi Perpustakaan {`Jendela Ilmu`}. Tunjukkan
                 kartu ini saat transaksi di perpustakaan.
               </p>
-              <Button
-                onClick={() => window.print()}
-                className="gap-2 no-print"
-              >
-                <Printer className="h-4 w-4" />
-                Cetak Kartu
-              </Button>
+              <div className="flex items-center gap-2 no-print">
+                <Select value={cardPrintSide} onValueChange={(v) => setCardPrintSide(v as PrintSide)}>
+                  <SelectTrigger className="h-9 w-[130px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="front">Depan saja</SelectItem>
+                    <SelectItem value="back">Belakang saja</SelectItem>
+                    <SelectItem value="both">Depan + Belakang</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  onClick={() => window.print()}
+                  className="gap-2"
+                >
+                  <Printer className="h-4 w-4" />
+                  Cetak Kartu
+                </Button>
+              </div>
             </div>
           </Card>
+          {/* Print area (hidden on screen) */}
+          <div className="print-area hidden print:block">
+            <MemberCardPrint
+              member={member}
+              headLibrarian={settings?.head_librarian}
+              cardBackText={settings?.card_back_text}
+              side={cardPrintSide}
+            />
+          </div>
         </TabsContent>
       </Tabs>
 

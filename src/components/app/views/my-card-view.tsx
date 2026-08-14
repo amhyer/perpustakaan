@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   CreditCard,
   Printer,
@@ -11,14 +12,22 @@ import {
   ShieldCheck,
   ShieldAlert,
   Smartphone,
+  RotateCw,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 import { Spinner } from "@/components/app/shared/loading";
-import { MemberCardPrint } from "@/components/app/shared/member-card-print";
+import { MemberCardPrint, type PrintSide } from "@/components/app/shared/member-card-print";
 import { QrCode } from "@/components/app/shared/qr-code";
 
 import { useFetch } from "@/hooks/use-fetch";
@@ -51,6 +60,8 @@ interface MyCardMember {
 
 export function MyCardView() {
   const user = useAppStore((s) => s.user);
+  const [showBack, setShowBack] = useState(false);
+  const [printSide, setPrintSide] = useState<PrintSide>("front");
 
   const memberId = user?.member?.id ?? null;
   const { data: member, loading, error } = useFetch<MyCardMember>(
@@ -93,14 +104,26 @@ export function MyCardView() {
         description="Tunjukkan kartu ini ke pustakawan untuk transaksi cepat"
         icon={CreditCard}
         actions={
-          <Button
-            onClick={() => window.print()}
-            className="gap-2 no-print"
-            disabled={!member}
-          >
-            <Printer className="h-4 w-4" />
-            Cetak Kartu
-          </Button>
+          <div className="flex items-center gap-2 no-print">
+            <Select value={printSide} onValueChange={(v) => setPrintSide(v as PrintSide)}>
+              <SelectTrigger className="h-9 w-[130px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="front">Depan saja</SelectItem>
+                <SelectItem value="back">Belakang saja</SelectItem>
+                <SelectItem value="both">Depan + Belakang</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              onClick={() => window.print()}
+              className="gap-2"
+              disabled={!member}
+            >
+              <Printer className="h-4 w-4" />
+              Cetak Kartu
+            </Button>
+          </div>
         }
       />
 
@@ -161,8 +184,22 @@ export function MyCardView() {
               {/* Glow di belakang kartu */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[230px] w-[360px] rounded-full bg-primary/20 blur-3xl" />
               <div className="relative shadow-2xl shadow-primary/30 rounded-2xl">
-                <MemberCardPrint member={member} headLibrarian={settings?.head_librarian} />
+                <MemberCardPrint
+                  member={member}
+                  headLibrarian={settings?.head_librarian}
+                  cardBackText={settings?.card_back_text}
+                  side={showBack ? "back" : "front"}
+                />
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => setShowBack(!showBack)}
+              >
+                <RotateCw className="h-3.5 w-3.5" />
+                {showBack ? "Lihat Sisi Depan" : "Lihat Sisi Belakang"}
+              </Button>
               <p className="text-xs text-muted-foreground text-center max-w-sm">
                 Kartu Anggota Perpustakaan {LIBRARY_NAME}
               </p>
@@ -233,6 +270,16 @@ export function MyCardView() {
           </div>
         </div>
       )}
+
+      {/* Print area (hidden on screen) */}
+      <div className="print-area hidden print:block">
+        <MemberCardPrint
+          member={member}
+          headLibrarian={settings?.head_librarian}
+          cardBackText={settings?.card_back_text}
+          side={printSide}
+        />
+      </div>
     </div>
   );
 }

@@ -125,6 +125,7 @@ export function SettingsView() {
     library_name: "",
     head_librarian: "",
     library_address: "",
+    card_back_text: "",
   });
   const [identityReady, setIdentityReady] = useState(false);
   const [savingIdentity, setSavingIdentity] = useState(false);
@@ -186,6 +187,7 @@ export function SettingsView() {
       library_name: settings.library_name ?? "",
       head_librarian: settings.head_librarian ?? "",
       library_address: settings.library_address ?? "",
+      card_back_text: settings.card_back_text ?? "",
     });
     setRules({
       fine_per_day_student: settings.fine_per_day_student ?? "",
@@ -225,6 +227,7 @@ export function SettingsView() {
         library_name: identity.library_name,
         head_librarian: identity.head_librarian,
         library_address: identity.library_address,
+        card_back_text: identity.card_back_text,
       });
       toast.success("Identitas perpustakaan disimpan.");
       refetchSettings();
@@ -537,6 +540,21 @@ export function SettingsView() {
                   placeholder="Jl. Pendidikan No. 1, Kota..."
                   rows={2}
                 />
+              </div>
+              <div className="space-y-1.5 md:col-span-2">
+                <Label htmlFor="set-card-back">Teks Sisi Belakang Kartu</Label>
+                <Textarea
+                  id="set-card-back"
+                  value={identity.card_back_text}
+                  onChange={(e) =>
+                    setIdentity((prev) => ({ ...prev, card_back_text: e.target.value }))
+                  }
+                  placeholder="Aturan penggunaan kartu anggota..."
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Teks ini tampil di sisi belakang kartu anggota. Kosongkan untuk pakai teks default.
+                </p>
               </div>
             </div>
             <div className="mt-4 flex justify-end">

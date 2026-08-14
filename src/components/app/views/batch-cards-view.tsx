@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/select";
 
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
-import { MemberCardPrint } from "@/components/app/shared/member-card-print";
+import { MemberCardPrint, type PrintSide } from "@/components/app/shared/member-card-print";
 import { useFetch } from "@/hooks/use-fetch";
 import { useAppStore } from "@/store/use-app-store";
 import { ROLE_LABELS, ROLE_COLORS } from "@/lib/constants";
@@ -67,6 +67,7 @@ export function BatchCardsView() {
   const [category, setCategory] = useState<string>("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [printing, setPrinting] = useState(false);
+  const [batchPrintSide, setBatchPrintSide] = useState<PrintSide>("front");
 
   const membersUrl = useMemo(() => {
     const params = new URLSearchParams();
@@ -135,6 +136,16 @@ export function BatchCardsView() {
         icon={Printer}
         actions={
           <div className="flex items-center gap-2 no-print">
+            <Select value={batchPrintSide} onValueChange={(v) => setBatchPrintSide(v as PrintSide)}>
+              <SelectTrigger className="h-9 w-[130px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="front">Depan saja</SelectItem>
+                <SelectItem value="back">Belakang saja</SelectItem>
+                <SelectItem value="both">Depan + Belakang</SelectItem>
+              </SelectContent>
+            </Select>
             <Button
               onClick={handlePrint}
               className="gap-2"
@@ -295,17 +306,55 @@ export function BatchCardsView() {
       {/* Print area: grid of MemberCardPrint */}
       {selectedMembers.length > 0 && (
         <div className="print-area hidden print:block">
-          <div className="grid grid-cols-2 gap-4 p-4">
-            {selectedMembers.map((m) => (
-              <div key={m.id} style={{ breakInside: "avoid", pageBreakInside: "avoid" }}>
-                <MemberCardPrint
-                  member={m}
-                  single={false}
-                  headLibrarian={settings?.head_librarian}
-                />
+          {batchPrintSide === "both" ? (
+            <>
+              {/* Cetak SEMUA sisi depan dulu */}
+              <div className="grid grid-cols-2 gap-4 p-4">
+                {selectedMembers.map((m) => (
+                  <div key={`front-${m.id}`} style={{ breakInside: "avoid", pageBreakInside: "avoid" }}>
+                    <MemberCardPrint
+                      member={m}
+                      single={false}
+                      headLibrarian={settings?.head_librarian}
+                      cardBackText={settings?.card_back_text}
+                      side="front"
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+              {/* Page break, baru SEMUA sisi belakang */}
+              <div
+                className="grid grid-cols-2 gap-4 p-4"
+                style={{ breakBefore: "page", pageBreakBefore: "always" }}
+              >
+                {selectedMembers.map((m) => (
+                  <div key={`back-${m.id}`} style={{ breakInside: "avoid", pageBreakInside: "avoid" }}>
+                    <MemberCardPrint
+                      member={m}
+                      single={false}
+                      headLibrarian={settings?.head_librarian}
+                      cardBackText={settings?.card_back_text}
+                      side="back"
+                    />
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="grid grid-cols-2 gap-4 p-4">
+              {selectedMembers.map((m) => (
+                <div key={m.id} style={{ breakInside: "avoid", pageBreakInside: "avoid" }}>
+                  <MemberCardPrint
+                    member={m}
+                    single={false}
+                    headLibrarian={settings?.head_librarian}
+                    cardBackText={settings?.card_back_text}
+                    side={batchPrintSide}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
