@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -171,6 +172,10 @@ export function SettingsView() {
   // Backup database
   const [downloadingBackup, setDownloadingBackup] = useState(false);
 
+  // Gamifikasi toggle (Tahap 8A)
+  const [showGamifikasi, setShowGamifikasi] = useState(true);
+  const [savingGamifikasi, setSavingGamifikasi] = useState(false);
+
   // Sync settings → form state when settings load (one-shot via flag)
   if (
     !identityReady &&
@@ -190,6 +195,7 @@ export function SettingsView() {
     });
     setIdentityReady(true);
     setRulesReady(true);
+    setShowGamifikasi(settings.show_gamification !== "false");
   }
 
   // Guard: hanya pustakawan PENUH yang bisa akses (PUSTAKAWAN_JUNIOR ditolak)
@@ -444,6 +450,21 @@ export function SettingsView() {
     }
   }
 
+  // ===== Gamifikasi toggle handler (Tahap 8A) =====
+  async function handleToggleGamifikasi(checked: boolean) {
+    setShowGamifikasi(checked);
+    setSavingGamifikasi(true);
+    try {
+      await api.put("/api/settings", { show_gamification: checked ? "true" : "false" });
+      toast.success(checked ? "Gamifikasi diaktifkan" : "Gamifikasi dinonaktifkan");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal mengubah pengaturan");
+      setShowGamifikasi(!checked); // revert
+    } finally {
+      setSavingGamifikasi(false);
+    }
+  }
+
   const loadingAll = loadingSettings;
 
   return (
@@ -531,6 +552,23 @@ export function SettingsView() {
                 )}
                 {savingIdentity ? "Menyimpan..." : "Simpan Identitas"}
               </Button>
+            </div>
+          </Card>
+
+          {/* SECTION 1b: Toggle Gamifikasi (Tahap 8A) */}
+          <Card className="p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <h2 className="font-semibold text-sm text-foreground">Gamifikasi & Minat Baca</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Tampilkan section badge, target baca, dan leaderboard di beranda anggota.
+                </p>
+              </div>
+              <Switch
+                checked={showGamifikasi}
+                onCheckedChange={handleToggleGamifikasi}
+                disabled={savingGamifikasi}
+              />
             </div>
           </Card>
 

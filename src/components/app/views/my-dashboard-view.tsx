@@ -26,6 +26,7 @@ import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 import { StatCard } from "@/components/app/shared/stat-card";
 import { BookCover } from "@/components/app/shared/book-cover";
 import { BookCard, type BookWithDetails } from "@/components/app/shared/book-card";
+import { GamificationSection } from "@/components/app/shared/gamification-section";
 import { Spinner } from "@/components/app/shared/loading";
 
 import { useFetch } from "@/hooks/use-fetch";
@@ -102,6 +103,8 @@ export function MyDashboardView() {
   const { data: announcements, loading: annLoading } = useFetch<Announcement[]>(`/api/announcements`);
   const { data: wishlist } = useFetch<WishlistItem[]>(`/api/wishlist?mine=1`);
   const { data: recommended, loading: recLoading } = useFetch<BookLite[]>(`/api/books?limit=5`);
+  const { data: settings } = useFetch<Record<string, string>>(`/api/settings`);
+  const showGamification = settings?.show_gamification !== "false"; // default ON
 
   const stats = useMemo(() => {
     const list = loans ?? [];
@@ -489,6 +492,11 @@ export function MyDashboardView() {
           </Card>
         </div>
       </div>
+
+      {/* Gamifikasi (Tahap 8A) — conditional render berdasarkan toggle settings */}
+      {showGamification && user.member && (
+        <GamificationSection memberId={user.member.id} />
+      )}
 
       {/* Recommended books */}
       <div className="space-y-3">
