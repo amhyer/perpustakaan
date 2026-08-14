@@ -54,6 +54,7 @@ import {
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 import { StatCard } from "@/components/app/shared/stat-card";
 import { Spinner } from "@/components/app/shared/loading";
+import { LiteracyReportSection } from "@/components/app/shared/literacy-report-section";
 import { useFetch } from "@/hooks/use-fetch";
 import {
   LOAN_STATUS_LABELS,
@@ -200,6 +201,7 @@ export function ReportsView() {
 
   const { data: stats, loading: statsLoading, error: statsError } = useFetch<StatsResponse>("/api/stats");
   const { data: loans, loading: loansLoading, error: loansError } = useFetch<Loan[]>("/api/loans");
+  const { data: settingsData } = useFetch<Record<string, string>>(`/api/settings`);
 
   const loading = statsLoading || loansLoading;
   const error = statsError ?? loansError;
@@ -765,6 +767,9 @@ export function ReportsView() {
             )}
           </CardContent>
         </Card>
+
+        {/* Laporan Literasi (Tahap 8C) */}
+        <LiteracyReportSection settings={settingsData ?? null} />
       </div>
     </div>
   );
