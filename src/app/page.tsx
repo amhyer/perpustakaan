@@ -21,6 +21,7 @@ import { ProposalsView } from "@/components/app/views/proposals-view";
 import { AnnouncementsView } from "@/components/app/views/announcements-view";
 import { ReportsView } from "@/components/app/views/reports-view";
 import { SettingsView } from "@/components/app/views/settings-view";
+import { KioskModeView } from "@/components/app/views/kiosk-mode-view";
 import { BatchCardsView } from "@/components/app/views/batch-cards-view";
 import { MyDashboardView } from "@/components/app/views/my-dashboard-view";
 import { MyLoansView } from "@/components/app/views/my-loans-view";
@@ -101,6 +102,11 @@ export default function Page() {
         return <DashboardView />;
     }
   };
+
+  // Mode Kios: render full-screen tanpa AppShell
+  if (view.key === "kiosk") {
+    return <KioskModeView />;
+  }
 
   return (
     <AppShell key={refreshKey}>{renderView()}</AppShell>

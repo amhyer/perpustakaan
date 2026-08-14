@@ -644,6 +644,16 @@ function CirculationViewContent() {
         title="Sirkulasi"
         description="Layanan peminjaman & pengembalian buku"
         icon={ScanLine}
+        actions={
+          <Button
+            onClick={() => setView("kiosk")}
+            variant="outline"
+            className="gap-2"
+          >
+            <ScanLine className="h-4 w-4" />
+            Mode Kios
+          </Button>
+        }
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
