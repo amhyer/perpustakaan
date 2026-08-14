@@ -42,6 +42,9 @@ model Member {
   classGrade   String?  // untuk siswa: kelas, untuk guru: mata pelajaran
   joinDate     DateTime @default(now())
   expiryDate   DateTime?
+  // Gamifikasi (Tahap 8A) — target baca tahunan
+  readingGoalTarget Int?
+  readingGoalSetAt  DateTime?
   loans        Loan[]
   reservations Reservation[]
   wishlists    Wishlist[]
