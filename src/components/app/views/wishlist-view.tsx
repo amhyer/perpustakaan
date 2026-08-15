@@ -9,9 +9,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/layout/card";
+import { Button } from "@/components/ui/form/button";
+import { Badge } from "@/components/ui/data-display/badge";
 
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 import { StatCard } from "@/components/app/shared/stat-card";

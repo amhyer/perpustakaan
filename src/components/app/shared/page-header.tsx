@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/form/button";
 import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {

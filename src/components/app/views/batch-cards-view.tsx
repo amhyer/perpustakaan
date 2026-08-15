@@ -12,19 +12,19 @@ import {
   Filter,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/form/button";
+import { Input } from "@/components/ui/form/input";
+import { Badge } from "@/components/ui/data-display/badge";
+import { Card } from "@/components/ui/layout/card";
+import { Checkbox } from "@/components/ui/form/checkbox";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/data-display/avatar";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/form/select";
 
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 import { MemberCardPrint, type PrintSide } from "@/components/app/shared/member-card-print";

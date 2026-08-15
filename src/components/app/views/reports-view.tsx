@@ -33,16 +33,16 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+} from "@/components/ui/layout/card";
+import { Button } from "@/components/ui/form/button";
+import { Badge } from "@/components/ui/data-display/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/form/select";
 import {
   Table,
   TableBody,
@@ -50,7 +50,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui/data-display/table";
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 import { StatCard } from "@/components/app/shared/stat-card";
 import { Spinner } from "@/components/app/shared/loading";

@@ -22,17 +22,17 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+} from "@/components/ui/layout/card";
+import { Input } from "@/components/ui/form/input";
+import { Button } from "@/components/ui/form/button";
+import { Badge } from "@/components/ui/data-display/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/form/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,7 +42,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/overlay/alert-dialog";
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 import { useAppStore } from "@/store/use-app-store";
 import { BookCover } from "@/components/app/shared/book-cover";
@@ -509,6 +509,7 @@ export function CirculationView() {
 }
 
 function CirculationViewContent() {
+  const { setView } = useAppStore();
   // Borrow state
   const [borrowMember, setBorrowMember] = useState<MemberSearchResult | null>(null);
   const [borrowBook, setBorrowBook] = useState<BookSearchResult | null>(null);

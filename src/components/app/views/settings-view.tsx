@@ -24,14 +24,14 @@ import {
   Download,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/form/button";
+import { Input } from "@/components/ui/form/input";
+import { Label } from "@/components/ui/form/label";
+import { Textarea } from "@/components/ui/form/textarea";
+import { Switch } from "@/components/ui/form/switch";
+import { Card } from "@/components/ui/layout/card";
+import { Badge } from "@/components/ui/data-display/badge";
+import { Separator } from "@/components/ui/layout/separator";
 import {
   Table,
   TableBody,
@@ -39,7 +39,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui/data-display/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,7 +49,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/overlay/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -57,7 +57,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/overlay/dialog";
 
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 

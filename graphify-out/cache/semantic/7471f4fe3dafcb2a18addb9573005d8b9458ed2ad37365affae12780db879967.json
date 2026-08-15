@@ -1,0 +1,1 @@
+{"nodes": [{"id": "download-folder", "label": "Download Folder", "type": "module", "source_file": "download/README.md", "confidence": 1.0}, {"id": "generated-files", "label": "Generated Files", "type": "entity", "source_file": "download/README.md", "confidence": 1.0}], "edges": [], "hyperedges": []}

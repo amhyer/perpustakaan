@@ -18,10 +18,10 @@ import { toast } from "sonner";
 import {
   Card,
   CardContent,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+} from "@/components/ui/layout/card";
+import { Input } from "@/components/ui/form/input";
+import { Button } from "@/components/ui/form/button";
+import { Badge } from "@/components/ui/data-display/badge";
 import {
   Table,
   TableBody,
@@ -29,12 +29,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui/data-display/table";
 import {
   Tabs,
   TabsList,
   TabsTrigger,
-} from "@/components/ui/tabs";
+} from "@/components/ui/disclosure/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,7 +44,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/overlay/alert-dialog";
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 import { StatCard } from "@/components/app/shared/stat-card";
 import { useFetch } from "@/hooks/use-fetch";

@@ -19,18 +19,18 @@ import { BookCard, type BookWithDetails } from "@/components/app/shared/book-car
 import { EmptyState, PageHeader } from "@/components/app/shared/page-header";
 import { LoadingGrid } from "@/components/app/shared/loading";
 
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/form/button";
+import { Card } from "@/components/ui/layout/card";
+import { Input } from "@/components/ui/form/input";
+import { Label } from "@/components/ui/form/label";
+import { Badge } from "@/components/ui/data-display/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/form/select";
 
 interface Category {
   id: string;

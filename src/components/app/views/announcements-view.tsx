@@ -14,13 +14,13 @@ import {
   Clock,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/form/button";
+import { Input } from "@/components/ui/form/input";
+import { Label } from "@/components/ui/form/label";
+import { Textarea } from "@/components/ui/form/textarea";
+import { Badge } from "@/components/ui/data-display/badge";
+import { Card } from "@/components/ui/layout/card";
+import { Switch } from "@/components/ui/form/switch";
 import {
   Dialog,
   DialogContent,
@@ -28,7 +28,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/overlay/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,7 +38,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/overlay/alert-dialog";
 
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 

@@ -17,10 +17,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/form/button";
+import { Card } from "@/components/ui/layout/card";
+import { Badge } from "@/components/ui/data-display/badge";
+import { Progress } from "@/components/ui/feedback/progress";
 
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 import { StatCard } from "@/components/app/shared/stat-card";

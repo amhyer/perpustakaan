@@ -4,10 +4,10 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { BookOpen, GraduationCap, Library, Loader2, Lock, Mail, ShieldCheck, Sparkles } from "lucide-react";
 import { Logo } from "@/components/app/logo";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { api } from "@/lib/api-client";
+import { Button } from "@/components/ui/form/button";
+import { Input } from "@/components/ui/form/input";
+import { Label } from "@/components/ui/form/label";
+import { api, type CurrentUser } from "@/lib/api-client";
 import { useAppStore } from "@/store/use-app-store";
 import { toast } from "sonner";
 
@@ -52,7 +52,7 @@ export function LoginScreen() {
     }
     setLoading(true);
     try {
-      const user = await api.post("/api/auth/login", { email, password });
+      const user = await api.post<CurrentUser>("/api/auth/login", { email, password });
       setUser(user);
       toast.success(`Selamat datang, ${user.name}!`);
     } catch (err) {

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Bell, LogOut, Menu, Search, User as UserIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/form/button";
+import { Input } from "@/components/ui/form/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,9 +11,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+} from "@/components/ui/navigation/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/data-display/avatar";
+import { Badge } from "@/components/ui/data-display/badge";
 import { useAppStore } from "@/store/use-app-store";
 import { api } from "@/lib/api-client";
 import { ROLE_LABELS } from "@/lib/constants";

@@ -15,15 +15,15 @@ import {
   RotateCw,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/form/button";
+import { Card } from "@/components/ui/layout/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/form/select";
 
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 import { Spinner } from "@/components/app/shared/loading";
@@ -272,14 +272,16 @@ export function MyCardView() {
       )}
 
       {/* Print area (hidden on screen) */}
-      <div className="print-area hidden print:block">
-        <MemberCardPrint
-          member={member}
-          headLibrarian={settings?.head_librarian}
-          cardBackText={settings?.card_back_text}
-          side={printSide}
-        />
-      </div>
+      {member && (
+        <div className="print-area hidden print:block">
+          <MemberCardPrint
+            member={member}
+            headLibrarian={settings?.head_librarian}
+            cardBackText={settings?.card_back_text}
+            side={printSide}
+          />
+        </div>
+      )}
     </div>
   );
 }

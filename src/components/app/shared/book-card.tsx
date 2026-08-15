@@ -2,9 +2,9 @@
 
 import { BookOpen, MapPin } from "lucide-react";
 import { BookCover } from "@/components/app/shared/book-cover";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/data-display/badge";
+import { Button } from "@/components/ui/form/button";
+import { Card } from "@/components/ui/layout/card";
 import { useAppStore } from "@/store/use-app-store";
 import { ITEM_STATUS_COLORS, ITEM_STATUS_LABELS } from "@/lib/constants";
 

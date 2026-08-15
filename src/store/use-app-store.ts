@@ -19,6 +19,7 @@ export type ViewKey =
   | "reports"
   | "settings"
   | "batch-cards"
+  | "stocktaking"
   | "kiosk"
   // Member (teacher/student)
   | "my-dashboard"

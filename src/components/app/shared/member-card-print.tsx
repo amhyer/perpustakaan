@@ -3,7 +3,7 @@
 import { forwardRef } from "react";
 import { QrCode } from "@/components/app/shared/qr-code";
 import { formatDate, HEAD_LIBRARIAN_NAME, LIBRARY_NAME, LIBRARY_TAGLINE } from "@/lib/constants";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/data-display/avatar";
 
 interface MemberCardData {
   id: string;

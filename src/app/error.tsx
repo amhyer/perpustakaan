@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/form/button";
 
 /**
  * app/error.tsx — Next.js error boundary untuk route segments.

@@ -21,11 +21,11 @@ import {
   RotateCw,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/form/button";
+import { Input } from "@/components/ui/form/input";
+import { Label } from "@/components/ui/form/label";
+import { Badge } from "@/components/ui/data-display/badge";
+import { Card } from "@/components/ui/layout/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,14 +36,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+} from "@/components/ui/overlay/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/data-display/avatar";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@/components/ui/tabs";
+} from "@/components/ui/disclosure/tabs";
 import {
   Table,
   TableBody,
@@ -51,7 +51,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui/data-display/table";
 import {
   Dialog,
   DialogContent,
@@ -59,15 +59,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/overlay/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+} from "@/components/ui/form/select";
+import { Textarea } from "@/components/ui/form/textarea";
 
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 import { Spinner } from "@/components/app/shared/loading";

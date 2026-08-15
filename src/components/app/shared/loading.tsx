@@ -1,6 +1,6 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
+import { Card } from "@/components/ui/layout/card";
 import { cn } from "@/lib/utils";
 
 export function LoadingGrid({ count = 8, className }: { count?: number; className?: string }) {

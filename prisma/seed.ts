@@ -90,7 +90,7 @@ async function main() {
         address: extra.address,
         classGrade: extra.classGrade,
         joinDate: new Date("2024-01-15"),
-        expiryDate: new Date("2026-01-15"),
+        expiryDate: new Date("2028-12-31"),
       },
     });
     return { user, member };

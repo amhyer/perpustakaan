@@ -30,9 +30,9 @@ import { useAppStore } from "@/store/use-app-store";
 import { BookCover } from "@/components/app/shared/book-cover";
 import { Spinner } from "@/components/app/shared/loading";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/data-display/badge";
+import { Button } from "@/components/ui/form/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/layout/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,7 +43,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/overlay/alert-dialog";
 import {
   ITEM_STATUS_COLORS,
   ITEM_STATUS_LABELS,
