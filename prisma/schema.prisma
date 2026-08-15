@@ -111,6 +111,7 @@ model BookItem {
   status      String   @default("AVAILABLE") // AVAILABLE | BORROWED | DAMAGED | LOST | RESERVED
   condition   String   @default("BAIK") // BAIK | RUSAK_RINGAN | RUSAK_BERAT
   loans       Loan[]
+  stocktakingScans StocktakingScan[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -277,4 +278,29 @@ model BookAttachment {
   uploadedAt     DateTime @default(now())
 
   @@index([bookId])
+}
+
+// ===== Stock Opname (Urutan 11 — Tahap 15-A) =====
+model StocktakingSession {
+  id            String             @id @default(cuid())
+  startedAt     DateTime           @default(now())
+  endedAt       DateTime?
+  note          String?
+  status        String             @default("ONGOING") // ONGOING | COMPLETED
+  createdById   String
+  expectedCount Int
+  scans         StocktakingScan[]
+}
+
+model StocktakingScan {
+  id         String            @id @default(cuid())
+  sessionId  String
+  session    StocktakingSession @relation(fields: [sessionId], references: [id])
+  bookItemId String
+  bookItem   BookItem          @relation(fields: [bookItemId], references: [id])
+  scannedAt  DateTime          @default(now())
+
+  @@unique([sessionId, bookItemId])
+  @@index([sessionId])
+  @@index([bookItemId])
 }
