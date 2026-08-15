@@ -4,9 +4,12 @@ import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   BookPlus,
+  Camera,
   ImagePlus,
   Loader2,
   Save,
+  ScanLine,
+  Search,
   ShieldAlert,
   X,
 } from "lucide-react";
@@ -15,23 +18,51 @@ import { toast } from "sonner";
 import { useFetch } from "@/hooks/use-fetch";
 import { api } from "@/lib/api-client";
 import { useAppStore } from "@/store/use-app-store";
+import { useQrScanner } from "@/hooks/use-qr-scanner";
+
+// ISBN lookup types
+interface ISBNLookupData {
+  title: string | null;
+  authors: string[] | null;
+  publisher: string | null;
+  publishedYear: string | null;
+  description: string | null;
+  categories: string[] | null;
+  isbn: string;
+  coverImageUrl: string | null;
+}
+
+interface ISBNLookupResult {
+  status: "FOUND" | "DUPLICATE" | "NOT_FOUND" | "ERROR";
+  data?: ISBNLookupData;
+  book?: { id: string; title: string; isbn: string | null };
+  message?: string;
+}
 
 import { BookCover } from "@/components/app/shared/book-cover";
 import { PageHeader } from "@/components/app/shared/page-header";
 import { AutocompleteInput } from "@/components/app/shared/autocomplete-input";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/form/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/layout/card";
+import { Input } from "@/components/ui/form/input";
+import { Label } from "@/components/ui/form/label";
+import { Textarea } from "@/components/ui/form/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/overlay/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/form/select";
 import { COVER_COLORS } from "@/lib/constants";
 
 interface Category {
@@ -123,6 +154,13 @@ export function BookFormView({ bookId }: { bookId?: string }) {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [lookingUp, setLookingUp] = useState(false);
+  const [lookupResult, setLookupResult] = useState<ISBNLookupResult | null>(null);
+  const [showLookupDialog, setShowLookupDialog] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+
+  // QR Scanner for ISBN
+  const { containerId: scannerContainerId } = useQrScanner(handleScanISBN, showScanner, "isbn-scanner-container");
 
   // Prefill when edit data arrives
   useEffect(() => {
@@ -179,6 +217,50 @@ export function BookFormView({ bookId }: { bookId?: string }) {
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  async function handleISBNSearch() {
+    const isbn = form.isbn.trim();
+    if (!isbn) {
+      toast.error("Masukkan ISBN terlebih dahulu");
+      return;
+    }
+    const cleaned = isbn.replace(/[-\s]/g, "");
+    if (!/^\d{10}$|^\d{13}$/.test(cleaned)) {
+      toast.error("Format ISBN tidak valid (harus 10 atau 13 digit)");
+      return;
+    }
+    setLookingUp(true);
+    try {
+      const res = await api.get<ISBNLookupResult>(`/api/books/lookup?isbn=${cleaned}`);
+      setLookupResult(res);
+      setShowLookupDialog(true);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal mencari buku");
+    } finally {
+      setLookingUp(false);
+    }
+  }
+
+  function applyLookupData() {
+    if (!lookupResult?.data) return;
+    const d = lookupResult.data;
+    update("title", d.title ?? "");
+    update("author", d.authors?.join(", ") ?? "");
+    update("publisher", d.publisher ?? "");
+    update("year", d.publishedYear ?? "");
+    update("synopsis", d.description ?? "");
+    if (d.coverImageUrl) {
+      update("coverImage", d.coverImageUrl);
+    }
+    setShowLookupDialog(false);
+    setLookupResult(null);
+    toast.success("Data buku berhasil diisi otomatis");
+  }
+
+  function handleScanISBN(text: string) {
+    setShowScanner(false);
+    update("isbn", text.trim());
   }
 
   async function handleUploadCover(file: File) {
@@ -312,13 +394,45 @@ export function BookFormView({ bookId }: { bookId?: string }) {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="isbn">ISBN</Label>
-                <Input
-                  id="isbn"
-                  value={form.isbn}
-                  onChange={(e) => update("isbn", e.target.value)}
-                  placeholder="cth. 978-979-3062-79-2"
-                />
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <Label htmlFor="isbn">ISBN</Label>
+                    <Input
+                      id="isbn"
+                      value={form.isbn}
+                      onChange={(e) => update("isbn", e.target.value)}
+                      placeholder="cth. 978-979-3062-79-2"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleISBNSearch}
+                    disabled={lookingUp}
+                    className="mb-0.5"
+                  >
+                    {lookingUp ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Search className="h-4 w-4" />
+                    )}
+                    Cari
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowScanner(true)}
+                    className="mb-0.5"
+                    aria-label="Scan ISBN"
+                  >
+                    <Camera className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Klik "Cari" untuk isi otomatis dari OpenLibrary/Google Books
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="subject">Subjek</Label>
@@ -574,6 +688,110 @@ export function BookFormView({ bookId }: { bookId?: string }) {
           </Card>
         </div>
       </form>
+
+      {/* ISBN lookup dialogs */}
+      <Dialog open={showScanner} onOpenChange={setShowScanner}>
+      <DialogContent className="sm:max-w-sm p-0 overflow-hidden">
+        <DialogHeader className="p-4 pb-0">
+          <DialogTitle>Scan ISBN Buku</DialogTitle>
+          <DialogDescription>
+            Arahkan barcode ISBN ke kamera
+          </DialogDescription>
+        </DialogHeader>
+        <div className="p-4 space-y-3">
+          <div id="isbn-scanner-container" className="mx-auto w-full max-w-xs rounded-lg overflow-hidden border-2 border-primary/30 bg-black aspect-square">
+            <span className="sr-only">Scanner kamera</span>
+          </div>
+          <p className="text-center text-xs text-muted-foreground">
+            Atau masukkan ISBN manual di field di atas
+          </p>
+          <div className="flex justify-center">
+            <Input
+              placeholder="Isi ISBN manual..."
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && e.currentTarget.value.trim()) {
+                  handleScanISBN(e.currentTarget.value.trim());
+                }
+              }}
+            />
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* ISBN Lookup Preview Dialog */}
+    <Dialog open={showLookupDialog} onOpenChange={setShowLookupDialog}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Hasil Pencarian ISBN</DialogTitle>
+          <DialogDescription>
+            {lookupResult?.message || "Data buku ditemukan dari OpenLibrary/Google Books"}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          {lookupResult?.status === "DUPLICATE" && lookupResult.book && (
+            <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+              <p className="text-sm text-yellow-800">
+                Buku ini sudah ada di katalog: <strong>{lookupResult.book.title}</strong>
+              </p>
+              <Button
+                size="sm"
+                className="mt-2"
+                onClick={() => setView("book-detail", { id: lookupResult.book!.id })}
+              >
+                Lihat Buku
+              </Button>
+            </div>
+          )}
+
+          {lookupResult?.status === "NOT_FOUND" && (
+            <p className="text-sm text-muted-foreground">
+              Data tidak ditemukan. Silakan isi manual di form.
+            </p>
+          )}
+
+          {lookupResult?.data && (
+            <div className="flex gap-4">
+              {lookupResult.data.coverImageUrl && (
+                <img
+                  src={lookupResult.data.coverImageUrl}
+                  alt="Cover"
+                  className="w-20 h-28 object-cover rounded shadow-md"
+                />
+              )}
+              <div className="flex-1 space-y-2">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Judul</Label>
+                  <p className="text-sm font-medium">{lookupResult.data.title || "-"}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Pengarang</Label>
+                  <p className="text-sm">{lookupResult.data.authors?.join(", ") || "-"}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Penerbit</Label>
+                  <p className="text-sm">{lookupResult.data.publisher || "-"}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Tahun</Label>
+                  <p className="text-sm">{lookupResult.data.publishedYear || "-"}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="flex justify-end gap-2 pt-4 border-t">
+          <Button variant="outline" size="sm" onClick={() => setShowLookupDialog(false)}>
+            Batal
+          </Button>
+          {lookupResult?.status === "FOUND" && lookupResult.data && (
+            <Button size="sm" onClick={applyLookupData}>
+              Gunakan Data Ini
+            </Button>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
     </div>
   );
 }
