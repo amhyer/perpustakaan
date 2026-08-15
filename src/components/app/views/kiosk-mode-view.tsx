@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Html5Qrcode } from "html5-qrcode";
 import {
   ScanLine,
   UserCheck,
@@ -20,10 +19,10 @@ import {
 import { toast } from "sonner";
 import { api } from "@/lib/api-client";
 import { useAppStore } from "@/store/use-app-store";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/form/button";
+import { Card } from "@/components/ui/layout/card";
+import { Input } from "@/components/ui/form/input";
+import { Badge } from "@/components/ui/data-display/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +32,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/overlay/alert-dialog";
 import {
   LOAN_STATUS_LABELS,
   LOAN_STATUS_COLORS,
@@ -82,63 +81,8 @@ type KioskPhase =
 
 type KioskAction = "borrow" | "return" | null;
 
-// ===== QR Scanner Hook =====
-function useQrScanner(onScan: (text: string) => void, active: boolean) {
-  const scannerRef = useRef<Html5Qrcode | null>(null);
-  const containerId = "kiosk-scanner-container";
-  const onScanRef = useRef(onScan);
-
-  useEffect(() => {
-    onScanRef.current = onScan;
-  }, [onScan]);
-
-  useEffect(() => {
-    if (!active) {
-      if (scannerRef.current) {
-        scannerRef.current.stop().then(() => {
-          scannerRef.current?.clear();
-          scannerRef.current = null;
-        }).catch(() => {
-          scannerRef.current = null;
-        });
-      }
-      return;
-    }
-
-    const startScanner = async () => {
-      try {
-        const scanner = new Html5Qrcode(containerId);
-        scannerRef.current = scanner;
-        await scanner.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 250, height: 250 } },
-          (decodedText) => {
-            onScanRef.current(decodedText);
-          },
-          () => {
-            // Ignore per-frame errors
-          }
-        );
-      } catch {
-        // Camera not available — user can use manual input
-      }
-    };
-    startScanner();
-
-    return () => {
-      if (scannerRef.current) {
-        scannerRef.current.stop().then(() => {
-          scannerRef.current?.clear();
-          scannerRef.current = null;
-        }).catch(() => {
-          scannerRef.current = null;
-        });
-      }
-    };
-  }, [active]);
-
-  return { containerId };
-}
+// ===== QR Scanner Hook (reused from shared hook) =====
+import { useQrScanner } from "@/hooks/use-qr-scanner";
 
 // ===== Main View =====
 export function KioskModeView() {

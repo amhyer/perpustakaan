@@ -41,6 +41,7 @@ const LIBRARIAN_NAV: NavItem[] = [
   { key: "announcements", label: "Pengumuman", icon: Megaphone },
   { key: "reports", label: "Laporan", icon: FileBarChart },
   { key: "batch-cards", label: "Cetak Kartu Massal", icon: Printer },
+  { key: "stocktaking", label: "Stock Opname", icon: ClipboardList },
   { key: "settings", label: "Pengaturan", icon: Settings },
 ];
 

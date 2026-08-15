@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api } from "@/lib/api-client";
+import { api, type CurrentUser } from "@/lib/api-client";
 import { useAppStore } from "@/store/use-app-store";
 import { AppShell } from "@/components/app/layout/app-shell";
 import { LoginScreen } from "@/components/app/auth/login-screen";
@@ -23,6 +23,7 @@ import { ReportsView } from "@/components/app/views/reports-view";
 import { SettingsView } from "@/components/app/views/settings-view";
 import { KioskModeView } from "@/components/app/views/kiosk-mode-view";
 import { BatchCardsView } from "@/components/app/views/batch-cards-view";
+import { StocktakingView } from "@/components/app/views/stocktaking-view";
 import { MyDashboardView } from "@/components/app/views/my-dashboard-view";
 import { MyLoansView } from "@/components/app/views/my-loans-view";
 import { MyCardView } from "@/components/app/views/my-card-view";
@@ -35,7 +36,7 @@ export default function Page() {
 
   useEffect(() => {
     api
-      .get("/api/auth/me")
+      .get<CurrentUser | null>("/api/auth/me")
       .then((u) => {
         if (u && u.id) setUser(u);
         else setUser(null);
@@ -86,6 +87,8 @@ export default function Page() {
         return <ReportsView />;
       case "batch-cards":
         return <BatchCardsView />;
+      case "stocktaking":
+        return <StocktakingView />;
       case "settings":
         return <SettingsView />;
       case "my-dashboard":
