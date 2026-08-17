@@ -344,7 +344,7 @@ export function MyDashboardView() {
                         className="shrink-0 w-16 sm:w-20"
                         aria-label={`Lihat detail ${book.title}`}
                       >
-                        <BookCover title={book.title} author={book.author} color={book.coverColor} size="sm" />
+                        <BookCover title={book.title} author={book.author} color={book.coverColor} coverImage={book.coverImage} size="sm" />
                       </button>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">

@@ -52,3 +52,12 @@ prompt
 server.log
 # Skills directory
 /skills/
+pslims972-x64/
+slims9_bulian-9.8.0/
+/e2e-evidence/
+*.db
+*.db-journal
+/public/uploads/
+*.csv
+*.docx
+*.err

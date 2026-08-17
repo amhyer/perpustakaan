@@ -282,7 +282,7 @@ export function MyLoansView() {
                     className="shrink-0 w-16 sm:w-20 mx-auto sm:mx-0"
                     aria-label={`Lihat detail ${book.title}`}
                   >
-                    <BookCover title={book.title} author={book.author} color={book.coverColor} size="sm" />
+                    <BookCover title={book.title} author={book.author} color={book.coverColor} coverImage={book.coverImage} size="sm" />
                   </button>
 
                   <div className="flex-1 min-w-0">

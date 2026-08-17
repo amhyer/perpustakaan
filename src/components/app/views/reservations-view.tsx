@@ -273,6 +273,7 @@ function ReservationsViewContent() {
                       title={r.book.title}
                       author={r.book.author}
                       color={r.book.coverColor}
+                      coverImage={r.book.coverImage}
                       size="sm"
                     />
                   </div>

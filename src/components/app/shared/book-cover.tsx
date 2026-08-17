@@ -6,16 +6,25 @@ interface BookCoverProps {
   title: string;
   author?: string;
   color?: string;
+  coverImage?: string | null;
   className?: string;
   size?: "sm" | "md" | "lg";
 }
 
-export function BookCover({ title, author, color = "#1e3a5f", className, size = "md" }: BookCoverProps) {
+export function BookCover({ title, author, color = "#1e3a5f", coverImage, className, size = "md" }: BookCoverProps) {
   const sizes = {
     sm: "aspect-[3/4] text-[10px]",
     md: "aspect-[3/4] text-xs",
     lg: "aspect-[3/4] text-sm",
   };
+
+  if (coverImage) {
+    return (
+      <div className={cn("relative w-full overflow-hidden rounded-lg shadow-md", sizes[size], className)}>
+        <img src={coverImage} alt={title} className="absolute inset-0 h-full w-full object-cover" />
+      </div>
+    );
+  }
 
   // Generate a secondary color for gradient
   const secondary = adjustColor(color, 25);

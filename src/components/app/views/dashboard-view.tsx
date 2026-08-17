@@ -551,6 +551,7 @@ function DashboardViewContent() {
                           title={book.title}
                           author={book.author}
                           color={book.coverColor}
+                          coverImage={book.coverImage}
                           size="sm"
                         />
                       </div>

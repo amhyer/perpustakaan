@@ -270,6 +270,7 @@ export function BookDetailView({ bookId }: { bookId: string }) {
             title={book.title}
             author={book.author}
             color={book.coverColor}
+            coverImage={book.coverImage}
             size="lg"
           />
           {/* Quick stats */}

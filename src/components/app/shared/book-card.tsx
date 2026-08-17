@@ -36,7 +36,7 @@ export function BookCard({ book }: { book: BookWithDetails }) {
         aria-label={`Lihat detail ${book.title}`}
       >
         <div className="relative">
-          <BookCover title={book.title} author={book.author} color={book.coverColor} />
+          <BookCover title={book.title} author={book.author} color={book.coverColor} coverImage={book.coverImage} />
           {availableCount > 0 ? (
             <Badge className="absolute top-2 right-2 bg-emerald-500 hover:bg-emerald-500 text-white border-0 shadow">
               {availableCount} Tersedia

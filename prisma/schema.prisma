@@ -10,6 +10,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum BookSource {
+  MANUAL
+  SIBI
+}
+
 // ===== Users & Auth =====
 model User {
   id           String   @id @default(cuid())
@@ -87,6 +92,10 @@ model Book {
   coverColor  String   @default("#1e3a5f") // warna gradient untuk cover placeholder
   language    String   @default("Indonesia")
   subject     String?  // mata pelajaran / subjek
+  source      BookSource @default(MANUAL) // MANUAL | SIBI
+  sourceUrl   String?  // tautan file digital asal (mis. PDF SIBI)
+  sibiId      String?  @unique // id dari SIBI, null kalau source=MANUAL
+  importedAt  DateTime? // waktu impor dari SIBI, null kalau source=MANUAL
   categoryId  String?
   category    Category? @relation(fields: [categoryId], references: [id])
   locationId  String?
@@ -100,6 +109,7 @@ model Book {
 
   @@index([categoryId])
   @@index([locationId])
+  @@index([sibiId])
 }
 
 // ===== Book Items (Eksemplar) =====

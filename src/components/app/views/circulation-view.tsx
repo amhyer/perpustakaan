@@ -313,7 +313,7 @@ function BookSearchInput({
     return (
       <div className="rounded-lg border bg-muted/40 p-3 flex items-start gap-3">
         <div className="w-10 shrink-0">
-          <BookCover title={selected.title} author={selected.author} color={selected.coverColor} size="sm" />
+          <BookCover title={selected.title} author={selected.author} color={selected.coverColor} coverImage={selected.coverImage} size="sm" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="font-semibold text-sm line-clamp-2">{selected.title}</div>
@@ -376,7 +376,7 @@ function BookSearchInput({
                 className="w-full text-left px-3 py-2 hover:bg-accent transition-colors flex items-center gap-3 border-b last:border-0 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="w-8 shrink-0">
-                  <BookCover title={b.title} author={b.author} color={b.coverColor} size="sm" />
+                  <BookCover title={b.title} author={b.author} color={b.coverColor} coverImage={b.coverImage} size="sm" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="font-medium text-sm truncate">{b.title}</div>
@@ -443,6 +443,7 @@ function ActiveLoansList({
                 title={loan.bookItem.book.title}
                 author={loan.bookItem.book.author}
                 color={loan.bookItem.book.coverColor}
+                coverImage={loan.bookItem.book.coverImage}
                 size="sm"
               />
             </div>
