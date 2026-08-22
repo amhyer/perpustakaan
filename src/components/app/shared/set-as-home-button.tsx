@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Home, Check } from "lucide-react";
 import { Button } from "@/components/ui/form/button";
 import { useAppStore } from "@/store/use-app-store";
-import { api } from "@/lib/api-client";
+import { api, type CurrentUser } from "@/lib/api-client";
 import { toast } from "sonner";
 
 interface SetAsHomeButtonProps {
@@ -68,7 +68,7 @@ export function SetAsHomeButton({
     setSaving(true);
     try {
       await api.put("/api/users/me/preferences", { defaultDashboard: viewKey });
-      const refreshed = await api.get<typeof user>("/api/auth/me");
+      const refreshed = await api.get<CurrentUser>("/api/auth/me");
       setUser(refreshed);
       toast.success(
         label

@@ -5,7 +5,7 @@ import { LayoutDashboard, Home, Sparkles, GripVertical, Check } from "lucide-rea
 import { Card } from "@/components/ui/layout/card";
 import { Badge } from "@/components/ui/data-display/badge";
 import { useAppStore } from "@/store/use-app-store";
-import { api } from "@/lib/api-client";
+import { api, type CurrentUser } from "@/lib/api-client";
 import { DASHBOARD_VIEW_LABELS, DASHBOARD_OPTIONS_BY_ROLE, type Role } from "@/lib/constants";
 import { toast } from "sonner";
 
@@ -50,7 +50,7 @@ export function DefaultDashboardSelector({ compact = false }: DefaultDashboardSe
     try {
       await api.put("/api/users/me/preferences", { defaultDashboard: value });
       // Update local user state — re-fetch /api/auth/me agar fresh
-      const refreshed = await api.get<typeof user>("/api/auth/me");
+      const refreshed = await api.get<CurrentUser>("/api/auth/me");
       setUser(refreshed);
       toast.success(
         value === "default"
