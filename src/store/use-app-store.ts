@@ -46,6 +46,41 @@ export type ViewKey =
   // E-book reader
   | "ebook-reader";
 
+/**
+ * Helper untuk resolve default dashboard berdasar role + preferensi user.
+ *
+ * Logika:
+ * 1. Jika defaultDashboard = 'default' (atau tidak ada) → auto-route
+ *    (LIBRARIAN → dashboard, TEACHER/STUDENT → my-dashboard)
+ * 2. Jika explicit (mis. 'executive-dashboard') → pakai itu, tapi validasi role
+ * 3. Fallback ke auto-route jika value tidak valid
+ */
+function resolveDefaultDashboard(
+  user: CurrentUser | null
+): ViewKey {
+  if (!user) return "dashboard";
+
+  const isLibrarian =
+    user.role === "LIBRARIAN" || user.role === "PUSTAKAWAN_JUNIOR";
+
+  // Default auto-route
+  if (!user.defaultDashboard || user.defaultDashboard === "default") {
+    return isLibrarian ? "dashboard" : "my-dashboard";
+  }
+
+  const preferred = user.defaultDashboard as ViewKey;
+
+  // Validasi: siswa/guru tidak boleh eksekutif / customizable
+  if (
+    !isLibrarian &&
+    (preferred === "executive-dashboard" || preferred === "customizable-dashboard")
+  ) {
+    return "my-dashboard";
+  }
+
+  return preferred;
+}
+
 interface ViewState {
   key: ViewKey;
   params: Record<string, string>;
@@ -76,10 +111,8 @@ export const useAppStore = create<AppStore>((set) => ({
     set({
       user: u,
       view: {
-        key:
-          u?.role === "LIBRARIAN" || u?.role === "PUSTAKAWAN_JUNIOR"
-            ? "dashboard"
-            : "my-dashboard",
+        // Sprint 4 — Fix #9: hormati preferensi defaultDashboard user
+        key: resolveDefaultDashboard(u),
         params: {},
         // Tentukan variant berdasarkan role — hindari default student saat guru navigasi
         dashboardVariant: u?.role === "TEACHER" ? "teacher" : "student",

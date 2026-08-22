@@ -94,12 +94,22 @@ export async function getCurrentUser() {
   }
 
   if (user.member && user.member.status !== "ACTIVE") return null;
+
+  // Ambil preferensi default dashboard (Sprint 4 — Fix #9). Lazy create
+  // jika belum ada — idempotent, aman dipanggil tiap request.
+  const pref = await db.userPreference.upsert({
+    where: { userId: user.id },
+    update: {},
+    create: { userId: user.id, defaultDashboard: "default" },
+  });
+
   return {
     id: user.id,
     email: user.email,
     name: user.name,
     role: user.role,
     member: user.member,
+    defaultDashboard: pref.defaultDashboard,
   };
 }
 

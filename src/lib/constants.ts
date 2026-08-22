@@ -148,6 +148,39 @@ export const MEMBER_STATUS_LABELS: Record<string, string> = {
   INACTIVE: "Nonaktif",
 };
 
+// ===== Default Dashboard Preference (Sprint 4 — Fix #9) =====
+/**
+ * View yang boleh dipilih user sebagai default dashboard pilihan mereka.
+ * Disimpan di tabel UserPreference (1-to-1 dengan User).
+ *
+ * 'default' = pakai auto-route berdasar role (LIBRARIAN → dashboard,
+ * TEACHER/STUDENT → my-dashboard). Ini nilai default saat row baru dibuat.
+ */
+export const VALID_DASHBOARD_VIEWS = new Set<string>([
+  "default",
+  "dashboard",              // LIBRARIAN standard
+  "customizable-dashboard", // LIBRARIAN drag & drop
+  "executive-dashboard",    // LIBRARIAN senior / eksekutif
+  "my-dashboard",           // TEACHER/STUDENT
+]);
+
+/** Label ramah untuk pilihan default dashboard di UI */
+export const DASHBOARD_VIEW_LABELS: Record<string, string> = {
+  default: "Otomatis (berdasarkan role)",
+  dashboard: "Dashboard Standar",
+  "customizable-dashboard": "Dashboard Kustom (Drag & Drop)",
+  "executive-dashboard": "Dashboard Eksekutif",
+  "my-dashboard": "Beranda Saya",
+};
+
+/** Opsi yang tersedia per role (filter dari VALID_DASHBOARD_VIEWS) */
+export const DASHBOARD_OPTIONS_BY_ROLE: Record<string, string[]> = {
+  LIBRARIAN: ["default", "dashboard", "customizable-dashboard", "executive-dashboard"],
+  PUSTAKAWAN_JUNIOR: ["default", "dashboard"],
+  TEACHER: ["default", "my-dashboard"],
+  STUDENT: ["default", "my-dashboard"],
+};
+
 // Warna cover default (palet hangat & akademis)
 export const COVER_COLORS = [
   "#1e3a5f", // biru tua
