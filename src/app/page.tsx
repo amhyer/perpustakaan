@@ -110,7 +110,6 @@ export default function Page() {
         return <AnnouncementsView />;
       case "reports":
         return <ReportsView />;
-        return <ReportsView />;
       case "report-builder":
         return <ReportBuilderView />;
       case "batch-cards":
@@ -140,7 +139,7 @@ export default function Page() {
       case "notifications":
         return <NotificationsView />;
       case "my-dashboard":
-        return <MyDashboardView variant={user.role === "TEACHER" ? "teacher" : "student"} />;
+        return <MyDashboardView variant={view.dashboardVariant} />;
       case "my-loans":
         return <MyLoansView />;
       case "my-card":
