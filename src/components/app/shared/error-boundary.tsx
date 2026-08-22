@@ -1,89 +1,121 @@
 "use client";
 
-import React, { Component, ReactNode } from "react";
+import { Component, ReactNode } from "react";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import { Button } from "@/components/ui/form/button";
-import { Card } from "@/components/ui/layout/card";
+import { Card, CardContent } from "@/components/ui/layout/card";
+import { reportClientError } from "@/lib/client-error";
 
-interface ErrorBoundaryProps {
+interface Props {
   children: ReactNode;
+  fallback?: ReactNode;
+  onReset?: () => void;
+  /** Optional component name untuk context */
+  name?: string;
 }
 
-interface ErrorBoundaryState {
+interface State {
   hasError: boolean;
   error: Error | null;
+  errorCount: number;
 }
 
 /**
- * ErrorBoundary — menangkap error render dari children.
- * Dipakai di AppShell untuk membungkus area render view, supaya crash
- * 1 halaman tidak menghapus sidebar/header/state login.
+ * Error Boundary — catch React errors, log ke server, tampilkan fallback UI.
+ *
+ * Place around views atau component trees yang rentan error.
+ *
+ * Example:
+ *   <ErrorBoundary name="DashboardView">
+ *     <DashboardView />
+ *   </ErrorBoundary>
  */
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
+export class ErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, errorCount: 0 };
   }
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error };
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error, errorCount: 0 };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log ke console untuk debugging (bisa diganti dengan service tracking)
-    console.error("ErrorBoundary caught:", error, errorInfo);
+    // Auto-report ke server
+    reportClientError(error, {
+      component: this.props.name || "ErrorBoundary",
+      componentStack: errorInfo.componentStack?.substring(0, 500),
+      url: typeof window !== "undefined" ? window.location.href : undefined,
+    });
+
+    // Increment count untuk prevent infinite loop
+    this.setState((prev) => ({ errorCount: prev.errorCount + 1 }));
   }
 
-  handleReload = () => {
+  handleReset = () => {
     this.setState({ hasError: false, error: null });
-    window.location.reload();
+    this.props.onReset?.();
+  };
+
+  handleReload = () => {
+    if (typeof window !== "undefined") {
+      window.location.reload();
+    }
   };
 
   handleHome = () => {
-    this.setState({ hasError: false, error: null });
-    // Trigger navigation ke beranda via window.location
-    window.location.href = "/";
+    if (typeof window !== "undefined") {
+      window.location.href = "/";
+    }
   };
 
   render() {
     if (this.state.hasError) {
+      if (this.props.fallback) return this.props.fallback;
+
       return (
-        <Card className="p-8 max-w-lg mx-auto mt-8">
-          <div className="flex flex-col items-center text-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10 text-destructive">
-              <AlertTriangle className="h-7 w-7" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">
-                Terjadi Kesalahan
+        <div className="min-h-[400px] flex items-center justify-center p-4">
+          <Card className="max-w-lg w-full">
+            <CardContent className="pt-8 pb-8 text-center">
+              <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-red-100 mb-4">
+                <AlertTriangle className="h-7 w-7 text-red-600" />
+              </div>
+              <h2 className="text-lg font-semibold text-foreground mb-2">
+                Terjadi Kesalahan pada Tampilan Ini
               </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Halaman ini mengalami error saat dimuat. Sidebar dan header tetap
-                berfungsi — Anda bisa navigasi ke halaman lain, atau coba muat ulang.
+              <p className="text-sm text-muted-foreground mb-1">
+                {this.state.error?.message || "Error tidak diketahui"}
               </p>
-            </div>
-            {this.state.error && (
-              <details className="w-full text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
-                <summary className="cursor-pointer font-medium">
-                  Detail error (untuk debugging)
-                </summary>
-                <pre className="mt-2 whitespace-pre-wrap break-all">
-                  {this.state.error.message}
-                </pre>
-              </details>
-            )}
-            <div className="flex items-center gap-2">
-              <Button onClick={this.handleReload} className="gap-2">
-                <RefreshCw className="h-4 w-4" />
-                Muat Ulang
-              </Button>
-              <Button variant="outline" onClick={this.handleHome} className="gap-2">
-                <Home className="h-4 w-4" />
-                Kembali ke Beranda
-              </Button>
-            </div>
-          </div>
-        </Card>
+              <p className="text-xs text-muted-foreground mb-6">
+                Tim teknis sudah dinotifikasi otomatis. Anda bisa coba refresh atau kembali ke beranda.
+              </p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                <Button onClick={this.handleReset} variant="outline" className="gap-2">
+                  <RefreshCw className="h-4 w-4" />
+                  Coba Lagi
+                </Button>
+                <Button onClick={this.handleHome} variant="outline" className="gap-2">
+                  <Home className="h-4 w-4" />
+                  Beranda
+                </Button>
+                <Button onClick={this.handleReload} className="gap-2">
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh Halaman
+                </Button>
+              </div>
+              {process.env.NODE_ENV === "development" && this.state.error && (
+                <details className="mt-6 text-left">
+                  <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
+                    Stack trace (development only)
+                  </summary>
+                  <pre className="mt-2 p-3 bg-muted rounded text-[10px] overflow-auto max-h-48 text-left">
+                    {this.state.error.stack}
+                  </pre>
+                </details>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       );
     }
 

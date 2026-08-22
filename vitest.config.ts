@@ -9,6 +9,7 @@ export default defineConfig({
     include: [
       "src/**/*.{test,spec}.{ts,tsx}",
       "tests/unit/**/*.{test,spec}.{ts,tsx}",
+      "tests/integration/**/*.{test,spec}.{ts,tsx}",
     ],
     exclude: [
       "node_modules",
@@ -16,6 +17,9 @@ export default defineConfig({
       "dist",
       "tests/python-runtime-*",
       "tests/database-*",
+      // Integration tests butuh real DB — skip di CI standard
+      // Uncomment untuk run di local
+      "**/tests/integration/**",
     ],
     setupFiles: ["./tests/setup.ts"],
     coverage: {
@@ -28,10 +32,10 @@ export default defineConfig({
         "**/*.test.ts",
         "**/*.spec.ts",
         "src/types/**",
-        "src/lib/db.ts", // Prisma singleton
+        "src/lib/db.ts",
+        "**/__tests__/**",
       ],
       thresholds: {
-        // Target moderate coverage untuk library files
         lines: 60,
         functions: 60,
         branches: 50,

@@ -3,6 +3,8 @@ import { Geist } from "next/font/google";
 import "./globals.css";
 import { SonnerToaster } from "@/components/ui/feedback/sonner";
 import { PwaInit } from "@/components/pwa-init";
+import { WebVitalsInit } from "@/components/web-vitals-init";
+import { SkipLink } from "@/components/app/shared/skip-link";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -49,7 +51,9 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Jendela Ilmu" />
       </head>
       <body className={`${geistSans.variable} antialiased bg-background text-foreground`}>
+        <SkipLink />
         <PwaInit />
+        <WebVitalsInit />
         {children}
         <SonnerToaster
           position="top-right"
