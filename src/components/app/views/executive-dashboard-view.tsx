@@ -17,6 +17,8 @@ import {
 import { Card } from "@/components/ui/layout/card";
 import { Badge } from "@/components/ui/data-display/badge";
 import { PageHeader } from "@/components/app/shared/page-header";
+import { RoleBadge } from "@/components/app/shared/role-badge";
+import { useAppStore } from "@/store/use-app-store";
 import { useFetch } from "@/hooks/use-fetch";
 import { formatRupiah, formatDate } from "@/lib/constants";
 import {
@@ -60,6 +62,7 @@ interface ExecutiveData {
 const CHART_COLORS = ["#1e3a5f", "#2d5a3d", "#7c4a2d", "#5a3a6b", "#8b3a3a"];
 
 export function ExecutiveDashboardView() {
+  const user = useAppStore((s) => s.user);
   const { data, loading } = useFetch<ExecutiveData>("/api/executive");
 
   if (loading || !data) {
@@ -89,6 +92,7 @@ export function ExecutiveDashboardView() {
         title="Dashboard Eksekutif"
         description="Ringkasan eksekutif untuk kepala sekolah & stakeholder. Update: real-time"
         icon={Sparkles}
+        actions={<RoleBadge user={user} />}
       />
 
       {/* KPI Cards */}

@@ -30,6 +30,7 @@ import { Badge } from "@/components/ui/data-display/badge";
 import { Switch } from "@/components/ui/form/switch";
 import { Label } from "@/components/ui/form/label";
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
+import { RoleBadge } from "@/components/app/shared/role-badge";
 import { useFetch } from "@/hooks/use-fetch";
 import { useAppStore } from "@/store/use-app-store";
 import { Skeleton } from "@/components/app/shared/skeleton";
@@ -204,30 +205,33 @@ export function CustomizableDashboardView() {
         }
         icon={BarChart3}
         actions={
-          user?.role === "LIBRARIAN" ? (
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setEditMode(!editMode)}
-                className="gap-2"
-              >
-                <SettingsIcon className="h-4 w-4" />
-                {editMode ? "Selesai" : "Sesuaikan"}
-              </Button>
-              {editMode && (
-                <>
-                  <Button variant="outline" onClick={reset} className="gap-2">
-                    <RotateCcw className="h-4 w-4" />
-                    Reset
-                  </Button>
-                  <Button onClick={save} disabled={!hasChanges} className="gap-2">
-                    <Save className="h-4 w-4" />
-                    Simpan {hasChanges && "*"}
-                  </Button>
-                </>
-              )}
-            </div>
-          ) : null
+          <div className="flex items-center gap-2 flex-wrap">
+            <RoleBadge user={user} />
+            {user?.role === "LIBRARIAN" ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setEditMode(!editMode)}
+                  className="gap-2"
+                >
+                  <SettingsIcon className="h-4 w-4" />
+                  {editMode ? "Selesai" : "Sesuaikan"}
+                </Button>
+                {editMode && (
+                  <>
+                    <Button variant="outline" onClick={reset} className="gap-2">
+                      <RotateCcw className="h-4 w-4" />
+                      Reset
+                    </Button>
+                    <Button onClick={save} disabled={!hasChanges} className="gap-2">
+                      <Save className="h-4 w-4" />
+                      Simpan {hasChanges && "*"}
+                    </Button>
+                  </>
+                )}
+              </>
+            ) : null}
+          </div>
         }
       />
 

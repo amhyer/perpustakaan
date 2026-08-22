@@ -31,6 +31,7 @@ import { Progress } from "@/components/ui/feedback/progress";
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 import { StatCard } from "@/components/app/shared/stat-card";
 import { BookCover } from "@/components/app/shared/book-cover";
+import { RoleBadge } from "@/components/app/shared/role-badge";
 import { BookCard, type BookWithDetails } from "@/components/app/shared/book-card";
 import { GamificationSection } from "@/components/app/shared/gamification-section";
 import { Spinner } from "@/components/app/shared/loading";
@@ -281,7 +282,14 @@ export function MyDashboardView({ variant = "student" }: { variant?: "student" |
               <h1 className="text-2xl sm:text-3xl font-bold leading-tight">
                 {greetingByTime()}, {firstName}!
               </h1>
-              <p className="text-sm text-primary-foreground/80 mt-1.5 max-w-md">
+              <div className="mt-2">
+                <RoleBadge
+                  user={user}
+                  showIcon={false}
+                  className="bg-white/20 text-white border-white/30"
+                />
+              </div>
+              <p className="text-sm text-primary-foreground/80 mt-2 max-w-md">
                 {LIBRARY_TAGLINE}. Kelola peminjaman & jelajahi koleksi {LIBRARY_NAME} di sini.
               </p>
             </div>

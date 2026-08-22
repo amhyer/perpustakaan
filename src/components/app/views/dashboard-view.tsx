@@ -63,6 +63,7 @@ import { EmptyState } from "@/components/app/shared/page-header";
 import { StatCard } from "@/components/app/shared/stat-card";
 import { BookCover } from "@/components/app/shared/book-cover";
 import { useFetch } from "@/hooks/use-fetch";
+import { RoleBadge } from "@/components/app/shared/role-badge";
 import { useAppStore, type ViewKey } from "@/store/use-app-store";
 import {
   ROLE_LABELS,
@@ -395,6 +396,9 @@ function DashboardViewContent() {
               <h1 className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight">
                 Selamat datang, {greetingName} 👋
               </h1>
+              <div className="mt-2">
+                <RoleBadge user={user} className="bg-white/20 text-white border-white/30" />
+              </div>
               <p className="mt-2 text-sm sm:text-base text-white/85 max-w-xl">
                 {LIBRARY_TAGLINE}. Berikut ringkasan aktivitas perpustakaan hari ini.
               </p>
