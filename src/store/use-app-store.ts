@@ -7,6 +7,11 @@ export type ViewKey =
   // Librarian
   | "dashboard"
   | "executive-dashboard"
+  | "rooms"
+  | "visitors"
+  | "assets"
+  | "api-keys"
+  | "my-sessions"
   | "catalog"
   | "book-detail"
   | "book-form"

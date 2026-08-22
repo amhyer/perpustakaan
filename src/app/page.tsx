@@ -10,6 +10,11 @@ import { Logo } from "@/components/app/logo";
 // Views
 import { DashboardView } from "@/components/app/views/dashboard-view";
 import { ExecutiveDashboardView } from "@/components/app/views/executive-dashboard-view";
+import { RoomsView } from "@/components/app/views/rooms-view";
+import { VisitorsView } from "@/components/app/views/visitors-view";
+import { AssetsView } from "@/components/app/views/assets-view";
+import { ApiKeysView } from "@/components/app/views/api-keys-view";
+import { MySessionsView } from "@/components/app/views/my-sessions-view";
 import { CatalogView } from "@/components/app/views/catalog-view";
 import { BookDetailView } from "@/components/app/views/book-detail-view";
 import { BookFormView } from "@/components/app/views/book-form-view";
@@ -73,6 +78,16 @@ export default function Page() {
         return <DashboardView />;
       case "executive-dashboard":
         return <ExecutiveDashboardView />;
+      case "rooms":
+        return <RoomsView />;
+      case "visitors":
+        return <VisitorsView />;
+      case "assets":
+        return <AssetsView />;
+      case "api-keys":
+        return <ApiKeysView />;
+      case "my-sessions":
+        return <MySessionsView />;
       case "catalog":
         return <CatalogView />;
       case "book-detail":

@@ -23,6 +23,12 @@ import {
   User,
   History,
   ArrowRightLeft,
+  Building2,
+  UserCheck,
+  Package,
+  Key,
+  Sparkles,
+  Shield,
 } from "lucide-react";
 import { Logo } from "@/components/app/logo";
 import { cn } from "@/lib/utils";
@@ -37,6 +43,7 @@ interface NavItem {
 
 const LIBRARIAN_NAV: NavItem[] = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { key: "executive-dashboard", label: "Dashboard Eksekutif", icon: Sparkles },
   { key: "catalog", label: "Katalog Buku", icon: BookOpen },
   { key: "members", label: "Anggota", icon: Users },
   { key: "circulation", label: "Sirkulasi", icon: ScanLine },
@@ -44,6 +51,9 @@ const LIBRARIAN_NAV: NavItem[] = [
   { key: "fines", label: "Denda", icon: Banknote },
   { key: "reservations", label: "Reservasi", icon: BookMarked },
   { key: "reservations-queue", label: "Antrian Reservasi", icon: Users },
+  { key: "rooms", label: "Ruangan", icon: Building2 },
+  { key: "visitors", label: "Buku Tamu", icon: UserCheck },
+  { key: "assets", label: "Aset", icon: Package },
   { key: "proposals", label: "Usulan Buku", icon: BookPlus },
   { key: "announcements", label: "Pengumuman", icon: Megaphone },
   { key: "notification-log", label: "Log Notifikasi", icon: Bell },
@@ -52,6 +62,7 @@ const LIBRARIAN_NAV: NavItem[] = [
   { key: "reports", label: "Laporan", icon: FileBarChart },
   { key: "batch-cards", label: "Cetak Kartu Massal", icon: Printer },
   { key: "stocktaking", label: "Stock Opname", icon: ClipboardList },
+  { key: "api-keys", label: "API Keys", icon: Key },
   { key: "settings", label: "Pengaturan", icon: Settings },
 ];
 
@@ -60,10 +71,12 @@ const MEMBER_NAV: NavItem[] = [
   { key: "catalog", label: "Katalog Buku", icon: BookOpen },
   { key: "my-loans", label: "Pinjamanku", icon: ClipboardList },
   { key: "reading-history", label: "Riwayat Baca", icon: History },
+  { key: "rooms", label: "Booking Ruangan", icon: Building2 },
   { key: "proposals", label: "Ajukan Buku", icon: BookPlus },
   { key: "wishlist", label: "Wishlist", icon: BookHeart },
   { key: "my-card", label: "Kartu Anggota", icon: CreditCard },
   { key: "my-profile", label: "Profil Saya", icon: User },
+  { key: "my-sessions", label: "Sesi Aktif", icon: Shield },
   { key: "announcements", label: "Pengumuman", icon: Megaphone },
   { key: "notifications", label: "Notifikasi", icon: Bell },
 ];

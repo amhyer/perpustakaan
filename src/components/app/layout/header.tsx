@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, LogOut, Menu, Search, User as UserIcon } from "lucide-react";
+import { Bell, LogOut, Menu, Search, Shield, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/form/button";
 import { Input } from "@/components/ui/form/input";
 import {
@@ -69,6 +69,12 @@ export function Header() {
     "my-card": "Kartu Anggota Digital",
     wishlist: "Wishlist Favorit",
     notifications: "Notifikasi",
+    "executive-dashboard": "Dashboard Eksekutif",
+    rooms: "Manajemen Ruangan",
+    visitors: "Buku Tamu",
+    assets: "Manajemen Aset",
+    "api-keys": "API Keys",
+    "my-sessions": "Sesi Aktif",
   };
 
   return (
@@ -144,6 +150,9 @@ export function Header() {
                 <UserIcon className="h-4 w-4 mr-2" /> Kartu Anggota
               </DropdownMenuItem>
             )}
+            <DropdownMenuItem onClick={() => setView("my-sessions")}>
+              <Shield className="h-4 w-4 mr-2" /> Sesi Aktif
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setView("notifications")}>
               <Bell className="h-4 w-4 mr-2" /> Notifikasi
               {notifCount > 0 && (
