@@ -1,12 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import { reportClientError } from "@/lib/client-error";
 
-/**
- * app/global-error.tsx — Next.js global error boundary.
- * Menangkap error yang tidak tertangkap oleh error.tsx biasa
- * (mis. error di root layout). WAJIB punya <html> dan <body>.
- */
 export default function GlobalError({
   error,
   reset,
@@ -15,52 +11,65 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Global error:", error);
+    // Auto-report error ke server
+    reportClientError(error, {
+      digest: error.digest,
+      type: "global-error",
+    });
   }, [error]);
 
   return (
-    <html lang="id">
+    <html>
       <body>
         <div
           style={{
-            minHeight: "100vh",
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
+            minHeight: "100vh",
             padding: "24px",
             fontFamily: "system-ui, -apple-system, sans-serif",
+            backgroundColor: "#f5f1e8",
+            color: "#2d2d2d",
           }}
         >
           <div
             style={{
-              maxWidth: "480px",
-              width: "100%",
-              border: "1px solid #e5e7eb",
-              borderRadius: "12px",
-              padding: "32px",
+              maxWidth: "500px",
               textAlign: "center",
+              background: "#fff",
+              padding: "32px",
+              borderRadius: "12px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
             }}
           >
-            <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "8px" }}>
-              Terjadi Kesalahan Sistem
-            </h2>
-            <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "24px" }}>
-              Aplikasi mengalami error yang tidak terduga. Silakan muat ulang
-              halaman atau hubungi administrator.
+            <div style={{ fontSize: "48px", marginBottom: "16px" }}>😵</div>
+            <h1 style={{ fontSize: "24px", margin: "0 0 12px 0", color: "#a04040" }}>
+              Terjadi Kesalahan
+            </h1>
+            <p style={{ margin: "0 0 24px 0", color: "#666" }}>
+              Aplikasi mengalami masalah tak terduga. Tim teknis telah dinotifikasi.
             </p>
+            {error.digest && (
+              <p style={{ fontSize: "12px", color: "#999", marginBottom: "24px", fontFamily: "monospace" }}>
+                ID Error: {error.digest}
+              </p>
+            )}
             <button
               onClick={reset}
               style={{
-                padding: "8px 16px",
-                borderRadius: "8px",
-                border: "1px solid #d1d5db",
-                background: "#fff",
+                background: "#1e3a5f",
+                color: "#fff",
+                border: "none",
+                padding: "12px 32px",
+                borderRadius: "6px",
+                fontSize: "15px",
+                fontWeight: 600,
                 cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: 500,
               }}
             >
-              Muat Ulang
+              Coba Lagi
             </button>
           </div>
         </div>

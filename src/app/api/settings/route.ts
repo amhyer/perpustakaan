@@ -11,6 +11,18 @@ const ALLOWED_SETTINGS_KEYS = new Set([
   "max_renewals_student", "max_renewals_teacher",
   "reminder_enabled", "reminder_days_before",
   "show_gamification",
+  // Notification channels (Tahap 21)
+  "notif_channel_in_app", "notif_channel_email", "notif_channel_whatsapp",
+  "reminder_overdue_enabled", "reminder_overdue_intervals",
+  // WhatsApp
+  "fonnte_device",
+  // Email
+  "email_from_name", "email_reply_to",
+  // Operasional
+  "library_opens_at", "library_closes_at", "library_open_days",
+  "max_loan_extension_days",
+  // Kiosk
+  "kiosk_enabled", "kiosk_welcome_message",
 ]);
 
 export async function GET() {

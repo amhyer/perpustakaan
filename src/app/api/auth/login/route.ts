@@ -1,8 +1,21 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { createSessionToken, setSessionCookie, verifyPassword } from "@/lib/auth";
+import { rateLimit, getClientIdentifier, rateLimitResponse, RATE_LIMITS } from "@/lib/rate-limit";
+import { createTempToken } from "@/lib/temp-token";
+import crypto from "crypto";
 
 export async function POST(req: Request) {
+  // Rate limit by IP: max 5 attempt / menit (anti brute-force)
+  const identifier = getClientIdentifier(req);
+  const rl = rateLimit({
+    key: `login:${identifier}`,
+    ...RATE_LIMITS.LOGIN,
+  });
+  if (!rl.success) {
+    return rateLimitResponse(rl, "Terlalu banyak percobaan login. Coba lagi dalam 1 menit.");
+  }
+
   try {
     const { email, password } = await req.json();
     if (!email || !password) {
@@ -11,7 +24,7 @@ export async function POST(req: Request) {
 
     const user = await db.user.findUnique({
       where: { email: email.toLowerCase().trim() },
-      include: { member: true },
+      include: { member: true, twoFactor: true },
     });
 
     if (!user || !(await verifyPassword(password, user.passwordHash))) {
@@ -20,7 +33,6 @@ export async function POST(req: Request) {
 
     const member = user.member;
     // Auto-deactivate expired members at login (Tahap 16 #4)
-    // Pengecualian: LIBRARIAN & PUSTAKAWAN_JUNIOR TIDAK PERNAH auto-deactivate
     if (
       member &&
       member.status === "ACTIVE" &&
@@ -39,6 +51,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Akun Anda dinonaktifkan atau kedaluwarsa. Hubungi pustakawan." }, { status: 403 });
     }
 
+    // ===== 2FA Check (Tahap 17) =====
+    if (user.twoFactor?.enabled && (user.role === "LIBRARIAN" || user.role === "PUSTAKAWAN_JUNIOR")) {
+      const { token: tempToken } = await createTempToken(user.id, "2fa", 10);
+      return NextResponse.json(
+        {
+          status: "2FA_REQUIRED",
+          tempToken,
+          message: "Masukkan kode 2FA dari authenticator app Anda.",
+        },
+        { status: 200 }
+      );
+    }
+
+    // Normal login flow + track active session
     const token = await createSessionToken({
       userId: user.id,
       email: user.email,
@@ -46,6 +72,20 @@ export async function POST(req: Request) {
       name: user.name,
     });
     await setSessionCookie(token);
+
+    // Track session untuk force-logout feature
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    const userAgent = req.headers.get("user-agent") || undefined;
+    await db.activeSession.create({
+      data: {
+        userId: user.id,
+        token: hashedToken,
+        userAgent: userAgent?.substring(0, 255),
+        ip: identifier,
+        lastActive: new Date(),
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 hari
+      },
+    });
 
     return NextResponse.json({
       id: user.id,

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth, requireLibrarian, requireFullLibrarian } from "@/lib/auth";
+import { sendEmail, emailTemplates } from "@/lib/email";
+import { sendWhatsAppBatch, whatsappTemplates } from "@/lib/whatsapp";
 
 export async function GET(req: Request) {
   const { error } = await requireAuth();
@@ -50,8 +52,17 @@ export async function POST(req: Request) {
     include: { author: { select: { name: true } } },
   });
 
-  // Notifikasi ke semua anggota non-librarian
-  const members = await db.user.findMany({ where: { role: { in: ["TEACHER", "STUDENT"] } } });
+  // Filter anggota berdasarkan kategori (optional, default semua)
+  const targetRole = body.targetRole; // 'TEACHER' | 'STUDENT' | undefined (semua)
+  const whereMember: any = { role: { in: ["TEACHER", "STUDENT"] } };
+  if (targetRole) whereMember.role = targetRole;
+
+  const members = await db.user.findMany({
+    where: whereMember,
+    include: { member: true },
+  });
+
+  // In-app notification (always)
   await db.notification.createMany({
     data: members.map((m) => ({
       userId: m.id,
@@ -61,6 +72,51 @@ export async function POST(req: Request) {
       relatedId: announcement.id,
     })),
   });
+
+  // Broadcast email (best-effort)
+  if (body.broadcastEmail !== false) {
+    const template = emailTemplates.announcementBroadcast({
+      title: body.title,
+      content: body.content,
+      authorName: user!.name,
+    });
+    Promise.allSettled(
+      members.map((m) =>
+        sendEmail({
+          to: m.email,
+          subject: template.subject,
+          html: template.html,
+          text: template.text,
+          category: "ANNOUNCEMENT",
+          relatedId: announcement.id,
+        })
+      )
+    ).then((results) => {
+      const sent = results.filter((r) => r.status === "fulfilled").length;
+      console.log(`[announcement] Email broadcast: ${sent}/${members.length}`);
+    });
+  }
+
+  // Broadcast WhatsApp (best-effort, hanya untuk member dengan phone)
+  if (body.broadcastWhatsapp !== false) {
+    const waRecipients = members
+      .filter((m) => m.member?.phone)
+      .map((m) => ({
+        phone: m.member!.phone!,
+        message: whatsappTemplates.announcement({
+          title: body.title,
+          content: body.content,
+        }),
+        category: "ANNOUNCEMENT" as const,
+        relatedId: announcement.id,
+      }));
+
+    if (waRecipients.length > 0) {
+      sendWhatsAppBatch(waRecipients, 1500).then((r) => {
+        console.log(`[announcement] WhatsApp broadcast: ${r.sent}/${r.total}`);
+      });
+    }
+  }
 
   return NextResponse.json(announcement, { status: 201 });
 }

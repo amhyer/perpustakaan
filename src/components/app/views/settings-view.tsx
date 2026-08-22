@@ -23,7 +23,15 @@ import {
   Database,
   Download,
   Bell,
+  Mail,
+  MessageSquare,
+  Shield,
+  KeyRound,
+  Copy,
+  Check,
+  AlertTriangle,
 } from "lucide-react";
+import QRCode from "qrcode.react";
 
 import { Button } from "@/components/ui/form/button";
 import { Input } from "@/components/ui/form/input";
@@ -187,6 +195,30 @@ export function SettingsView() {
   const [reminderDays, setReminderDays] = useState("1");
   const [savingNotif, setSavingNotif] = useState(false);
 
+  // Notification channels (Tahap 21)
+  const [notifInApp, setNotifInApp] = useState(true);
+  const [notifEmail, setNotifEmail] = useState(false);
+  const [notifWhatsapp, setNotifWhatsapp] = useState(false);
+  const [savingChannels, setSavingChannels] = useState(false);
+
+  // 2FA state (Tahap 17)
+  interface TwoFAStatus {
+    enabled: boolean;
+    enabledAt: string | null;
+  }
+  const { data: twoFAStatus, refetch: refetchTwoFA } = useFetch<TwoFAStatus>("/api/auth/2fa/status", {});
+  const [twoFASetup, setTwoFASetup] = useState<{
+    secret: string;
+    otpAuthUri: string;
+    backupCodes: string[];
+  } | null>(null);
+  const [twoFAConfirmCode, setTwoFAConfirmCode] = useState("");
+  const [show2FADialog, setShow2FADialog] = useState(false);
+  const [showDisable2FADialog, setShowDisable2FADialog] = useState(false);
+  const [disablePassword, setDisablePassword] = useState("");
+  const [savingTwoFA, setSavingTwoFA] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+
   // Sync settings → form state when settings load (one-shot via flag)
   if (
     !identityReady &&
@@ -214,6 +246,9 @@ export function SettingsView() {
     setShowGamifikasi(settings.show_gamification !== "false");
     setReminderEnabled(settings.reminder_enabled !== "false");
     setReminderDays(settings.reminder_days_before || "1");
+    setNotifInApp(settings.notif_channel_in_app !== "false");
+    setNotifEmail(settings.notif_channel_email === "true");
+    setNotifWhatsapp(settings.notif_channel_whatsapp === "true");
   }
 
   // Guard: hanya pustakawan PENUH yang bisa akses (PUSTAKAWAN_JUNIOR ditolak)
@@ -506,6 +541,92 @@ export function SettingsView() {
     }
   }
 
+  // ===== Notification channels handler (Tahap 21) =====
+  async function saveChannels() {
+    setSavingChannels(true);
+    try {
+      await api.put("/api/settings", {
+        notif_channel_in_app: notifInApp ? "true" : "false",
+        notif_channel_email: notifEmail ? "true" : "false",
+        notif_channel_whatsapp: notifWhatsapp ? "true" : "false",
+      });
+      toast.success("Channel notifikasi disimpan.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyimpan channel");
+    } finally {
+      setSavingChannels(false);
+    }
+  }
+
+  // ===== 2FA handlers (Tahap 17) =====
+  async function startTwoFASetup() {
+    setSavingTwoFA(true);
+    try {
+      const res = await api.post<{ secret: string; otpAuthUri: string; backupCodes: string[] }>(
+        "/api/auth/2fa/setup"
+      );
+      setTwoFASetup(res);
+      setShow2FADialog(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal memulai setup 2FA");
+    } finally {
+      setSavingTwoFA(false);
+    }
+  }
+
+  async function confirmTwoFASetup() {
+    if (!twoFASetup || twoFAConfirmCode.length !== 6) {
+      toast.error("Masukkan kode 6 digit");
+      return;
+    }
+    setSavingTwoFA(true);
+    try {
+      await api.post("/api/auth/2fa/confirm", {
+        code: twoFAConfirmCode,
+        backupCodes: twoFASetup.backupCodes,
+      });
+      toast.success("✅ 2FA berhasil diaktifkan. Simpan backup codes di tempat aman!");
+      setShow2FADialog(false);
+      setTwoFASetup(null);
+      setTwoFAConfirmCode("");
+      refetchTwoFA();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Verifikasi gagal");
+    } finally {
+      setSavingTwoFA(false);
+    }
+  }
+
+  async function disableTwoFA() {
+    if (!disablePassword) {
+      toast.error("Masukkan password untuk konfirmasi");
+      return;
+    }
+    setSavingTwoFA(true);
+    try {
+      await fetch("/api/auth/2fa/confirm", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: disablePassword }),
+      });
+      toast.success("2FA dinonaktifkan");
+      setShowDisable2FADialog(false);
+      setDisablePassword("");
+      refetchTwoFA();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal menonaktifkan 2FA");
+    } finally {
+      setSavingTwoFA(false);
+    }
+  }
+
+  function copyToClipboard(text: string, id: string) {
+    navigator.clipboard.writeText(text);
+    setCopied(id);
+    toast.success("Disalin ke clipboard");
+    setTimeout(() => setCopied(null), 2000);
+  }
+
   const loadingAll = loadingSettings;
 
   return (
@@ -683,6 +804,121 @@ export function SettingsView() {
                 </Button>
               </div>
             </div>
+          </Card>
+
+          {/* SECTION 1d: Channel Notifikasi (Tahap 21) */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                <MessageSquare className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-foreground">Channel Notifikasi</h2>
+                <p className="text-xs text-muted-foreground">
+                  Pilih channel untuk mengirim notifikasi (in-app, email, WhatsApp).
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {/* In-app (always) */}
+              <div className="flex items-center justify-between gap-4 p-3 rounded-lg border bg-muted/30">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Bell className="h-5 w-5 text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">In-App (di dalam aplikasi)</p>
+                    <p className="text-xs text-muted-foreground">Selalu aktif. Muncul di menu notifikasi.</p>
+                  </div>
+                </div>
+                <Switch checked={notifInApp} onCheckedChange={setNotifInApp} />
+              </div>
+
+              {/* Email */}
+              <div className="flex items-center justify-between gap-4 p-3 rounded-lg border">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Mail className="h-5 w-5 text-amber-600 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">Email</p>
+                    <p className="text-xs text-muted-foreground">
+                      Kirim via Gmail SMTP. Butuh env: GMAIL_USER, GMAIL_APP_PASSWORD.
+                    </p>
+                    {notifEmail && !process.env.NEXT_PUBLIC_DEMO && (
+                      <Badge variant="outline" className="mt-1 text-[10px]">
+                        ⚠ Pastikan SMTP sudah dikonfigurasi
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <Switch checked={notifEmail} onCheckedChange={setNotifEmail} />
+              </div>
+
+              {/* WhatsApp */}
+              <div className="flex items-center justify-between gap-4 p-3 rounded-lg border">
+                <div className="flex items-center gap-3 min-w-0">
+                  <MessageSquare className="h-5 w-5 text-emerald-600 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">WhatsApp (Fonnte)</p>
+                    <p className="text-xs text-muted-foreground">
+                      Kirim via Fonnte gateway. Butuh env: FONNTE_TOKEN.
+                    </p>
+                  </div>
+                </div>
+                <Switch checked={notifWhatsapp} onCheckedChange={setNotifWhatsapp} />
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <Button onClick={saveChannels} disabled={savingChannels} size="sm" className="gap-2">
+                {savingChannels ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                {savingChannels ? "Menyimpan..." : "Simpan Channel"}
+              </Button>
+            </div>
+          </Card>
+
+          {/* SECTION 1e: Keamanan / 2FA (Tahap 17) */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                <Shield className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-foreground">Keamanan Akun</h2>
+                <p className="text-xs text-muted-foreground">
+                  Two-Factor Authentication (2FA) untuk perlindungan ekstra akun Anda.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 p-4 rounded-lg border">
+              <div className="flex items-center gap-3 min-w-0">
+                <KeyRound className="h-5 w-5 text-primary shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">2FA (TOTP Authenticator)</p>
+                  <p className="text-xs text-muted-foreground">
+                    {twoFAStatus?.enabled
+                      ? `Aktif sejak ${twoFAStatus.enabledAt ? formatDate(twoFAStatus.enabledAt) : "-"}`
+                      : "Tidak aktif. Sangat disarankan untuk pustakawan."}
+                  </p>
+                </div>
+              </div>
+              {twoFAStatus?.enabled ? (
+                <Button variant="outline" size="sm" onClick={() => setShowDisable2FADialog(true)}>
+                  Nonaktifkan
+                </Button>
+              ) : (
+                <Button onClick={startTwoFASetup} disabled={savingTwoFA} size="sm" className="gap-2">
+                  {savingTwoFA ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
+                  Aktifkan 2FA
+                </Button>
+              )}
+            </div>
+
+            {!twoFAStatus?.enabled && (
+              <p className="text-xs text-muted-foreground mt-3 italic">
+                💡 2FA menggunakan Google Authenticator, Authy, atau app TOTP lainnya. Setelah aktif, Anda akan
+                diminta kode 6 digit setiap login.
+              </p>
+            )}
           </Card>
 
           {/* SECTION 2: Aturan Peminjaman */}
@@ -1635,6 +1871,183 @@ export function SettingsView() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog: Setup 2FA */}
+      <Dialog
+        open={show2FADialog}
+        onOpenChange={(o) => {
+          if (!o) {
+            setShow2FADialog(false);
+            setTwoFASetup(null);
+            setTwoFAConfirmCode("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              Setup Two-Factor Authentication
+            </DialogTitle>
+            <DialogDescription>
+              Scan QR code dengan Google Authenticator / Authy, lalu masukkan kode 6 digit.
+            </DialogDescription>
+          </DialogHeader>
+
+          {twoFASetup && (
+            <div className="space-y-4">
+              {/* Step 1: QR */}
+              <div className="text-center">
+                <p className="text-sm font-medium mb-3">1. Scan QR Code</p>
+                <div className="inline-block p-4 bg-white rounded-lg border">
+                  <QRCode value={twoFASetup.otpAuthUri} size={180} level="M" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Atau masukkan secret secara manual:
+                </p>
+                <div className="mt-2 flex items-center gap-2 justify-center">
+                  <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+                    {twoFASetup.secret}
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => copyToClipboard(twoFASetup.secret, "secret")}
+                    className="h-7 w-7 p-0"
+                  >
+                    {copied === "secret" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Step 2: Backup codes */}
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <p className="text-sm font-medium text-amber-900 mb-2 flex items-center gap-1.5">
+                  <AlertTriangle className="h-4 w-4" />
+                  2. Simpan Backup Codes
+                </p>
+                <p className="text-xs text-amber-800 mb-2">
+                  Jika kehilangan HP, gunakan salah satu kode ini untuk login. Setiap kode hanya bisa dipakai sekali.
+                </p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {twoFASetup.backupCodes.map((code) => (
+                    <code
+                      key={code}
+                      className="text-xs bg-white border border-amber-200 px-2 py-1 rounded font-mono text-center"
+                    >
+                      {code}
+                    </code>
+                  ))}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => copyToClipboard(twoFASetup.backupCodes.join("\n"), "backup")}
+                  className="mt-2 w-full gap-2"
+                >
+                  {copied === "backup" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                  Salin Semua Backup Codes
+                </Button>
+              </div>
+
+              {/* Step 3: Verify */}
+              <div>
+                <p className="text-sm font-medium mb-2">3. Verifikasi Kode</p>
+                <div className="space-y-2">
+                  <Label htmlFor="2fa-confirm">Kode 6 digit dari Authenticator</Label>
+                  <Input
+                    id="2fa-confirm"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={twoFAConfirmCode}
+                    onChange={(e) => setTwoFAConfirmCode(e.target.value.replace(/\D/g, ""))}
+                    placeholder="123456"
+                    className="text-center text-lg font-mono tracking-widest"
+                    autoFocus
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShow2FADialog(false);
+                setTwoFASetup(null);
+                setTwoFAConfirmCode("");
+              }}
+              disabled={savingTwoFA}
+            >
+              Batal
+            </Button>
+            <Button onClick={confirmTwoFASetup} disabled={savingTwoFA || twoFAConfirmCode.length !== 6} className="gap-2">
+              {savingTwoFA ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
+              Aktifkan 2FA
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Disable 2FA */}
+      <Dialog
+        open={showDisable2FADialog}
+        onOpenChange={(o) => {
+          if (!o) {
+            setShowDisable2FADialog(false);
+            setDisablePassword("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Nonaktifkan 2FA?
+            </DialogTitle>
+            <DialogDescription>
+              Masukkan password Anda untuk konfirmasi. 2FA akan dinonaktifkan untuk akun ini.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <Label htmlFor="disable-password">Password</Label>
+            <Input
+              id="disable-password"
+              type="password"
+              value={disablePassword}
+              onChange={(e) => setDisablePassword(e.target.value)}
+              placeholder="Password Anda"
+              autoComplete="current-password"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDisable2FADialog(false);
+                setDisablePassword("");
+              }}
+              disabled={savingTwoFA}
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={disableTwoFA}
+              disabled={savingTwoFA || !disablePassword}
+              className="gap-2"
+            >
+              {savingTwoFA ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Nonaktifkan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

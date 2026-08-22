@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import type { PrismaClient } from "@prisma/client";
+import { notify, notifyDueDateBatch, notifyOverdueBatch } from "@/lib/notification-service";
 
 /**
  * (d) Notifikasi "wishlist tersedia": untuk wishlist yang belum dinotifikasi
@@ -12,7 +13,7 @@ async function notifyWishlistAvailable(prisma: PrismaClient, now: Date): Promise
   const candidates = await prisma.wishlist.findMany({
     where: { notifiedAvailable: false },
     include: {
-      member: { select: { userId: true } },
+      member: { select: { userId: true, fullName: true, phone: true } },
       book: {
         select: { title: true, items: { select: { status: true } } },
       },
@@ -35,13 +36,19 @@ async function notifyWishlistAvailable(prisma: PrismaClient, now: Date): Promise
     });
     if (activeReservation) continue; // Sudah direservasi — tidak perlu notif
 
-    await prisma.notification.create({
-      data: {
-        userId: w.member.userId,
-        title: "Buku Favorit Tersedia!",
-        message: `"${w.book.title}" yang Anda masukkan ke wishlist kini tersedia. Cepat pinjam sebelum kehabisan!`,
-        type: "INFO",
-        relatedId: w.bookId,
+    // Multi-channel notification (in-app + email + WA)
+    await notify({
+      userId: w.member.userId,
+      title: "Buku Favorit Tersedia!",
+      message: `"${w.book.title}" yang Anda masukkan ke wishlist kini tersedia. Cepat pinjam sebelum kehabisan!`,
+      type: "INFO",
+      relatedId: w.bookId,
+      template: {
+        whatsappKey: "wishlistAvailable",
+        templateData: {
+          name: w.member.fullName,
+          bookTitle: w.book.title,
+        },
       },
     });
     await prisma.wishlist.update({
@@ -96,12 +103,24 @@ export async function POST(req: Request) {
           status: "LOANED",
           dueDate: { gte: targetStart, lt: targetEnd },
         },
-        include: { member: { select: { userId: true, fullName: true } } },
+        include: {
+          member: {
+            select: {
+              userId: true,
+              fullName: true,
+              category: true,
+              phone: true,
+            },
+          },
+          bookItem: { include: { book: { select: { title: true } } } },
+        },
       });
 
+      // Filter loan yang belum dinotifikasi hari ini (idempotent)
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const loansToNotify: typeof dueLoans = [];
       for (const loan of dueLoans) {
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
         const existing = await db.notification.findFirst({
           where: {
             userId: loan.member.userId,
@@ -110,20 +129,12 @@ export async function POST(req: Request) {
             createdAt: { gte: todayStart, lt: todayEnd },
           },
         });
-        if (existing) continue;
-
-        const dayLabel = reminderDays === 1 ? "besok" : `dalam ${reminderDays} hari`;
-        await db.notification.create({
-          data: {
-            userId: loan.member.userId,
-            title: "Pengingat Jatuh Tempo",
-            message: `Buku Anda jatuh tempo ${dayLabel} (${targetDate.toLocaleDateString("id-ID")}). Kembalikan tepat waktu untuk hindari denda.`,
-            type: "DUE_DATE",
-            relatedId: loan.id,
-          },
-        });
-        notificationsCreated++;
+        if (!existing) loansToNotify.push(loan);
       }
+
+      // Kirim via multi-channel (in-app + email + WA)
+      const result = await notifyDueDateBatch(loansToNotify);
+      notificationsCreated = result.notified;
     }
 
     // (a2) Pinjaman OVERDUE: kirim notifikasi OVERDUE (idempotent: sekali per loan per hari)
@@ -131,13 +142,24 @@ export async function POST(req: Request) {
       where: {
         status: "OVERDUE",
       },
-      include: { member: { select: { userId: true, fullName: true } } },
+      include: {
+        member: {
+          select: {
+            userId: true,
+            fullName: true,
+            category: true,
+            phone: true,
+          },
+        },
+        bookItem: { include: { book: { select: { title: true } } } },
+      },
     });
 
-    let overdueNotified = 0;
+    // Filter loan yang belum dinotifikasi hari ini
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const overdueToNotify: typeof overdueLoans = [];
     for (const loan of overdueLoans) {
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
       const existing = await db.notification.findFirst({
         where: {
           userId: loan.member.userId,
@@ -146,20 +168,12 @@ export async function POST(req: Request) {
           createdAt: { gte: todayStart, lt: todayEnd },
         },
       });
-      if (existing) continue;
-
-      const daysOverdue = Math.ceil((now.getTime() - loan.dueDate.getTime()) / 86400000);
-      await db.notification.create({
-        data: {
-          userId: loan.member.userId,
-          title: "Buku Terlambat Dikembalikan",
-          message: `Buku Anda sudah terlambat ${daysOverdue} hari. Segera kembalikan untuk menghindari denda bertambah.`,
-          type: "OVERDUE",
-          relatedId: loan.id,
-        },
-      });
-      overdueNotified++;
+      if (!existing) overdueToNotify.push(loan);
     }
+
+    // Kirim via multi-channel
+    const overdueResult = await notifyOverdueBatch(overdueToNotify);
+    const overdueNotified = overdueResult.notified;
 
     // (b) Update pinjaman LOANED yang sudah lewat jatuh tempo → OVERDUE
     const overdueResult = await db.loan.updateMany({

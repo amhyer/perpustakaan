@@ -4,6 +4,7 @@ import { requireAuth, isLibrarian } from "@/lib/auth";
 import { calculateFine, DAMAGE_FINE_AMOUNT } from "@/lib/constants";
 import { getLoanRule } from "@/lib/loan-rules";
 import { logAudit } from "@/lib/audit";
+import { notify } from "@/lib/notification-service";
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { user, error } = await requireAuth();
@@ -100,6 +101,22 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         relatedId: nextReservation.id,
       },
     });
+    // Multi-channel notification (WA + email)
+    await notify({
+      userId: nextReservation.member.userId,
+      title: "Buku Reservasi Siap Diambil!",
+      message: `"${loan.bookItem.book.title}" sudah tersedia.`,
+      type: "INFO",
+      relatedId: nextReservation.id,
+      template: {
+        whatsappKey: "reservationReady",
+        templateData: {
+          name: nextReservation.member.fullName,
+          bookTitle: loan.bookItem.book.title,
+          expiresIn: "3 hari",
+        },
+      },
+    });
   } else {
     await db.bookItem.update({ where: { id: loan.bookItemId }, data: { status: "AVAILABLE" } });
   }
@@ -117,6 +134,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       type: fine > 0 ? "WARNING" : "INFO",
       relatedId: loan.id,
     },
+  });
+  // Multi-channel (WA + email) untuk return
+  await notify({
+    userId: loan.member.userId,
+    title: "Pengembalian Berhasil",
+    message,
+    type: fine > 0 ? "WARNING" : "INFO",
+    relatedId: loan.id,
   });
 
   const detail = fine > 0

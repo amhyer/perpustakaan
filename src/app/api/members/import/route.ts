@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireLibrarian, hashPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { sendEmail, emailTemplates } from "@/lib/email";
+import { sendWhatsApp, whatsappTemplates } from "@/lib/whatsapp";
 
 const MAX_ROWS = 500;
 const DEFAULT_DOMAIN = "jendelailmu.sch.id";
@@ -28,6 +30,8 @@ export async function POST(req: Request) {
 
   const errors: { row: number; reason: string }[] = [];
   let imported = 0;
+  const sendWelcome = body.sendWelcome !== false; // default true
+  const newMembers: { email: string; name: string; memberNumber: string; phone: string | null; temporaryPassword: string }[] = [];
 
   await db.$transaction(async (tx) => {
     for (let i = 0; i < rows.length; i++) {
@@ -80,6 +84,8 @@ export async function POST(req: Request) {
       const newUser = await tx.user.create({
         data: { email, passwordHash, name: fullName, role: category },
       });
+
+      const phone = typeof r.phone === "string" && r.phone.trim() ? r.phone.trim() : null;
       await tx.member.create({
         data: {
           userId: newUser.id,
@@ -89,7 +95,7 @@ export async function POST(req: Request) {
           status: "ACTIVE",
           classGrade:
             typeof r.classGrade === "string" && r.classGrade.trim() ? r.classGrade.trim() : null,
-          phone: typeof r.phone === "string" && r.phone.trim() ? r.phone.trim() : null,
+          phone,
         },
       });
       await tx.notification.create({
@@ -101,14 +107,58 @@ export async function POST(req: Request) {
         },
       });
       imported++;
+      newMembers.push({
+        email: newUser.email,
+        name: fullName,
+        memberNumber,
+        phone,
+        temporaryPassword: defaultPassword,
+      });
     }
   });
 
   await logAudit(user!.id, "MEMBER_IMPORT", "Member", undefined, `${imported} anggota diimport`);
 
+  // Kirim welcome email + WA (best-effort, tidak memblokir response)
+  if (sendWelcome && newMembers.length > 0) {
+    Promise.allSettled(
+      newMembers.map(async (m) => {
+        // Email
+        const tpl = emailTemplates.welcome({
+          name: m.name,
+          email: m.email,
+          temporaryPassword: m.temporaryPassword,
+        });
+        await sendEmail({
+          to: m.email,
+          subject: tpl.subject,
+          html: tpl.html,
+          text: tpl.text,
+          category: "WELCOME",
+          relatedId: m.memberNumber,
+        }).catch(() => {});
+
+        // WhatsApp (jika ada nomor)
+        if (m.phone) {
+          const waTpl = whatsappTemplates.welcome({ name: m.name, memberNumber: m.memberNumber });
+          await sendWhatsApp({
+            phone: m.phone,
+            message: waTpl,
+            category: "WELCOME",
+            relatedId: m.memberNumber,
+          }).catch(() => {});
+        }
+      })
+    ).then((results) => {
+      const sent = results.filter((r) => r.status === "fulfilled").length;
+      console.log(`[member-import] Welcome sent: ${sent}/${newMembers.length}`);
+    });
+  }
+
   return NextResponse.json({
     imported,
     skipped: rows.length - imported,
+    welcomeSent: sendWelcome,
     errors: errors.slice(0, 100),
   });
 }

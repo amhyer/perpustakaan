@@ -28,6 +28,9 @@ model User {
   notifications Notification[]
   auditLogs    AuditLog[]
   transfers    BookTransfer[]
+  twoFactor     TwoFactorSecret?
+  passwordResetTokens PasswordResetToken[]
+  activeSessions     ActiveSession[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -57,6 +60,9 @@ model Member {
   wishlists    Wishlist[]
   proposals    BookProposal[]
   reviews      BookReview[]
+  roomBookings RoomBooking[]
+  visitors     Visitor[]
+  assetLoans   AssetLoan[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -80,6 +86,7 @@ model Location {
   books           Book[]
   transfersFrom   BookTransfer[] @relation("FromLocation")
   transfersTo     BookTransfer[] @relation("ToLocation")
+  assets          Asset[]
   createdAt       DateTime @default(now())
 }
 
@@ -390,4 +397,225 @@ model BookTransfer {
   @@index([toLocationId])
   @@index([userId])
   @@index([createdAt])
+}
+
+// ===== Two-Factor Authentication (Tahap 17 - Critical Fix) =====
+model TwoFactorSecret {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  secret      String   // TOTP secret (base32)
+  enabled     Boolean  @default(false)
+  backupCodes String?  // JSON array of hashed backup codes
+  createdAt   DateTime @default(now())
+  enabledAt   DateTime?
+}
+
+// ===== Password Reset Token (Tahap 17 - Critical Fix) =====
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique // hashed token
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ===== Active Session (Tahap 17 - Critical Fix) =====
+// Track active sessions per user untuk fitur "force logout" & session management.
+model ActiveSession {
+  id         String   @id @default(cuid())
+  userId     String
+  token      String   @unique // hashed session token
+  userAgent  String?
+  ip         String?
+  lastActive DateTime @default(now())
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ===== Library Room (Tahap 18 - Operasional) =====
+model LibraryRoom {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  type        String   // READING | DISCUSSION | AV | COMPUTER | OTHER
+  capacity    Int
+  description String?
+  isActive    Boolean  @default(true)
+  bookings    RoomBooking[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model RoomBooking {
+  id        String   @id @default(cuid())
+  roomId    String
+  room      LibraryRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  memberId  String?
+  member    Member?  @relation(fields: [memberId], references: [id])
+  bookerName String  // untuk walk-in / non-member
+  bookerPhone String?
+  startTime DateTime
+  endTime   DateTime
+  purpose   String?
+  status    String   @default("BOOKED") // BOOKED | CHECKED_IN | COMPLETED | CANCELLED
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([roomId])
+  @@index([startTime, endTime])
+  @@index([memberId])
+}
+
+// ===== Visitor / Buku Tamu (Tahap 19 - Pelayanan) =====
+model Visitor {
+  id         String   @id @default(cuid())
+  memberId   String?
+  member     Member?  @relation(fields: [memberId], references: [id])
+  name       String   // nama untuk non-member
+  purpose    String?  // baca, pinjam, diskusi, tugas, dll
+  checkIn    DateTime @default(now())
+  checkOut   DateTime?
+  notes      String?
+
+  @@index([memberId])
+  @@index([checkIn])
+}
+
+// ===== Asset (Tahap 20 - Operasional) =====
+// Aset non-buku: proyektor, laptop, mikrofon, dll.
+model Asset {
+  id            String   @id @default(cuid())
+  name          String
+  category      String   // AV | IT | FURNITURE | OTHER
+  serialNumber  String?  @unique
+  brand         String?
+  model         String?
+  condition     String   @default("BAIK") // BAIK | RUSAK_RINGAN | RUSAK_BERAT
+  status        String   @default("AVAILABLE") // AVAILABLE | BORROWED | MAINTENANCE | LOST
+  locationId    String?
+  location      Location? @relation(fields: [locationId], references: [id])
+  notes         String?
+  loans         AssetLoan[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category])
+  @@index([status])
+}
+
+model AssetLoan {
+  id         String    @id @default(cuid())
+  assetId    String
+  asset      Asset     @relation(fields: [assetId], references: [id])
+  memberId   String
+  member     Member    @relation(fields: [memberId], references: [id])
+  loanDate   DateTime  @default(now())
+  dueDate    DateTime
+  returnDate DateTime?
+  status     String    @default("LOANED") // LOANED | RETURNED | OVERDUE
+  notes      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([assetId])
+  @@index([memberId])
+  @@index([status])
+}
+
+// ===== Email Log (Tahap 21 - Komunikasi) =====
+model EmailLog {
+  id         String   @id @default(cuid())
+  to         String
+  subject    String
+  body       String
+  category   String   // REMINDER | OVERDUE | ANNOUNCEMENT | WELCOME | RESET_PASSWORD | OTHER
+  status     String   @default("PENDING") // PENDING | SENT | FAILED
+  errorMsg   String?
+  sentAt     DateTime?
+  relatedId  String?  // e.g. loan id, announcement id
+  createdAt  DateTime @default(now())
+
+  @@index([to])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ===== WhatsApp Log (Tahap 21 - Komunikasi) =====
+model WhatsAppLog {
+  id         String   @id @default(cuid())
+  phone      String
+  message    String
+  category   String   // REMINDER | OVERDUE | ANNOUNCEMENT | WELCOME | RESET_PASSWORD | OTHER
+  status     String   @default("PENDING") // PENDING | SENT | FAILED
+  errorMsg   String?
+  sentAt     DateTime?
+  relatedId  String?
+  createdAt  DateTime @default(now())
+
+  @@index([phone])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ===== API Key (Tahap 22 - Integrasi) =====
+model ApiKey {
+  id          String   @id @default(cuid())
+  name        String
+  keyHash     String   @unique // hashed API key
+  prefix      String   // first 8 chars (unhashed) for display
+  scopes      String   // JSON array of scopes: ["read:books", "write:loans", ...]
+  isActive    Boolean  @default(true)
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  createdById String
+  createdAt   DateTime @default(now())
+
+  @@index([keyHash])
+  @@index([isActive])
+}
+
+// ===== Audit Log Archive (Tahap 17 - retention policy) =====
+model AuditLogArchive {
+  id         String   @id
+  userId     String
+  action     String
+  entityType String
+  entityId   String?
+  detail     String?
+  createdAt  DateTime
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+// ===== Error Log (Tahap 17 - Error Tracking) =====
+model ErrorLog {
+  id         String   @id @default(cuid())
+  message    String
+  stack      String?
+  level      String   @default("ERROR") // DEBUG | INFO | WARN | ERROR | FATAL
+  userId     String?
+  url        String?
+  method     String?
+  statusCode Int?
+  userAgent  String?
+  ip         String?
+  context    String?  // JSON
+  resolved   Boolean  @default(false)
+  resolvedAt DateTime?
+  resolvedBy String?
+  createdAt  DateTime @default(now())
+
+  @@index([level])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([resolved])
 }
