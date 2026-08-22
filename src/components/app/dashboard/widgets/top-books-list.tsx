@@ -53,7 +53,10 @@ export function TopBooksList({
     <Card className={className}>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100 text-amber-700"
+            aria-hidden="true"
+          >
             <Trophy className="h-4 w-4" />
           </div>
           <div>
@@ -62,9 +65,14 @@ export function TopBooksList({
           </div>
         </div>
         {onViewAll && (
-          <Button variant="ghost" size="sm" onClick={onViewAll}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onViewAll}
+            aria-label={`Lihat semua ${title.toLowerCase()}`}
+          >
             {viewAllLabel}
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </Button>
         )}
       </CardHeader>
@@ -79,7 +87,10 @@ export function TopBooksList({
               compact
             />
           ) : (
-            <div className="py-10 text-center text-sm text-muted-foreground">
+            <div
+              className="py-10 text-center text-sm text-muted-foreground"
+              role="status"
+            >
               {emptyTitle ?? "Belum ada data"}
               {emptyDescription && (
                 <p className="text-xs mt-1">{emptyDescription}</p>
@@ -87,14 +98,21 @@ export function TopBooksList({
             </div>
           )
         ) : (
-          <ul className={`${maxHeightClass} overflow-y-auto scrollbar-thin divide-y divide-border`}>
+          <ul
+            className={`${maxHeightClass} overflow-y-auto scrollbar-thin divide-y divide-border`}
+            aria-label={title}
+          >
             {books.map((book, i) => (
               <li key={book.id}>
                 <button
                   onClick={() => onSelectBook?.(book.id)}
-                  className="w-full flex items-center gap-3 py-2.5 px-1 hover:bg-accent/50 rounded-lg transition-colors text-left"
+                  aria-label={`Lihat detail ${book.title} oleh ${book.author}, dipinjam ${book.loanCount} kali`}
+                  className="w-full flex items-center gap-3 py-2.5 px-1 hover:bg-accent/50 rounded-lg transition-colors text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
+                  <span
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground"
+                    aria-hidden="true"
+                  >
                     {i + 1}
                   </span>
                   <div className="w-10 shrink-0">
@@ -110,7 +128,11 @@ export function TopBooksList({
                     <p className="text-sm font-medium line-clamp-1">{book.title}</p>
                     <p className="text-xs text-muted-foreground line-clamp-1">{book.author}</p>
                   </div>
-                  <Badge className="bg-primary/10 text-primary border-0 shrink-0" variant="secondary">
+                  <Badge
+                    className="bg-primary/10 text-primary border-0 shrink-0"
+                    variant="secondary"
+                    aria-label={`${book.loanCount} kali dipinjam`}
+                  >
                     {book.loanCount}× pinjam
                   </Badge>
                 </button>

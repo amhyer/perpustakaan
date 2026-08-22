@@ -295,8 +295,15 @@ export function RoleEmptyState({
     : undefined;
 
   const innerContent = (
-    <div className="flex flex-col items-center justify-center py-10 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary mb-4">
+    <div
+      className="flex flex-col items-center justify-center py-10 text-center"
+      role="status"
+      aria-live="polite"
+    >
+      <div
+        className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary mb-4"
+        aria-hidden="true"
+      >
         <Icon className="h-8 w-8" />
       </div>
       <h3 className="font-semibold text-foreground">{finalTitle}</h3>
@@ -310,7 +317,7 @@ export function RoleEmptyState({
           {primaryAction && (
             <Button onClick={primaryAction.onClick} size="sm">
               {primaryAction.label}
-              <ArrowRight className="h-3.5 w-3.5 ml-1" />
+              <ArrowRight className="h-3.5 w-3.5 ml-1" aria-hidden="true" />
             </Button>
           )}
           {!primaryAction && contentPrimary && (
@@ -348,9 +355,12 @@ function PrimaryActionWithView({
 }) {
   const setView = useAppStore((s) => s.setView);
   return (
-    <Button onClick={() => setView(action.view, action.params)} size="sm">
+    <Button
+      onClick={() => setView(action.view, action.params)}
+      size="sm"
+    >
       {action.label}
-      <ArrowRight className="h-3.5 w-3.5 ml-1" />
+      <ArrowRight className="h-3.5 w-3.5 ml-1" aria-hidden="true" />
     </Button>
   );
 }

@@ -26,7 +26,10 @@ function CategoryTooltip({ active, payload }: {
   if (!active || !payload || payload.length === 0) return null;
   const p = payload[0];
   return (
-    <div className="rounded-lg border border-border bg-popover px-3 py-2 shadow-md text-xs">
+    <div
+      className="rounded-lg border border-border bg-popover px-3 py-2 shadow-md text-xs"
+      role="tooltip"
+    >
       <p className="font-medium text-foreground">{p.name}</p>
       <p className="text-muted-foreground mt-0.5">
         Total: <span className="font-semibold text-primary">{p.payload.count}</span> peminjaman
@@ -48,6 +51,10 @@ interface CategoryDonutChartProps {
  *
  * Dipakai oleh:
  * - DashboardView (default slot)
+ *
+ * Accessibility:
+ * - Chart punya summary text untuk screen reader
+ * - Empty state pakai role="status" agar diumumkan
  */
 export function CategoryDonutChart({
   data,
@@ -57,6 +64,14 @@ export function CategoryDonutChart({
   className,
 }: CategoryDonutChartProps) {
   const total = data.reduce((s, c) => s + c.count, 0) || 1;
+
+  // Summary untuk screen reader — list kategori dengan jumlah & %
+  const summary = data.length === 0
+    ? "Belum ada data kategori."
+    : data
+        .slice(0, 5)
+        .map((d) => `${d.name}: ${d.count} (${Math.round((d.count / total) * 100)}%)`)
+        .join(", ");
 
   return (
     <Card className={className}>
@@ -69,52 +84,64 @@ export function CategoryDonutChart({
           <div
             className="flex items-center justify-center text-sm text-muted-foreground"
             style={{ height }}
+            role="status"
           >
             Belum ada data kategori
           </div>
         ) : (
-          <div className="w-full" style={{ height }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={data}
-                  dataKey="count"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={45}
-                  outerRadius={75}
-                  paddingAngle={2}
-                >
-                  {data.map((_, i) => (
-                    <Cell
-                      key={i}
-                      fill={PIE_COLORS[i % PIE_COLORS.length]}
-                      stroke="hsl(var(--background))"
-                      strokeWidth={2}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip content={<CategoryTooltip />} />
-                <Legend
-                  layout="horizontal"
-                  align="center"
-                  verticalAlign="bottom"
-                  iconType="circle"
-                  formatter={(value, _entry, idx) => {
-                    const item = data[idx as number];
-                    const count = item?.count ?? 0;
-                    const pct = Math.round((count / total) * 100);
-                    return (
-                      <span className="text-[11px] text-muted-foreground">
-                        {value} ({count} · {pct}%)
-                      </span>
-                    );
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+          <>
+            {/* sr-only summary untuk screen reader */}
+            <p className="sr-only">
+              {title}. {data.length} kategori. {summary}
+            </p>
+            <div
+              className="w-full"
+              style={{ height }}
+              role="img"
+              aria-label={`${title}. ${data.length} kategori, total ${total} peminjaman. ${summary}`}
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={data}
+                    dataKey="count"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={45}
+                    outerRadius={75}
+                    paddingAngle={2}
+                  >
+                    {data.map((_, i) => (
+                      <Cell
+                        key={i}
+                        fill={PIE_COLORS[i % PIE_COLORS.length]}
+                        stroke="hsl(var(--background))"
+                        strokeWidth={2}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CategoryTooltip />} />
+                  <Legend
+                    layout="horizontal"
+                    align="center"
+                    verticalAlign="bottom"
+                    iconType="circle"
+                    formatter={(value, _entry, idx) => {
+                      const item = data[idx as number];
+                      const count = item?.count ?? 0;
+                      const pct = Math.round((count / total) * 100);
+                      return (
+                        <span className="text-[11px] text-muted-foreground">
+                          {value} ({count} · {pct}%)
+                        </span>
+                      );
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>

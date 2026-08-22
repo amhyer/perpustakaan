@@ -46,8 +46,10 @@ export function RoleBadge({ user, showIcon = true, className }: RoleBadgeProps) 
     <Badge
       variant="outline"
       className={`${colorClass} ${className ?? ""} gap-1 font-medium`}
+      role="status"
+      aria-label={`Tipe akun: ${ROLE_LABELS[role] ?? role}`}
     >
-      {showIcon && <Icon className="h-3 w-3" />}
+      {showIcon && <Icon className="h-3 w-3" aria-hidden="true" />}
       {ROLE_LABELS[role] ?? role}
     </Badge>
   );

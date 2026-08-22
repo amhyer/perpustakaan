@@ -62,7 +62,10 @@ export function TopMembersList({
     <Card className={className}>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-100 text-sky-700"
+            aria-hidden="true"
+          >
             <Users className="h-4 w-4" />
           </div>
           <div>
@@ -71,9 +74,14 @@ export function TopMembersList({
           </div>
         </div>
         {onViewAll && (
-          <Button variant="ghost" size="sm" onClick={onViewAll}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onViewAll}
+            aria-label={`Lihat semua ${title.toLowerCase()}`}
+          >
             {viewAllLabel}
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </Button>
         )}
       </CardHeader>
@@ -88,7 +96,10 @@ export function TopMembersList({
               compact
             />
           ) : (
-            <div className="py-10 text-center text-sm text-muted-foreground">
+            <div
+              className="py-10 text-center text-sm text-muted-foreground"
+              role="status"
+            >
               {emptyTitle ?? "Belum ada data"}
               {emptyDescription && (
                 <p className="text-xs mt-1">{emptyDescription}</p>
@@ -96,17 +107,27 @@ export function TopMembersList({
             </div>
           )
         ) : (
-          <ul className={`${maxHeightClass} overflow-y-auto scrollbar-thin divide-y divide-border`}>
+          <ul
+            className={`${maxHeightClass} overflow-y-auto scrollbar-thin divide-y divide-border`}
+            aria-label={title}
+          >
             {members.map((m, i) => (
               <li key={m.id}>
                 <button
                   onClick={() => onSelectMember?.(m.id)}
-                  className="w-full flex items-center gap-3 py-2.5 px-1 hover:bg-accent/50 rounded-lg transition-colors text-left"
+                  aria-label={`Lihat detail anggota ${m.fullName} (${ROLE_LABELS[m.category] ?? m.category}), ${m.loanCount} kali pinjam`}
+                  className="w-full flex items-center gap-3 py-2.5 px-1 hover:bg-accent/50 rounded-lg transition-colors text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
+                  <span
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground"
+                    aria-hidden="true"
+                  >
                     {i + 1}
                   </span>
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold uppercase">
+                  <div
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold uppercase"
+                    aria-hidden="true"
+                  >
                     {initials(m.fullName)}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -119,10 +140,15 @@ export function TopMembersList({
                   <Badge
                     className={`${ROLE_COLORS[m.category] ?? ""} shrink-0`}
                     variant="outline"
+                    aria-label={`Kategori: ${ROLE_LABELS[m.category] ?? m.category}`}
                   >
                     {ROLE_LABELS[m.category] ?? m.category}
                   </Badge>
-                  <Badge className="bg-sky-50 text-sky-700 border-0 shrink-0" variant="secondary">
+                  <Badge
+                    className="bg-sky-50 text-sky-700 border-0 shrink-0"
+                    variant="secondary"
+                    aria-label={`${m.loanCount} kali peminjaman`}
+                  >
                     {m.loanCount}×
                   </Badge>
                 </button>

@@ -64,7 +64,10 @@ export function RecentLoansTable({
     <Card className={className}>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary"
+            aria-hidden="true"
+          >
             <Clock className="h-4 w-4" />
           </div>
           <div>
@@ -75,9 +78,14 @@ export function RecentLoansTable({
           </div>
         </div>
         {onViewAll && (
-          <Button variant="ghost" size="sm" onClick={onViewAll}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onViewAll}
+            aria-label={`Lihat semua ${title.toLowerCase()}`}
+          >
             {viewAllLabel}
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </Button>
         )}
       </CardHeader>
@@ -92,7 +100,10 @@ export function RecentLoansTable({
               compact
             />
           ) : (
-            <div className="py-10 text-center text-sm text-muted-foreground">
+            <div
+              className="py-10 text-center text-sm text-muted-foreground"
+              role="status"
+            >
               {emptyTitle ?? "Belum ada peminjaman"}
               {emptyDescription && (
                 <p className="text-xs mt-1">{emptyDescription}</p>
@@ -101,13 +112,16 @@ export function RecentLoansTable({
           )
         ) : (
           <div className="overflow-x-auto scrollbar-thin">
-            <Table>
+            <Table aria-label={title}>
+              <caption className="sr-only">
+                {description ?? `${sliced.length} transaksi peminjaman terbaru`}
+              </caption>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Anggota</TableHead>
-                  <TableHead>Buku</TableHead>
-                  <TableHead className="hidden sm:table-cell">Tanggal</TableHead>
-                  <TableHead className="text-right">Status</TableHead>
+                  <TableHead scope="col">Anggota</TableHead>
+                  <TableHead scope="col">Buku</TableHead>
+                  <TableHead scope="col" className="hidden sm:table-cell">Tanggal</TableHead>
+                  <TableHead scope="col" className="text-right">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -116,7 +130,8 @@ export function RecentLoansTable({
                     <TableCell>
                       <button
                         onClick={() => onSelectMember?.(loan.member.id)}
-                        className="text-left hover:underline"
+                        aria-label={`Lihat detail anggota ${loan.member.fullName} (${loan.member.memberNumber})`}
+                        className="text-left hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
                       >
                         <span className="block text-sm font-medium line-clamp-1">
                           {loan.member.fullName}
@@ -129,7 +144,8 @@ export function RecentLoansTable({
                     <TableCell>
                       <button
                         onClick={() => onSelectBook?.(loan.bookItem.book.id)}
-                        className="text-left hover:underline max-w-[240px]"
+                        aria-label={`Lihat detail buku ${loan.bookItem.book.title} oleh ${loan.bookItem.book.author}`}
+                        className="text-left hover:underline max-w-[240px] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
                       >
                         <span className="block text-sm font-medium line-clamp-1">
                           {loan.bookItem.book.title}
@@ -140,12 +156,15 @@ export function RecentLoansTable({
                       </button>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">
-                      {formatDateShort(loan.loanDate)}
+                      <time dateTime={loan.loanDate}>
+                        {formatDateShort(loan.loanDate)}
+                      </time>
                     </TableCell>
                     <TableCell className="text-right">
                       <Badge
                         className={LOAN_STATUS_COLORS[loan.status] ?? ""}
                         variant="outline"
+                        aria-label={`Status: ${LOAN_STATUS_LABELS[loan.status] ?? loan.status}`}
                       >
                         {LOAN_STATUS_LABELS[loan.status] ?? loan.status}
                       </Badge>

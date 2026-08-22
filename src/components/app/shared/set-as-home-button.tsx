@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Home, Check } from "lucide-react";
+import { Home, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/form/button";
 import { useAppStore } from "@/store/use-app-store";
 import { api, type CurrentUser } from "@/lib/api-client";
@@ -23,7 +23,12 @@ interface SetAsHomeButtonProps {
 /**
  * Tombol "Set sebagai Beranda" untuk memilih current dashboard sebagai default.
  *
- * Sprint 4 — Fix #9. Tersembunyi otomatis jika dashboard ini sudah jadi default.
+ * Sprint 4 — Fix #9. Tampil tombol berbeda saat dashboard ini sudah jadi default.
+ *
+ * Accessibility:
+ * - Icon-only/sm-hidden state pakai aria-label eksplisit
+ * - Loading state diumumkan via aria-live
+ * - Decorative icon di-hidden dari screen reader
  *
  * ```tsx
  * <SetAsHomeButton viewKey="customizable-dashboard" label="Dashboard Kustom" />
@@ -43,10 +48,7 @@ export function SetAsHomeButton({
 
   // Sembunyikan jika ini sudah default
   const currentDefault = user.defaultDashboard || "default";
-  const isCurrentDefault =
-    currentDefault === viewKey ||
-    // Untuk role dengan auto-route, tampilkan jika user pilih explicit
-    (currentDefault === "default" && false);
+  const isCurrentDefault = currentDefault === viewKey;
 
   if (isCurrentDefault) {
     return (
@@ -55,9 +57,9 @@ export function SetAsHomeButton({
         size={size}
         disabled
         className={`gap-1.5 text-emerald-600 ${className ?? ""}`}
-        title="Ini sudah menjadi beranda Anda"
+        aria-label={`${label ?? "Dashboard"} sudah menjadi beranda Anda`}
       >
-        <Check className="h-3.5 w-3.5" />
+        <Check className="h-3.5 w-3.5" aria-hidden="true" />
         <span className="hidden sm:inline">Beranda Aktif</span>
       </Button>
     );
@@ -82,6 +84,10 @@ export function SetAsHomeButton({
     }
   }
 
+  const ariaLabel = label
+    ? `Jadikan ${label} sebagai beranda utama`
+    : "Jadikan dashboard ini sebagai beranda utama";
+
   return (
     <Button
       onClick={setAsHome}
@@ -89,9 +95,15 @@ export function SetAsHomeButton({
       variant={variant}
       size={size}
       className={`gap-1.5 ${className ?? ""}`}
+      aria-label={ariaLabel}
+      aria-busy={saving}
     >
-      <Home className="h-3.5 w-3.5" />
-      <span className="hidden sm:inline">
+      {saving ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+      ) : (
+        <Home className="h-3.5 w-3.5" aria-hidden="true" />
+      )}
+      <span className="hidden sm:inline" aria-live="polite">
         {saving ? "Menyimpan…" : "Set sebagai Beranda"}
       </span>
     </Button>
