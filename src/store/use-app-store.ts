@@ -49,6 +49,9 @@ export type ViewKey =
 interface ViewState {
   key: ViewKey;
   params: Record<string, string>;
+  /** Variant untuk MyDashboardView: "student" | "teacher". Disimpan di store
+   *  agar tidak hilang saat navigasi via setView("my-dashboard") tanpa args. */
+  dashboardVariant: "student" | "teacher";
 }
 
 interface AppStore {
@@ -78,12 +81,23 @@ export const useAppStore = create<AppStore>((set) => ({
             ? "dashboard"
             : "my-dashboard",
         params: {},
+        // Tentukan variant berdasarkan role — hindari default student saat guru navigasi
+        dashboardVariant: u?.role === "TEACHER" ? "teacher" : "student",
       },
     }),
 
-  view: { key: "dashboard", params: {} },
+  view: { key: "dashboard", params: {}, dashboardVariant: "student" },
   setView: (key, params = {}) => {
-    set({ view: { key, params } });
+    set((state) => ({
+      view: {
+        key,
+        params,
+        // Pertahankan variant yang sudah ada di store, kecuali params override
+        dashboardVariant:
+          (params.variant as "student" | "teacher" | undefined) ??
+          state.view.dashboardVariant,
+      },
+    }));
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
