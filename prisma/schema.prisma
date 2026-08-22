@@ -23,6 +23,7 @@ model User {
   name         String
   role         String   @default("STUDENT") // LIBRARIAN | TEACHER | STUDENT
   member       Member?
+  preference   UserPreference?
   announcements Announcement[]
   proposals     BookProposal[]     @relation("ProposalReviewer")
   notifications Notification[]
@@ -33,6 +34,20 @@ model User {
   activeSessions     ActiveSession[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+// ===== User Preferences (Sprint 4 — Fix #9) =====
+// Preferensi per-user, terpisah dari Setting global (yang dipakai semua user).
+// Saat ini menyimpan 'defaultDashboard' — view pertama saat user login.
+// LIBRARIAN/PUSTAKAWAN_JUNIOR: 'dashboard' | 'customizable-dashboard' | 'executive-dashboard'
+// TEACHER/STUDENT: 'my-dashboard' (saat ini hanya 1 opsi)
+model UserPreference {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  defaultDashboard String   @default("default") // 'default' = pakai auto-route berdasar role
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 // ===== Members =====
