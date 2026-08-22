@@ -499,11 +499,13 @@ function DashboardViewContent() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <TopBooksList
           books={data.popularBooks}
+          userRole={user?.role}
           onSelectBook={(id) => setView("book-detail", { id })}
           onViewAll={() => setView("catalog")}
         />
         <TopMembersList
           members={data.topMembers}
+          userRole={user?.role}
           onSelectMember={(id) => setView("member-detail", { id })}
           onViewAll={() => setView("members")}
         />
@@ -513,6 +515,7 @@ function DashboardViewContent() {
       <RecentLoansTable
         loans={data.recentLoans}
         description="5 transaksi peminjaman terakhir"
+        userRole={user?.role}
         onSelectMember={(id) => setView("member-detail", { id })}
         onSelectBook={(id) => setView("book-detail", { id })}
         onViewAll={() => setView("loans")}

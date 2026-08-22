@@ -20,6 +20,10 @@ import {
   XCircle,
   Hourglass,
   CalendarClock,
+  Users,
+  Target,
+  Trophy,
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,17 +32,16 @@ import { Card } from "@/components/ui/layout/card";
 import { Badge } from "@/components/ui/data-display/badge";
 import { Progress } from "@/components/ui/feedback/progress";
 
-import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
+import { RoleEmptyState } from "@/components/app/shared/role-empty-state";
 import { StatCard } from "@/components/app/shared/stat-card";
 import { BookCover } from "@/components/app/shared/book-cover";
-import { RoleBadge } from "@/components/app/shared/role-badge";
 import { BookCard, type BookWithDetails } from "@/components/app/shared/book-card";
 import { GamificationSection } from "@/components/app/shared/gamification-section";
 import { Spinner } from "@/components/app/shared/loading";
 
 import { useFetch } from "@/hooks/use-fetch";
 import { api } from "@/lib/api-client";
-import { useAppStore } from "@/store/use-app-store";
+import { useAppStore, type ViewKey } from "@/store/use-app-store";
 import {
   LOAN_RULES,
   ROLE_LABELS,
@@ -108,6 +111,10 @@ interface Reservation {
 interface Proposal {
   id: string;
   status: string;
+  title?: string;
+  bookTitle?: string;
+  reason?: string;
+  createdAt?: string;
 }
 
 type BookLite = BookWithDetails;
@@ -197,16 +204,15 @@ export function MyDashboardView({ variant = "student" }: { variant?: "student" |
   if (!user || !user.member) {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title="Beranda"
-          description="Selamat datang di Perpustakaan Jendela Ilmu"
-          icon={BookOpen}
-        />
-        <EmptyState
-          icon={BookOpen}
-          title="Akun Anda belum terdaftar sebagai anggota"
-          description="Silakan hubungi pustakawan untuk mengaktifkan keanggotaan Anda."
-        />
+        <div className="p-6">
+          <RoleEmptyState
+            context="no-active-loans"
+            userRole="STUDENT"
+            title="Akun Anda belum terdaftar sebagai anggota"
+            description="Silakan hubungi pustakawan untuk mengaktifkan keanggotaan Anda."
+            compact
+          />
+        </div>
       </div>
     );
   }
@@ -282,14 +288,7 @@ export function MyDashboardView({ variant = "student" }: { variant?: "student" |
               <h1 className="text-2xl sm:text-3xl font-bold leading-tight">
                 {greetingByTime()}, {firstName}!
               </h1>
-              <div className="mt-2">
-                <RoleBadge
-                  user={user}
-                  showIcon={false}
-                  className="bg-white/20 text-white border-white/30"
-                />
-              </div>
-              <p className="text-sm text-primary-foreground/80 mt-2 max-w-md">
+              <p className="text-sm text-primary-foreground/80 mt-1.5 max-w-md">
                 {LIBRARY_TAGLINE}. Kelola peminjaman & jelajahi koleksi {LIBRARY_NAME} di sini.
               </p>
             </div>
@@ -350,72 +349,23 @@ export function MyDashboardView({ variant = "student" }: { variant?: "student" |
         />
       </div>
 
-      {/* Teacher-only: proposals + digital collection shortcuts */}
-      {variant === "teacher" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Card className="p-5 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="font-semibold flex items-center gap-2 text-sm">
-                <BookPlus className="h-4 w-4 text-primary" />
-                Usulan Buku Saya
-              </h2>
-              <Badge variant="outline" className="shrink-0">
-                {proposalsLoading ? "..." : stats.proposalTotal} usulan
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1.5 mb-3">
-              Ajukan buku yang Anda butuhkan untuk pembelajaran; tinjau status usulan di sini.
-            </p>
-            <div className="flex items-center gap-2 mb-4">
-              <Badge className="border-amber-200 bg-amber-100 text-amber-700">
-                <Hourglass className="h-3 w-3 mr-1" />
-                {proposalsLoading ? "..." : stats.proposalPending} menunggu
-              </Badge>
-              <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                {proposalsLoading ? "..." : stats.proposalApproved} disetujui
-              </Badge>
-              <Badge className="border-red-200 bg-red-100 text-red-700">
-                <XCircle className="h-3 w-3 mr-1" />
-                {proposalsLoading ? "..." : stats.proposalRejected} ditolak
-              </Badge>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" className="h-8 gap-1" onClick={() => setView("proposals")}>
-                <BookPlus className="h-3.5 w-3.5" />
-                Ajukan Usulan
-              </Button>
-              <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => setView("proposals")}>
-                Riwayat
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          </Card>
-
-          <Card
-            className="p-5 hover:shadow-md transition-shadow cursor-pointer group flex flex-col"
-            onClick={() => setView("catalog")}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="font-semibold flex items-center gap-2 text-sm">
-                <Library className="h-4 w-4 text-primary" />
-                Koleksi Digital
-              </h2>
-              <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-transform" />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1.5 flex-1">
-              Jelajahi katalog perpustakaan termasuk buku digital dari sumber resmi (SIBI)
-              untuk menunjang kegiatan belajar mengajar.
-            </p>
-            <Button size="sm" variant="outline" className="h-8 gap-1 mt-3 self-start" onClick={() => setView("catalog")}>
-              Buka Katalog
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
-          </Card>
-        </div>
+      {/* ===== ROLE-SPECIFIC SECTIONS (Fix #6) ===== */}
+      {variant === "teacher" ? (
+        <TeacherSections
+          proposals={myProposals}
+          proposalsLoading={proposalsLoading}
+          stats={stats}
+          setView={setView}
+        />
+      ) : (
+        <StudentSections
+          recommended={recommended}
+          recLoading={recLoading}
+          setView={setView}
+        />
       )}
 
-      {/* Two-column layout */}
+      {/* ===== Two-column: Active loans + Announcements ===== */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Active loans */}
         <div className="lg:col-span-2 space-y-3">
@@ -450,14 +400,11 @@ export function MyDashboardView({ variant = "student" }: { variant?: "student" |
               Gagal memuat peminjaman: {loansError}
             </Card>
           ) : activeLoans.length === 0 ? (
-            <Card className="p-6">
-              <EmptyState
-                icon={BookOpen}
-                title="Belum ada buku dipinjam"
-                description="Jelajahi katalog dan temukan bacaan menarik hari ini."
-                action={{ label: "Jelajahi Katalog", onClick: () => setView("catalog") }}
-              />
-            </Card>
+            <RoleEmptyState
+              context="no-active-loans"
+              userRole={variant}
+              compact
+            />
           ) : (
             <div className="space-y-3">
               {activeLoans.map((loan) => {
@@ -576,9 +523,11 @@ export function MyDashboardView({ variant = "student" }: { variant?: "student" |
               ))}
             </Card>
           ) : topAnnouncements.length === 0 ? (
-            <Card className="p-6 text-center text-sm text-muted-foreground">
-              Belum ada pengumuman.
-            </Card>
+            <RoleEmptyState
+              context="no-announcements"
+              userRole={variant}
+              compact
+            />
           ) : (
             <div className="space-y-2 max-h-96 overflow-y-auto scrollbar-thin pr-1">
               {topAnnouncements.map((ann) => (
@@ -638,7 +587,7 @@ export function MyDashboardView({ variant = "student" }: { variant?: "student" |
             </h2>
             <Button variant="ghost" size="sm" className="gap-1" onClick={() => setView("my-loans")}>
               Lihat Semua
-              <ArrowRight className="h-3.5 h-3.5" />
+              <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -709,36 +658,235 @@ export function MyDashboardView({ variant = "student" }: { variant?: "student" |
       {showGamification && user.member && (
         <GamificationSection memberId={user.member.id} />
       )}
+    </div>
+  );
+}
 
-      {/* Recommended books */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-amber-500" />
-            {recLabel}
+// ============================================================
+// Teacher-specific sections (Fix #6)
+// ============================================================
+function TeacherSections({
+  proposals,
+  proposalsLoading,
+  stats,
+  setView,
+}: {
+  proposals: Proposal[] | null | undefined;
+  proposalsLoading: boolean;
+  stats: { proposalTotal: number; proposalPending: number; proposalApproved: number; proposalRejected: number };
+  setView: (view: ViewKey, params?: Record<string, string>) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      {/* Section 1: Proposals (penugasan guru) */}
+      <Card className="p-5 hover:shadow-md transition-shadow">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <h2 className="font-semibold flex items-center gap-2 text-sm">
+            <BookPlus className="h-4 w-4 text-primary" />
+            Usulan Buku Saya
           </h2>
-          <Button variant="ghost" size="sm" className="gap-1" onClick={() => setView("catalog")}>
+          <Badge variant="outline" className="shrink-0">
+            {proposalsLoading ? "..." : stats.proposalTotal} usulan
+          </Badge>
+        </div>
+        <p className="text-xs text-muted-foreground mb-4">
+          Ajukan buku yang Anda butuhkan untuk pembelajaran; tinjau status usulan di sini.
+        </p>
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <Badge className="border-amber-200 bg-amber-100 text-amber-700">
+            <Hourglass className="h-3 w-3 mr-1" />
+            {proposalsLoading ? "..." : stats.proposalPending} menunggu
+          </Badge>
+          <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700">
+            <CheckCircle2 className="h-3 w-3 mr-1" />
+            {proposalsLoading ? "..." : stats.proposalApproved} disetujui
+          </Badge>
+          <Badge className="border-red-200 bg-red-100 text-red-700">
+            <XCircle className="h-3 w-3 mr-1" />
+            {proposalsLoading ? "..." : stats.proposalRejected} ditolak
+          </Badge>
+        </div>
+
+        {/* Recent proposals list */}
+        {proposals && proposals.length > 0 ? (
+          <div className="space-y-2 mb-4">
+            {(proposals as any[]).slice(0, 3).map((p, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-2 text-xs p-2 rounded bg-muted/50"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{p.title || p.bookTitle || "Usulan Buku"}</p>
+                  {p.reason && (
+                    <p className="text-muted-foreground line-clamp-1">{p.reason}</p>
+                  )}
+                </div>
+                <Badge
+                  variant="outline"
+                  className={
+                    p.status === "PENDING"
+                      ? "border-amber-200 text-amber-700"
+                      : p.status === "APPROVED"
+                      ? "border-emerald-200 text-emerald-700"
+                      : "border-red-200 text-red-700"
+                  }
+                >
+                  {p.status === "PENDING" ? "Menunggu" : p.status === "APPROVED" ? "Disetujui" : "Ditolak"}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        ) : !proposalsLoading ? (
+          <div className="mb-4">
+            <RoleEmptyState
+              context="no-proposals"
+              userRole="TEACHER"
+              compact
+              className="border-dashed"
+            />
+          </div>
+        ) : null}
+
+        <div className="flex items-center gap-2">
+          <Button size="sm" className="h-8 gap-1" onClick={() => setView("proposals")}>
+            <BookPlus className="h-3.5 w-3.5" />
+            Ajukan Usulan
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => setView("proposals")}>
+            Riwayat
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </Card>
+
+      {/* Section 2: Digital collection (katalog digital) */}
+      <Card
+        className="p-5 hover:shadow-md transition-shadow cursor-pointer group flex flex-col"
+        onClick={() => setView("catalog")}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-semibold flex items-center gap-2 text-sm">
+            <Library className="h-4 w-4 text-primary" />
+            Koleksi Digital & Referensi Mengajar
+          </h2>
+          <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-transform" />
+        </div>
+        <p className="text-xs text-muted-foreground mt-1.5 flex-1">
+          Jelajahi katalog perpustakaan termasuk buku digital dari sumber resmi (SIBI)
+          untuk menunjang kegiatan belajar mengajar Anda.
+        </p>
+        <Button size="sm" variant="outline" className="h-8 gap-1 mt-3 self-start" onClick={() => setView("catalog")}>
+          Buka Katalog
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Button>
+      </Card>
+    </div>
+  );
+}
+
+// ============================================================
+// Student-specific sections (Fix #6)
+// ============================================================
+function StudentSections({
+  recommended,
+  recLoading,
+  setView,
+}: {
+  recommended: BookLite[];
+  recLoading: boolean;
+  setView: (view: ViewKey, params?: Record<string, string>) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      {/* Section 1: Rekomendasi (untuk siswa) */}
+      <Card className="p-5">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <h2 className="font-semibold flex items-center gap-2 text-sm">
+            <Sparkles className="h-4 w-4 text-amber-500" />
+            Rekomendasi Untukmu
+          </h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1"
+            onClick={() => setView("catalog")}
+          >
             Lihat Katalog
             <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         </div>
-
         {recLoading ? (
           <Spinner />
         ) : recommended && recommended.length > 0 ? (
           <div className="flex gap-4 overflow-x-auto scrollbar-thin pb-3 -mx-1 px-1">
-            {recommended.map((book) => (
-              <div key={book.id} className="w-36 sm:w-40 shrink-0">
+            {recommended.slice(0, 6).map((book) => (
+              <div key={book.id} className="w-32 sm:w-36 shrink-0">
                 <BookCard book={book} />
               </div>
             ))}
           </div>
         ) : (
-          <Card className="p-6 text-center text-sm text-muted-foreground">
-            Belum ada rekomendasi buku.
-          </Card>
+          <RoleEmptyState
+            context="no-recommendations"
+            userRole="STUDENT"
+            compact
+            className="border-dashed"
+          />
         )}
-      </div>
+      </Card>
+
+      {/* Section 2: Tantangan Membaca (placeholder untuk gamification) */}
+      <Card className="p-5 bg-gradient-to-br from-violet-50 to-pink-50 dark:from-violet-950/20 dark:to-pink-950/20 border-violet-200/50">
+        <div className="flex items-start gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 text-white">
+            <Trophy className="h-6 w-6" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-semibold text-sm flex items-center gap-2">
+              <Target className="h-4 w-4 text-violet-600" />
+              Tantangan Baca Mingguan
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Raih badge dengan meminjam dan menyelesaikan bacaan. Cek progres kamu di
+              bagian <span className="font-medium text-foreground">Gamifikasi</span> di bawah.
+            </p>
+            <div className="mt-3 flex items-center gap-2">
+              <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => setView("catalog")}>
+                <TrendingUp className="h-3.5 w-3.5" />
+                Mulai Baca
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Section 3: Teman Sekelas (placeholder) */}
+      <Card className="p-5">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <h2 className="font-semibold flex items-center gap-2 text-sm">
+            <Users className="h-4 w-4 text-sky-600" />
+            Teman Sekelas yang Aktif
+          </h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1"
+            onClick={() => setView("members")}
+          >
+            Lihat
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Leaderboard teman sekelas akan tersedia setelah ada cukup data peminjaman.
+        </p>
+        <RoleEmptyState
+          context="no-classmates"
+          userRole="STUDENT"
+          compact
+          className="border-dashed mt-3"
+        />
+      </Card>
     </div>
   );
 }
