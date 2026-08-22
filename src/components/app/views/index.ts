@@ -176,3 +176,9 @@ export const CustomizableDashboardView = dynamic(
   () => import("./customizable-dashboard-view").then((m) => m.CustomizableDashboardView),
   { loading: () => loadingComponent, ssr: false }
 );
+
+// Report builder (Tahap 30)
+export const ReportBuilderView = dynamic(
+  () => import("./report-builder-view").then((m) => m.ReportBuilderView),
+  { loading: () => loadingComponent, ssr: false }
+);

@@ -4,6 +4,7 @@ import { requireAuth, isLibrarian } from "@/lib/auth";
 import { calculateFine } from "@/lib/constants";
 import { computeDueDateWithHolidays, getLoanRules, getLoanRule } from "@/lib/loan-rules";
 import { logAudit } from "@/lib/audit";
+import { eventBus, EVENTS } from "@/lib/event-bus";
 
 export async function GET(req: Request) {
   const { user, error } = await requireAuth();
@@ -191,6 +192,20 @@ export async function POST(req: Request) {
   });
 
   await logAudit(user!.id, "LOAN_CREATE", "Loan", loan.id, `${item.book.title} → ${member.fullName}`);
+
+  // Real-time event: notify member + broadcast to librarians
+  eventBus.publish(member.userId, EVENTS.NOTIFICATION_NEW, {
+    notificationId: `notif_${Date.now()}`,
+    title: "Peminjaman Berhasil",
+    message: `Buku "${item.book.title}" berhasil dipinjam`,
+  });
+  eventBus.publish(member.userId, EVENTS.LOAN_CREATED, {
+    loanId: loan.id,
+    bookTitle: item.book.title,
+    bookItemId: item.id,
+  });
+  // Broadcast ke semua pustakawan untuk dashboard real-time
+  eventBus.broadcast(EVENTS.DATA_CHANGED, { entity: "loan", action: "created" });
 
   return NextResponse.json(loan, { status: 201 });
 }

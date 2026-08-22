@@ -47,6 +47,7 @@ import {
   KioskModeView,
   EBookReaderView,
   BarcodeLabelsView,
+  ReportBuilderView,
   CustomizableDashboardView,
 } from "@/components/app/views";
 
@@ -109,6 +110,9 @@ export default function Page() {
         return <AnnouncementsView />;
       case "reports":
         return <ReportsView />;
+        return <ReportsView />;
+      case "report-builder":
+        return <ReportBuilderView />;
       case "batch-cards":
         return <BatchCardsView />;
       case "stocktaking":

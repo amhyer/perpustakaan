@@ -24,8 +24,10 @@ export type ViewKey =
   | "proposals"
   | "announcements"
   | "reports"
+  | "report-builder"
   | "settings"
   | "batch-cards"
+  | "barcode-labels"
   | "stocktaking"
   | "fines"
   | "notification-log"
@@ -42,9 +44,7 @@ export type ViewKey =
   | "notifications"
   | "search-results"
   // E-book reader
-  | "ebook-reader"
-  // Barcode labels
-  | "barcode-labels";
+  | "ebook-reader";
 
 interface ViewState {
   key: ViewKey;
