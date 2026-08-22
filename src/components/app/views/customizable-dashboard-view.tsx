@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { motion, Reorder } from "framer-motion";
 import {
   Plus,
@@ -9,43 +9,40 @@ import {
   RotateCcw,
   Save,
   Eye,
-  EyeOff,
   BookOpen,
   Users,
   TrendingUp,
-  Calendar,
+  Library,
   AlertTriangle,
   Award,
-  Activity,
   BarChart3,
-  Library,
-  DollarSign,
   Clock,
   CheckCircle2,
   GripVertical,
+  type LucideIcon,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/layout/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/layout/card";
 import { Button } from "@/components/ui/form/button";
 import { Badge } from "@/components/ui/data-display/badge";
-import { Switch } from "@/components/ui/form/switch";
 import { Label } from "@/components/ui/form/label";
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 import { RoleBadge } from "@/components/app/shared/role-badge";
 import { useFetch } from "@/hooks/use-fetch";
 import { useAppStore } from "@/store/use-app-store";
 import { Skeleton } from "@/components/app/shared/skeleton";
-import { api } from "@/lib/api-client";
 import { toast } from "sonner";
-import { formatRupiah, formatDate } from "@/lib/constants";
+import { formatRupiah } from "@/lib/constants";
 import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-} from "recharts";
+  TrendAreaChart,
+  TopBooksList,
+  TopMembersList,
+  type StatsResponse,
+} from "@/components/app/dashboard/widgets";
 
 type WidgetSize = "sm" | "md" | "lg";
 type WidgetType =
@@ -57,8 +54,6 @@ type WidgetType =
   | "list-overdue"
   | "list-popular-books"
   | "list-active-members"
-  | "list-recent-activity"
-  | "calendar-today"
   | "alerts";
 
 interface Widget {
@@ -95,6 +90,7 @@ const SIZE_CLASSES: Record<WidgetSize, string> = {
 
 export function CustomizableDashboardView() {
   const user = useAppStore((s) => s.user);
+  const setView = useAppStore((s) => s.setView);
   const [layout, setLayout] = useState<DashboardLayout>(DEFAULT_LAYOUT);
   const [editMode, setEditMode] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -112,7 +108,7 @@ export function CustomizableDashboardView() {
     }
   }, []);
 
-  const { data: stats, loading } = useFetch<any>("/api/stats");
+  const { data: stats, loading } = useFetch<StatsResponse>("/api/stats");
 
   const handleReorder = (newWidgets: Widget[]) => {
     setLayout({ ...layout, widgets: newWidgets });
@@ -164,8 +160,6 @@ export function CustomizableDashboardView() {
       "list-overdue": { title: "Buku Terlambat", size: "md" },
       "list-popular-books": { title: "Buku Terpopuler", size: "md" },
       "list-active-members": { title: "Peminjam Aktif", size: "md" },
-      "list-recent-activity": { title: "Aktivitas Terbaru", size: "md" },
-      "calendar-today": { title: "Hari Ini", size: "md" },
       "alerts": { title: "Peringatan", size: "md" },
     };
     const def = defaults[type];
@@ -254,7 +248,7 @@ export function CustomizableDashboardView() {
                 <div>
                   <Label className="text-xs">Tambah Widget:</Label>
                   <div className="flex flex-wrap gap-1.5 mt-2">
-                    {[
+                    {([
                       { type: "stat-total-books", label: "Total Koleksi", icon: BookOpen },
                       { type: "stat-active-members", label: "Anggota Aktif", icon: Users },
                       { type: "stat-active-loans", label: "Sedang Dipinjam", icon: Library },
@@ -263,12 +257,12 @@ export function CustomizableDashboardView() {
                       { type: "list-overdue", label: "List Terlambat", icon: Clock },
                       { type: "list-popular-books", label: "Buku Populer", icon: Award },
                       { type: "alerts", label: "Peringatan", icon: AlertTriangle },
-                    ].map((opt) => (
+                    ] satisfies { type: WidgetType; label: string; icon: LucideIcon }[]).map((opt) => (
                       <Button
                         key={opt.type}
                         variant="outline"
                         size="sm"
-                        onClick={() => addWidget(opt.type as WidgetType)}
+                        onClick={() => addWidget(opt.type)}
                         className="gap-1.5 h-7 text-xs"
                       >
                         <Plus className="h-3 w-3" />
@@ -312,6 +306,8 @@ export function CustomizableDashboardView() {
                 onRemove={() => removeWidget(widget.id)}
                 onUpdateTitle={(t) => updateTitle(widget.id, t)}
                 onChangeSize={(s) => changeSize(widget.id, s)}
+                onSelectBook={(id) => setView("book-detail", { id })}
+                onSelectMember={(id) => setView("member-detail", { id })}
               />
             </Reorder.Item>
           ))}
@@ -341,12 +337,14 @@ export function CustomizableDashboardView() {
 
 interface WidgetRendererProps {
   widget: Widget;
-  stats: any;
+  stats: StatsResponse | null;
   editMode: boolean;
   onToggleVisibility: () => void;
   onRemove: () => void;
   onUpdateTitle: (title: string) => void;
   onChangeSize: (size: WidgetSize) => void;
+  onSelectBook: (bookId: string) => void;
+  onSelectMember: (memberId: string) => void;
 }
 
 function WidgetRenderer({
@@ -357,6 +355,8 @@ function WidgetRenderer({
   onRemove,
   onUpdateTitle,
   onChangeSize,
+  onSelectBook,
+  onSelectMember,
 }: WidgetRendererProps) {
   const isEditing = editMode;
 
@@ -398,7 +398,13 @@ function WidgetRenderer({
         </div>
       </CardHeader>
       <CardContent>
-        <WidgetContent type={widget.type} stats={stats} size={widget.size} />
+        <WidgetContent
+          type={widget.type}
+          stats={stats}
+          size={widget.size}
+          onSelectBook={onSelectBook}
+          onSelectMember={onSelectMember}
+        />
         {isEditing && (
           <div className="flex gap-1 mt-3 pt-2 border-t">
             <span className="text-[10px] text-muted-foreground">Ukuran:</span>
@@ -422,11 +428,67 @@ function WidgetRenderer({
   );
 }
 
-function WidgetContent({ type, stats, size }: { type: WidgetType; stats: any; size: WidgetSize }) {
+interface WidgetContentProps {
+  type: WidgetType;
+  stats: StatsResponse | null;
+  size: WidgetSize;
+  onSelectBook: (bookId: string) => void;
+  onSelectMember: (memberId: string) => void;
+}
+
+function WidgetContent({ type, stats, size, onSelectBook, onSelectMember }: WidgetContentProps) {
   if (!stats) return <Skeleton className="h-20" />;
 
-  const overview = stats.overview || {};
-  const trend = stats.trend || [];
+  const overview = stats.overview;
+  const trend = stats.trend;
+  const isLarge = size === "lg";
+
+  // Widget 'chart-trend' — reuse shared TrendAreaChart
+  if (type === "chart-trend") {
+    return (
+      <div className={isLarge ? "" : "-mx-6 -mb-6"}>
+        <TrendAreaChart
+          data={trend}
+          title=""
+          description=""
+          height={isLarge ? 220 : 180}
+          className="border-0 shadow-none"
+        />
+      </div>
+    );
+  }
+
+  // Widget 'list-popular-books' — reuse shared TopBooksList
+  if (type === "list-popular-books") {
+    return (
+      <div className="-mx-6 -mb-6">
+        <TopBooksList
+          books={stats.popularBooks}
+          title=""
+          description=""
+          onSelectBook={onSelectBook}
+          maxHeightClass="max-h-72"
+          className="border-0 shadow-none"
+        />
+      </div>
+    );
+  }
+
+  // Widget 'list-active-members' — reuse shared TopMembersList
+  if (type === "list-active-members") {
+    return (
+      <div className="-mx-6 -mb-6">
+        <TopMembersList
+          members={stats.topMembers}
+          title=""
+          description=""
+          onSelectMember={onSelectMember}
+          maxHeightClass="max-h-72"
+          className="border-0 shadow-none"
+        />
+      </div>
+    );
+  }
 
   switch (type) {
     case "stat-total-books":
@@ -473,7 +535,7 @@ function WidgetContent({ type, stats, size }: { type: WidgetType; stats: any; si
               (overview.overdueLoans || 0) > 0 ? "text-red-600" : "text-foreground"
             }`}
           >
-            {(overview.totalOverdue || 0).toLocaleString("id-ID")}
+            {(overview.overdueLoans || 0).toLocaleString("id-ID")}
           </div>
           <div className="text-xs text-muted-foreground">
             Denda: {formatRupiah(overview.overdueFineTotal || 0)}
@@ -481,36 +543,7 @@ function WidgetContent({ type, stats, size }: { type: WidgetType; stats: any; si
         </div>
       );
 
-    case "chart-trend":
-      return (
-        <div className="h-48">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={trend}>
-              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis dataKey="label" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "rgba(255,255,255,0.95)",
-                  border: "1px solid #ddd",
-                  borderRadius: 6,
-                  fontSize: 11,
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="count"
-                stroke="#1e3a5f"
-                strokeWidth={2}
-                dot={{ r: 3 }}
-                name="Peminjaman"
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      );
-
-    case "list-overdue":
+    case "list-overdue": {
       const overdue = (stats.overdueList || []).slice(0, 5);
       return overdue.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-4">
@@ -518,7 +551,7 @@ function WidgetContent({ type, stats, size }: { type: WidgetType; stats: any; si
         </p>
       ) : (
         <div className="space-y-2">
-          {overdue.map((l: any) => (
+          {overdue.map((l) => (
             <div key={l.id} className="text-xs">
               <p className="font-medium truncate">{l.bookItem?.book?.title}</p>
               <p className="text-muted-foreground truncate">{l.member?.fullName}</p>
@@ -526,31 +559,14 @@ function WidgetContent({ type, stats, size }: { type: WidgetType; stats: any; si
           ))}
         </div>
       );
+    }
 
-    case "list-popular-books":
-      const popular = (stats.popularBooks || []).slice(0, 5);
-      return popular.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-4">Belum ada data</p>
-      ) : (
-        <div className="space-y-2">
-          {popular.map((b: any, i: number) => (
-            <div key={b.id} className="flex items-center gap-2 text-xs">
-              <span className="font-bold text-muted-foreground w-4">{i + 1}.</span>
-              <span className="flex-1 truncate">{b.title}</span>
-              <Badge variant="outline" className="text-[10px]">
-                {b.loanCount}x
-              </Badge>
-            </div>
-          ))}
-        </div>
-      );
-
-    case "alerts":
+    case "alerts": {
       const alerts: { type: "warning" | "info"; text: string }[] = [];
-      if ((overview.totalOverdue || 0) > 0) {
+      if ((overview.overdueLoans || 0) > 0) {
         alerts.push({
           type: "warning",
-          text: `${overview.totalOverdue} buku terlambat dikembalikan`,
+          text: `${overview.overdueLoans} buku terlambat dikembalikan`,
         });
       }
       if ((overview.pendingProposals || 0) > 0) {
@@ -586,24 +602,7 @@ function WidgetContent({ type, stats, size }: { type: WidgetType; stats: any; si
           ))}
         </div>
       );
-
-    case "list-active-members":
-      const topMembers = (stats.topMembers || []).slice(0, 5);
-      return topMembers.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-4">Belum ada data</p>
-      ) : (
-        <div className="space-y-2">
-          {topMembers.map((m: any, i: number) => (
-            <div key={m.id} className="flex items-center gap-2 text-xs">
-              <span className="font-bold text-muted-foreground w-4">{i + 1}.</span>
-              <span className="flex-1 truncate">{m.fullName}</span>
-              <Badge variant="outline" className="text-[10px]">
-                {m.loanCount}x
-              </Badge>
-            </div>
-          ))}
-        </div>
-      );
+    }
 
     default:
       return <p className="text-xs text-muted-foreground">Widget belum diimplementasi</p>;
