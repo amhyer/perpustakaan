@@ -173,7 +173,7 @@ echo ""
 # ---------- 10. RoleEmptyState Context Coverage ----------
 echo "─── RoleEmptyState Contexts ───"
 res="src/components/app/shared/role-empty-state.tsx"
-context_count=$(grep -c '^\s*|"no-' "$res")
+context_count=$(grep -cE '^\s*\|"no-' "$res" 2>/dev/null || echo 0)
 unique_contexts=$(grep -oE '"no-[a-z-]+":' "$res" | sort -u | wc -l)
 echo "  Found $unique_contexts unique contexts"
 if [ "$unique_contexts" -ge 10 ]; then
@@ -201,5 +201,15 @@ echo ""
 echo "Latest 5 commits:"
 git log --oneline -5
 echo ""
+
+echo "─── Test Files ───"
+test_count=$(find . -name "*.test.ts" -o -name "*.test.tsx" 2>/dev/null | grep -v node_modules | wc -l)
+echo "Total test files: $test_count"
+echo ""
+
+echo "─── Accessibility Coverage (sample) ───"
+echo "  Files dengan aria-label: $(grep -rl 'aria-label' src/components/app/shared src/components/app/dashboard 2>/dev/null | wc -l)"
+echo "  Files dengan aria-hidden: $(grep -rl 'aria-hidden' src/components/app/shared src/components/app/dashboard 2>/dev/null | wc -l)"
+echo "  Files dengan role attribute: $(grep -rl 'role=' src/components/app/shared src/components/app/dashboard 2>/dev/null | wc -l)"
 
 echo -e "${GREEN}Selesai.${NC}"
