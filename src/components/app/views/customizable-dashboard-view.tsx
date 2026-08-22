@@ -94,14 +94,19 @@ export function CustomizableDashboardView() {
   const [layout, setLayout] = useState<DashboardLayout>(DEFAULT_LAYOUT);
   const [editMode, setEditMode] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  // Track mount state — untuk hindari hydration mismatch saat baca localStorage
+  const [mounted, setMounted] = useState(false);
 
   // localStorage key per user — agar layout tidak conflict antar akun
   // di device yang sama
   const storageKey = user?.id ? `${STORAGE_KEY_BASE}:${user.id}` : STORAGE_KEY_BASE;
 
-  // Load layout from localStorage
+  // Load layout from localStorage (client-side only)
   useEffect(() => {
-    if (typeof window === "undefined" || !user?.id) return;
+    if (typeof window === "undefined" || !user?.id) {
+      setMounted(true);
+      return;
+    }
     const stored = localStorage.getItem(storageKey);
     if (stored) {
       try {
@@ -110,6 +115,7 @@ export function CustomizableDashboardView() {
         setLayout(DEFAULT_LAYOUT);
       }
     }
+    setMounted(true);
   }, [storageKey, user?.id]);
 
   const { data: stats, loading } = useFetch<StatsResponse>("/api/stats");
@@ -284,6 +290,13 @@ export function CustomizableDashboardView() {
 
       {/* Widget grid */}
       {loading && !stats ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+      ) : !mounted ? (
+        // Tunggu sampai mount selesai + localStorage dibaca — cegah hydration mismatch
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-32" />
