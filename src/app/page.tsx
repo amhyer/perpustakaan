@@ -24,6 +24,13 @@ import { SettingsView } from "@/components/app/views/settings-view";
 import { KioskModeView } from "@/components/app/views/kiosk-mode-view";
 import { BatchCardsView } from "@/components/app/views/batch-cards-view";
 import { StocktakingView } from "@/components/app/views/stocktaking-view";
+import { FinesView } from "@/components/app/views/fines-view";
+import { MyProfileView } from "@/components/app/views/my-profile-view";
+import { ReadingHistoryView } from "@/components/app/views/reading-history-view";
+import { ReservationsQueueView } from "@/components/app/views/reservations-queue-view";
+import { NotificationLogView } from "@/components/app/views/notification-log-view";
+import { AuditLogView } from "@/components/app/views/audit-log-view";
+import { BookTransferView } from "@/components/app/views/book-transfer-view";
 import { MyDashboardView } from "@/components/app/views/my-dashboard-view";
 import { MyLoansView } from "@/components/app/views/my-loans-view";
 import { MyCardView } from "@/components/app/views/my-card-view";
@@ -79,6 +86,8 @@ export default function Page() {
         return <LoansView />;
       case "reservations":
         return <ReservationsView />;
+      case "reservations-queue":
+        return <ReservationsQueueView />;
       case "proposals":
         return <ProposalsView />;
       case "announcements":
@@ -89,14 +98,26 @@ export default function Page() {
         return <BatchCardsView />;
       case "stocktaking":
         return <StocktakingView />;
+      case "fines":
+        return <FinesView />;
       case "settings":
         return <SettingsView />;
       case "my-dashboard":
-        return <MyDashboardView />;
+        return <MyDashboardView variant={user.role === "TEACHER" ? "teacher" : "student"} />;
       case "my-loans":
         return <MyLoansView />;
       case "my-card":
         return <MyCardView />;
+      case "my-profile":
+        return <MyProfileView />;
+      case "reading-history":
+        return <ReadingHistoryView />;
+      case "notification-log":
+        return <NotificationLogView />;
+      case "audit-log":
+        return <AuditLogView />;
+      case "book-transfer":
+        return <BookTransferView />;
       case "wishlist":
         return <WishlistView />;
       case "notifications":

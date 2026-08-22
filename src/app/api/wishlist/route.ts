@@ -15,7 +15,16 @@ export async function GET(req: Request) {
     where,
     include: {
       book: {
-        select: { id: true, title: true, author: true, coverColor: true, coverImage: true, category: { select: { name: true } } },
+        select: {
+          id: true,
+          title: true,
+          author: true,
+          coverColor: true,
+          coverImage: true,
+          source: true,
+          category: { select: { name: true } },
+          items: { select: { id: true, status: true } },
+        },
       },
       member: { select: { fullName: true, memberNumber: true } },
     },

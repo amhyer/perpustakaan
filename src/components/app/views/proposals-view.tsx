@@ -115,17 +115,25 @@ export function ProposalsView() {
   const [rejectNote, setRejectNote] = useState("");
   const [acting, setActing] = useState<string | null>(null);
 
+  const [page, setPage] = useState(1);
+  const pageSize = 12;
+
   const proposalsUrl = useMemo(() => {
     const params = new URLSearchParams();
     if (!isLibrarian) params.set("mine", "1");
     if (filter !== "all") params.set("status", filter);
+    params.set("page", String(page));
+    params.set("pageSize", String(pageSize));
     const qs = params.toString();
     return `/api/proposals${qs ? `?${qs}` : ""}`;
-  }, [isLibrarian, filter]);
+  }, [isLibrarian, filter, page]);
 
-  const { data, loading, error, refetch } = useFetch<Proposal[]>(proposalsUrl, {
-    deps: [proposalsUrl],
-  });
+  const { data: proposalsResp, loading, error, refetch } = useFetch<{ data: Proposal[]; total: number; page: number; pageSize: number; totalPages: number }>(
+    proposalsUrl,
+    { deps: [proposalsUrl] }
+  );
+  const data = proposalsResp?.data ?? [];
+  const totalPages = proposalsResp?.totalPages ?? 1;
 
   const stats = useMemo(() => {
     const list = data ?? [];
@@ -410,6 +418,30 @@ export function ProposalsView() {
               </Card>
             );
           })}
+        </div>
+      )}
+      {/* Pagination (Tahap 16 #26) */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-4 p-4 border-t">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            ← Sebelumnya
+          </Button>
+          <span className="text-sm text-muted-foreground px-2">
+            Hal. {page} / {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          >
+            Berikutnya →
+          </Button>
         </div>
       )}
 

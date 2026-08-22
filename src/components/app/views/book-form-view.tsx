@@ -97,6 +97,7 @@ interface BookDetail {
   subject: string | null;
   categoryId: string | null;
   locationId: string | null;
+  sourceUrl: string | null;
 }
 
 interface FormState {
@@ -114,6 +115,7 @@ interface FormState {
   coverColor: string;
   coverImage: string;
   itemCount: string;
+  sourceUrl: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -131,6 +133,7 @@ const EMPTY_FORM: FormState = {
   coverColor: COVER_COLORS[0],
   coverImage: "",
   itemCount: "3",
+  sourceUrl: "",
 };
 
 export function BookFormView({ bookId }: { bookId?: string }) {
@@ -182,6 +185,7 @@ export function BookFormView({ bookId }: { bookId?: string }) {
         coverColor: existingBook.coverColor || COVER_COLORS[0],
         coverImage: existingBook.coverImage || "",
         itemCount: "3",
+        sourceUrl: existingBook.sourceUrl || "",
       });
     }
   }, [isEdit, existingBook]);
@@ -302,6 +306,17 @@ export function BookFormView({ bookId }: { bookId?: string }) {
       return;
     }
     setSaving(true);
+    const sourceUrl = form.sourceUrl.trim();
+    if (sourceUrl) {
+      try {
+        const u = new URL(sourceUrl);
+        if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("invalid");
+      } catch {
+        setSaving(false);
+        toast.error("URL buku digital tidak valid (harus http/https)");
+        return;
+      }
+    }
     const payload: Record<string, unknown> = {
       title: form.title.trim(),
       author: form.author.trim(),
@@ -316,6 +331,7 @@ export function BookFormView({ bookId }: { bookId?: string }) {
       locationId: form.locationId || null,
       coverColor: form.coverColor,
       coverImage: form.coverImage || null,
+      sourceUrl: sourceUrl || null,
     };
     if (!isEdit) {
       payload.itemCount = parseInt(form.itemCount || "1", 10);
@@ -885,7 +901,30 @@ export function BookFormView({ bookId }: { bookId?: string }) {
                   </CardContent>
                 </Card>
 
-                {/* Cover & items */}
+          {/* Buku Digital (Tahap 12) — tautan file digital opsional utk buku non-SIBI */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Buku Digital (Opsional)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="sourceUrl">URL Buku Digital</Label>
+                <Input
+                  id="sourceUrl"
+                  value={form.sourceUrl}
+                  onChange={(e) => update("sourceUrl", e.target.value)}
+                  placeholder="cth. https://example.com/buku.pdf"
+                  inputMode="url"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Isi bila buku punya versi digital (PDF/EPUB). Tombol "Baca Buku Digital"
+                  akan tampil di halaman detail buku.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Cover & items */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">Cover & Eksemplar</CardTitle>

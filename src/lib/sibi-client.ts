@@ -1,86 +1,91 @@
-// src/lib/sibi-client.ts
+/**
+ * Client untuk mengambil data katalog dari SIBI (Pusat Perbukuan Kemendikdasmen).
+ *
+ * PENTING: panggil ini HANYA dari server (Route Handler / Server Component),
+ * jangan dari client component -- supaya base URL tidak berubah sewaktu-waktu
+ * tanpa kamu sadari dan supaya bisa ditambah caching/rate-limit di proxy-mu.
+ *
+ * Catatan dari observasi: parameter `q` / `search` / `title` di API SIBI
+ * DIABAIKAN oleh server (selalu balikin hasil default). Jadi pencarian judul
+ * harus dilakukan di sisi kita sendiri: fetch dengan limit besar, lalu filter
+ * lokal (lihat searchSibiBooks di bawah).
+ */
 
-import { SIBI } from "./sibi-types";
+import type { SibiListResponse, SibiBook, SibiSourceType } from './sibi-types';
 
-const API_BASE_URL = "https://api.buku.cloudapp.web.id/api";
+const BASE_URL = 'https://api.buku.cloudapp.web.id/api/catalogue';
 
-type SibiBookSource = "getTextBooks" | "getPenggerakTextBooks" | "getNonTextBooks";
+const ENDPOINTS: Record<SibiSourceType, string> = {
+  'text-k13': '/getTextBooks',
+  penggerak: '/getPenggerakTextBooks',
+  'non-teks': '/getNonTextBooks',
+  tag: '/getBooksByTag',
+};
 
-async function fetchFromSIBI<T>(
-  endpoint: string,
-  params: Record<string, string | number>
-): Promise<T> {
-  const url = new URL(`${API_BASE_URL}/catalogue/${endpoint}`);
-  Object.entries(params).forEach(([key, value]) =>
-    url.searchParams.append(key, String(value))
+async function fetchSibi(
+  path: string,
+  params: Record<string, string | number> = {}
+): Promise<SibiListResponse> {
+  const qs = new URLSearchParams(
+    Object.entries(params).map(([k, v]) => [k, String(v)])
   );
+  const url = `${BASE_URL}${path}?${qs.toString()}`;
 
-  const response = await fetch(url.toString(), {
-    headers: {
-      Accept: "application/json",
-    },
+  const res = await fetch(url, {
+    // katalog SIBI jarang berubah -- cache 6 jam cukup aman
+    next: { revalidate: 21600 },
+    headers: { Accept: 'application/json' },
   });
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch from SIBI API: ${response.statusText}`);
+  if (!res.ok) {
+    throw new Error(`SIBI API error ${res.status} pada ${path}`);
   }
 
-  const data = await response.json();
-  return data.data;
+  return res.json();
 }
 
-export async function getTextBooks(
-  search: string,
-  limit: number = 2000
-): Promise<SIBI.Book[]> {
-  const books = await fetchFromSIBI<SIBI.Book[]>("getTextBooks", { limit });
-  if (!search) return books;
-  return books.filter(
-    (book) =>
-      book.title.toLowerCase().includes(search.toLowerCase()) ||
-      book.writer?.toLowerCase().includes(search.toLowerCase()) ||
-      book.isbn?.toLowerCase().includes(search.toLowerCase())
-  );
-}
+export const sibi = {
+  /** Ambil daftar buku teks K-13 */
+  getTextBooks: (limit = 100) =>
+    fetchSibi(ENDPOINTS['text-k13'], { limit, order_by: 'updated_at' }),
 
-export async function getPenggerakTextBooks(
-  search: string,
-  limit: number = 2000
-): Promise<SIBI.Book[]> {
-  const books = await fetchFromSIBI<SIBI.Book[]>("getPenggerakTextBooks", {
-    limit,
-  });
-  if (!search) return books;
-  return books.filter(
-    (book) =>
-      book.title.toLowerCase().includes(search.toLowerCase()) ||
-      book.writer?.toLowerCase().includes(search.toLowerCase()) ||
-      book.isbn?.toLowerCase().includes(search.toLowerCase())
-  );
-}
+  /** Ambil daftar buku Kurikulum Merdeka (Buku Sekolah Penggerak) */
+  getPenggerakTextBooks: (limit = 100) =>
+    fetchSibi(ENDPOINTS.penggerak, { limit, order_by: 'updated_at' }),
 
-export async function getNonTextBooks(
-  search: string,
-  limit: number = 3000
-): Promise<SIBI.Book[]> {
-  const books = await fetchFromSIBI<SIBI.Book[]>("getNonTextBooks", { limit });
-  if (!search) return books;
-  return books.filter(
-    (book) =>
-      book.title.toLowerCase().includes(search.toLowerCase()) ||
-      book.writer?.toLowerCase().includes(search.toLowerCase())
-  );
-}
+  /** Ambil daftar buku non-teks */
+  getNonTextBooks: (limit = 100) =>
+    fetchSibi(ENDPOINTS['non-teks'], { limit, order_by: 'updated_at' }),
 
-export async function getBooksByTag(tag: string): Promise<SIBI.Book[]> {
-  return fetchFromSIBI<SIBI.Book[]>("getBooksByTag", { tag });
-}
+  /** Ambil buku berdasarkan tag/tema, mis. "STEM" */
+  getBooksByTag: (tag: string, limit = 100) =>
+    fetchSibi(ENDPOINTS.tag, { Tag: tag, limit }),
 
-export async function getBookDetails(
-  source: SibiBookSource,
-  id: string
-): Promise<SIBI.Book | null> {
-    const params = { limit: 5000 };
-    const books = await fetchFromSIBI<SIBI.Book[]>(source, params);
-    return books.find((book) => book.id === id) || null;
-}
+  /**
+   * Cari buku berdasarkan kata kunci judul, penulis, atau ISBN.
+   * Karena API SIBI tidak mendukung search server-side, kita ambil
+   * dataset (dibatasi `poolLimit`) lalu filter di sini.
+   */
+  async search(
+    keyword: string,
+    source: SibiSourceType = 'text-k13',
+    poolLimit = 2000
+  ): Promise<SibiBook[]> {
+    const data =
+      source === 'penggerak'
+        ? await sibi.getPenggerakTextBooks(poolLimit)
+        : source === 'non-teks'
+        ? await sibi.getNonTextBooks(poolLimit)
+        : await sibi.getTextBooks(poolLimit);
+
+    const kw = keyword.trim().toLowerCase();
+    if (!kw) return data.results;
+
+    return data.results.filter(
+      (b) =>
+        b.title.toLowerCase().includes(kw) ||
+        b.writer?.toLowerCase().includes(kw) ||
+        b.isbn?.toLowerCase().includes(kw)
+    );
+  },
+};

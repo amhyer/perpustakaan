@@ -19,6 +19,10 @@ export async function getLoanRules(): Promise<typeof LOAN_RULES> {
           "fine_per_day_teacher",
           "loan_days_student",
           "loan_days_teacher",
+          "max_books_student",
+          "max_books_teacher",
+          "max_renewals_student",
+          "max_renewals_teacher",
         ],
       },
     },
@@ -45,6 +49,22 @@ export async function getLoanRules(): Promise<typeof LOAN_RULES> {
   if (map.loan_days_teacher) {
     const v = parseInt(map.loan_days_teacher, 10);
     if (!isNaN(v) && v > 0) rules.TEACHER.loanDays = v;
+  }
+  if (map.max_books_student) {
+    const v = parseInt(map.max_books_student, 10);
+    if (!isNaN(v) && v > 0) rules.STUDENT.maxBooks = v;
+  }
+  if (map.max_books_teacher) {
+    const v = parseInt(map.max_books_teacher, 10);
+    if (!isNaN(v) && v > 0) rules.TEACHER.maxBooks = v;
+  }
+  if (map.max_renewals_student) {
+    const v = parseInt(map.max_renewals_student, 10);
+    if (!isNaN(v)) rules.STUDENT.maxRenewals = v;
+  }
+  if (map.max_renewals_teacher) {
+    const v = parseInt(map.max_renewals_teacher, 10);
+    if (!isNaN(v)) rules.TEACHER.maxRenewals = v;
   }
 
   return rules;

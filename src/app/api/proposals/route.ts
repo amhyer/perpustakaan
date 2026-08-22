@@ -8,11 +8,34 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
   const mine = searchParams.get("mine");
+  // Pagination (Tahap 16 #26) — backward compatible
+  const pageParam = searchParams.get("page");
+  const page = pageParam ? parseInt(pageParam) : null;
+  const pageSize = parseInt(searchParams.get("pageSize") || "12");
 
   const where: Record<string, unknown> = {};
   if (status) where.status = status;
   if (mine === "1" && user!.member) where.memberId = user!.member.id;
 
+  // Mode pagination: return { data, total, page, pageSize }
+  if (page !== null && !isNaN(page)) {
+    const [proposals, total] = await Promise.all([
+      db.bookProposal.findMany({
+        where,
+        include: {
+          member: { select: { id: true, fullName: true, memberNumber: true, category: true, classGrade: true } },
+          reviewer: { select: { name: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      db.bookProposal.count({ where }),
+    ]);
+    return NextResponse.json({ data: proposals, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
+  }
+
+  // Mode lama (tanpa pagination): return array biasa
   const proposals = await db.bookProposal.findMany({
     where,
     include: {

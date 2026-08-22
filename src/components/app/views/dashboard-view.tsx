@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import {
   BookOpen,
   PackageCheck,
@@ -18,7 +18,15 @@ import {
   ChevronRight,
   Clock,
   CalendarClock,
+  CalendarDays,
   ShieldAlert,
+  Zap,
+  ScanLine,
+  CreditCard,
+  ClipboardCheck,
+  Megaphone,
+  BellRing,
+  type LucideIcon,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -55,7 +63,7 @@ import { EmptyState } from "@/components/app/shared/page-header";
 import { StatCard } from "@/components/app/shared/stat-card";
 import { BookCover } from "@/components/app/shared/book-cover";
 import { useFetch } from "@/hooks/use-fetch";
-import { useAppStore } from "@/store/use-app-store";
+import { useAppStore, type ViewKey } from "@/store/use-app-store";
 import {
   ROLE_LABELS,
   ROLE_COLORS,
@@ -82,7 +90,14 @@ interface Overview {
   overdueLoans: number;
   pendingReservations: number;
   pendingProposals: number;
+  expiredReservations: number;
   overdueFineTotal: number;
+  loansToday: number;
+  returnsToday: number;
+  newMembersToday: number;
+  recentLoansToday: { bookItem?: { book?: { title: string; author: string } }; member?: { fullName: string } }[];
+  recentReturnsToday: { bookItem?: { book?: { title: string; author: string } }; member?: { fullName: string } }[];
+  recentNewMembersToday: { fullName: string; category: string }[];
 }
 
 interface TrendItem {
@@ -201,6 +216,31 @@ function initials(name: string): string {
     .join("");
 }
 
+// ===== Quick action (P0-2) =====
+interface QuickActionDef {
+  label: string;
+  description: string;
+  view: ViewKey;
+  icon: LucideIcon;
+  color: string;
+}
+
+function QuickAction({ label, description, view, icon: Icon, color }: QuickActionDef) {
+  const setView = useAppStore((s) => s.setView);
+  return (
+    <button
+      onClick={() => setView(view)}
+      className="rounded-xl border bg-card p-3 text-left hover:shadow-md hover:border-primary/40 hover:bg-accent/40 transition-all group"
+    >
+      <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${color}`}>
+        <Icon className="h-4 w-4" />
+      </div>
+      <p className="mt-2 text-sm font-semibold leading-tight">{label}</p>
+      <p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">{description}</p>
+    </button>
+  );
+}
+
 // ===== Main view =====
 export function DashboardView() {
   const user = useAppStore((s) => s.user);
@@ -224,7 +264,29 @@ function DashboardViewContent() {
   const user = useAppStore((s) => s.user);
   const setView = useAppStore((s) => s.setView);
 
-  const { data, loading, error } = useFetch<StatsResponse>("/api/stats");
+  const { data, loading, error, refetch } = useFetch<StatsResponse>("/api/stats");
+
+  // Auto-refresh
+  const [autoRefresh, setAutoRefresh] = useState<number | null>(null);
+  const [refreshCountdown, setRefreshCountdown] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!autoRefresh) {
+      setRefreshCountdown(null);
+      return;
+    }
+    setRefreshCountdown(autoRefresh);
+    const countdownInterval = setInterval(() => {
+      setRefreshCountdown(prev => {
+        if (prev === null || prev <= 1) {
+          refetch();
+          return autoRefresh;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(countdownInterval);
+  }, [autoRefresh, refetch]);
 
   const today = useMemo(() => {
     return new Date().toLocaleDateString("id-ID", {
@@ -259,6 +321,38 @@ function DashboardViewContent() {
 
   const totalCategory = data.categoryStats.reduce((s, c) => s + c.count, 0) || 1;
 
+  const actionItems: { label: string; view: ViewKey; icon: LucideIcon; color: string; value: number }[] = [
+    {
+      label: "Usulan Buku Menunggu",
+      view: "proposals",
+      icon: ClipboardList,
+      color: "bg-amber-100 text-amber-700",
+      value: o.pendingProposals,
+    },
+    {
+      label: "Reservasi Menunggu",
+      view: "reservations",
+      icon: CalendarClock,
+      color: "bg-sky-100 text-sky-700",
+      value: o.pendingReservations,
+    },
+    {
+      label: "Peminjaman Terlambat",
+      view: "loans",
+      icon: AlertTriangle,
+      color: "bg-red-100 text-red-700",
+      value: o.overdueLoans,
+    },
+    {
+      label: "Reservasi Kedaluwarsa",
+      view: "reservations",
+      icon: Clock,
+      color: "bg-rose-100 text-rose-700",
+      value: o.expiredReservations,
+    },
+  ];
+  const actionTotal = actionItems.reduce((s, i) => s + (i.value ?? 0), 0);
+
   return (
     <div className="space-y-6">
       {/* ===== Welcome banner ===== */}
@@ -283,7 +377,21 @@ function DashboardViewContent() {
         <div className="relative z-10 p-6 sm:p-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="min-w-0">
-              <p className="text-sm font-medium text-white/80">{today}</p>
+              <div className="flex items-center gap-3">
+                <p className="text-sm font-medium text-white/80">{today}</p>
+                <div className="flex items-center gap-1.5 ml-auto">
+                  <button
+                    onClick={() => setAutoRefresh(autoRefresh === 30 ? 60 : autoRefresh === 60 ? 300 : autoRefresh === 300 ? null : 30)}
+                    className={`text-xs px-2 py-1 rounded-full border transition-colors ${autoRefresh ? "bg-white/20 border-white/30 text-white" : "bg-white/10 border-white/20 text-white/60 hover:text-white"}`}
+                  >
+                    {autoRefresh ? (
+                      <>Auto {autoRefresh < 60 ? `${autoRefresh}s` : `${autoRefresh / 60}m`} {refreshCountdown !== null && `(${refreshCountdown}s)`}</>
+                    ) : (
+                      "Auto-refresh"
+                    )}
+                  </button>
+                </div>
+              </div>
               <h1 className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight">
                 Selamat datang, {greetingName} 👋
               </h1>
@@ -330,6 +438,58 @@ function DashboardViewContent() {
           </div>
         </div>
       </Card>
+
+      {/* ===== Aksi Cepat (P0-2) ===== */}
+      <div className="space-y-3">
+        <h2 className="text-base font-semibold flex items-center gap-2">
+          <Zap className="h-4 w-4 text-primary" />
+          Aksi Cepat
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <QuickAction
+            label="Sirkulasi"
+            description="Pinjam / kembalikan buku"
+            view="circulation"
+            icon={ArrowRightLeft}
+            color="bg-sky-100 text-sky-700"
+          />
+          <QuickAction
+            label="Tambah Buku"
+            description="Tambah manual atau scan ISBN"
+            view="book-form"
+            icon={ScanLine}
+            color="bg-primary/10 text-primary"
+          />
+          <QuickAction
+            label="Cetak Kartu Massal"
+            description="Buat kartu anggota sekaligus"
+            view="batch-cards"
+            icon={CreditCard}
+            color="bg-violet-100 text-violet-700"
+          />
+          <QuickAction
+            label="Stock Opname"
+            description="Rekap & verifikasi koleksi"
+            view="stocktaking"
+            icon={ClipboardCheck}
+            color="bg-emerald-100 text-emerald-700"
+          />
+          <QuickAction
+            label="Reservasi"
+            description="Kelola antrian reservasi"
+            view="reservations"
+            icon={CalendarClock}
+            color="bg-amber-100 text-amber-700"
+          />
+          <QuickAction
+            label="Pengumuman"
+            description="Terbitkan pengumuman baru"
+            view="announcements"
+            icon={Megaphone}
+            color="bg-rose-100 text-rose-700"
+          />
+        </div>
+      </div>
 
       {/* ===== Stats grid - row 1 ===== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -394,6 +554,140 @@ function DashboardViewContent() {
           subtitle={`${o.overdueLoans} pinjaman`}
         />
       </div>
+
+      {/* ===== Hari Ini (Tahap 33+35) ===== */}
+      <Card className="p-4 sm:p-6">
+        <CardHeader className="p-0 mb-4 flex-row items-center justify-between space-y-0">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
+              <CalendarDays className="h-4 w-4" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Aktivitas Hari Ini</CardTitle>
+              <CardDescription className="text-xs">
+                Ringkasan aktivitas perpustakaan hari ini
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="text-center p-3 rounded-lg bg-muted/50">
+              <div className="text-2xl font-bold text-blue-600">{o.loansToday}</div>
+              <div className="text-xs text-muted-foreground mt-1">Dipinjam</div>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-muted/50">
+              <div className="text-2xl font-bold text-emerald-600">{o.returnsToday}</div>
+              <div className="text-xs text-muted-foreground mt-1">Dikembalikan</div>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-muted/50">
+              <div className="text-2xl font-bold text-purple-600">{o.newMembersToday}</div>
+              <div className="text-xs text-muted-foreground mt-1">Anggota Baru</div>
+            </div>
+          </div>
+          {(o.recentLoansToday.length > 0 || o.recentReturnsToday.length > 0 || o.recentNewMembersToday.length > 0) && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {o.recentLoansToday.length > 0 && (
+                <div>
+                  <div className="text-xs font-medium text-blue-600 mb-2 flex items-center gap-1">
+                    <BookOpen className="h-3 w-3" /> Dipinjam Hari Ini
+                  </div>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {o.recentLoansToday.map((loan, i) => (
+                      <div key={i} className="text-xs p-1.5 rounded bg-blue-50 dark:bg-blue-950/30 truncate">
+                        <span className="font-medium">{loan.bookItem?.book?.title || "-"}</span>
+                        <span className="text-muted-foreground"> — {loan.member?.fullName}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {o.recentReturnsToday.length > 0 && (
+                <div>
+                  <div className="text-xs font-medium text-emerald-600 mb-2 flex items-center gap-1">
+                    <PackageCheck className="h-3 w-3" /> Dikembalikan Hari Ini
+                  </div>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {o.recentReturnsToday.map((loan, i) => (
+                      <div key={i} className="text-xs p-1.5 rounded bg-emerald-50 dark:bg-emerald-950/30 truncate">
+                        <span className="font-medium">{loan.bookItem?.book?.title || "-"}</span>
+                        <span className="text-muted-foreground"> — {loan.member?.fullName}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {o.recentNewMembersToday.length > 0 && (
+                <div>
+                  <div className="text-xs font-medium text-purple-600 mb-2 flex items-center gap-1">
+                    <UserPlus className="h-3 w-3" /> Anggota Baru
+                  </div>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {o.recentNewMembersToday.map((m, i) => (
+                      <div key={i} className="text-xs p-1.5 rounded bg-purple-50 dark:bg-purple-950/30 truncate">
+                        <span className="font-medium">{m.fullName}</span>
+                        <span className="text-muted-foreground"> — {m.category === "STUDENT" ? "Siswa" : "Guru"}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ===== Perlu Tindakan (P0-3) ===== */}
+      <Card className="p-4 sm:p-6">
+        <CardHeader className="p-0 mb-4 flex-row items-center justify-between space-y-0">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-100 text-red-700">
+              <BellRing className="h-4 w-4" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Perlu Tindakan</CardTitle>
+              <CardDescription className="text-xs">
+                Prioritas yang membutuhkan perhatian Anda hari ini
+              </CardDescription>
+            </div>
+          </div>
+          {actionTotal > 0 && (
+            <Badge variant="secondary" className="bg-red-100 text-red-700 border-0">
+              {actionTotal} item
+            </Badge>
+          )}
+        </CardHeader>
+        <CardContent className="p-0">
+          {actionTotal === 0 ? (
+            <EmptyState
+              icon={BellRing}
+              title="Semua beres!"
+              description="Tidak ada usulan, reservasi, atau peminjaman yang memerlukan tindakan."
+            />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {actionItems.map((item) => (
+                <button
+                  key={item.label}
+                  onClick={() => setView(item.view)}
+                  className="flex items-center gap-3 rounded-xl border p-4 text-left hover:shadow-md hover:border-primary/40 hover:bg-accent/40 transition-all group"
+                >
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${item.color}`}>
+                    <item.icon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold truncate">{item.label}</p>
+                    <p className="text-[11px] text-muted-foreground">Buka halaman {item.view}</p>
+                  </div>
+                  <span className="text-lg font-bold shrink-0">
+                    {item.value}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* ===== Charts section ===== */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

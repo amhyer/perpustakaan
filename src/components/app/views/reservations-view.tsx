@@ -117,11 +117,27 @@ export function ReservationsView() {
 function ReservationsViewContent() {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 12;
   const [actionTarget, setActionTarget] = useState<ActionTarget | null>(null);
   const [acting, setActing] = useState<string | null>(null);
   const setView = useAppStore((s) => s.setView);
 
-  const { data, loading, error, refetch } = useFetch<Reservation[]>("/api/reservations", {});
+  const url = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    params.set("pageSize", String(pageSize));
+    if (filter !== "all") params.set("status", filter);
+    const qs = params.toString();
+    return `/api/reservations${qs ? `?${qs}` : ""}`;
+  }, [filter, page]);
+
+  const { data: reservationsResp, loading, error, refetch } = useFetch<{ data: Reservation[]; total: number; page: number; pageSize: number; totalPages: number }>(
+    url,
+    { deps: [url] }
+  );
+  const data = reservationsResp?.data ?? [];
+  const totalPages = reservationsResp?.totalPages ?? 1;
 
   const stats = useMemo(() => {
     const list = data ?? [];
@@ -129,6 +145,7 @@ function ReservationsViewContent() {
       total: list.length,
       ready: list.filter((r) => r.status === "READY").length,
       pending: list.filter((r) => r.status === "PENDING").length,
+      expired: list.filter((r) => r.status === "EXPIRED").length,
     };
   }, [data]);
 
@@ -181,7 +198,7 @@ function ReservationsViewContent() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard
           label="Total Reservasi"
           value={loading ? "..." : stats.total}
@@ -199,6 +216,12 @@ function ReservationsViewContent() {
           value={loading ? "..." : stats.pending}
           icon={Clock}
           color="bg-amber-100 text-amber-700"
+        />
+        <StatCard
+          label="Kedaluwarsa"
+          value={loading ? "..." : stats.expired}
+          icon={XCircle}
+          color="bg-rose-100 text-rose-700"
         />
       </div>
 
@@ -381,6 +404,30 @@ function ReservationsViewContent() {
               </Card>
             );
           })}
+        </div>
+      )}
+      {/* Pagination (Tahap 16 #26) */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-4 p-4 border-t">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            ← Sebelumnya
+          </Button>
+          <span className="text-sm text-muted-foreground px-2">
+            Hal. {page} / {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          >
+            Berikutnya →
+          </Button>
         </div>
       )}
 

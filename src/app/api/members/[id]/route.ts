@@ -4,9 +4,14 @@ import { requireAuth, requireFullLibrarian, isLibrarian } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireAuth();
+  const { user, error } = await requireAuth();
   if (error) return error;
   const { id } = await params;
+
+  // Non-librarians can only view their own profile
+  if (!isLibrarian(user!.role) && user!.member?.id !== id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const member = await db.member.findUnique({
     where: { id },

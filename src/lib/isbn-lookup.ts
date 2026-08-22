@@ -5,7 +5,7 @@ import { ensureUploadDir, generateUniqueFileName, UPLOAD_DIR, COVER_ALLOWED_MIME
 
 export const COVERS_SUBDIR = "covers";
 export const COVERS_DIR = path.join(UPLOAD_DIR, COVERS_SUBDIR);
-export const COVERS_URL_PREFIX = `/uploads/${COVERS_SUBDIR}`;
+export const COVERS_URL_PREFIX = `/api/uploads/${COVERS_SUBDIR}`;
 export const LOOKUP_TIMEOUT_MS = 5000;
 
 export interface ISBNNormalizedData {

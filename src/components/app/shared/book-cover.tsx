@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface BookCoverProps {
@@ -18,10 +19,23 @@ export function BookCover({ title, author, color = "#1e3a5f", coverImage, classN
     lg: "aspect-[3/4] text-sm",
   };
 
-  if (coverImage) {
+  const [imgError, setImgError] = useState(false);
+  const [prevCover, setPrevCover] = useState(coverImage);
+  if (prevCover !== coverImage) {
+    setPrevCover(coverImage);
+    setImgError(false);
+  }
+
+  if (coverImage && !imgError) {
     return (
       <div className={cn("relative w-full overflow-hidden rounded-lg shadow-md", sizes[size], className)}>
-        <img src={coverImage} alt={title} className="absolute inset-0 h-full w-full object-cover" />
+        <img
+          src={coverImage}
+          alt={title}
+          loading="lazy"
+          onError={() => setImgError(true)}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
       </div>
     );
   }

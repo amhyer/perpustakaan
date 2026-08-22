@@ -26,6 +26,8 @@ model User {
   announcements Announcement[]
   proposals     BookProposal[]     @relation("ProposalReviewer")
   notifications Notification[]
+  auditLogs    AuditLog[]
+  transfers    BookTransfer[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -54,6 +56,7 @@ model Member {
   reservations Reservation[]
   wishlists    Wishlist[]
   proposals    BookProposal[]
+  reviews      BookReview[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -70,12 +73,14 @@ model Category {
 
 // ===== Locations / Rak =====
 model Location {
-  id          String   @id @default(cuid())
-  name        String   @unique // mis. "Rak A - Fiksi"
-  code        String   @unique // mis. "A-01"
-  description String?
-  books       Book[]
-  createdAt   DateTime @default(now())
+  id              String   @id @default(cuid())
+  name            String   @unique // mis. "Rak A - Fiksi"
+  code            String   @unique // mis. "A-01"
+  description     String?
+  books           Book[]
+  transfersFrom   BookTransfer[] @relation("FromLocation")
+  transfersTo     BookTransfer[] @relation("ToLocation")
+  createdAt       DateTime @default(now())
 }
 
 // ===== Books (Bibliografi) =====
@@ -104,6 +109,7 @@ model Book {
   reservations Reservation[]
   wishlists   Wishlist[]
   attachments BookAttachment[]
+  reviews     BookReview[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -122,11 +128,31 @@ model BookItem {
   condition   String   @default("BAIK") // BAIK | RUSAK_RINGAN | RUSAK_BERAT
   loans       Loan[]
   stocktakingScans StocktakingScan[]
+  conditionLogs ConditionLog[]
+  transfers   BookTransfer[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([bookId])
   @@index([status])
+}
+
+// ===== Condition Log (Riwayat Kondisi Eksemplar) =====
+model ConditionLog {
+  id               String    @id @default(cuid())
+  bookItemId       String
+  bookItem         BookItem  @relation(fields: [bookItemId], references: [id], onDelete: Cascade)
+  previousCondition String?
+  newCondition     String
+  previousStatus   String?
+  newStatus        String?
+  reason           String?
+  reportedById     String    // userId of the librarian
+  loanId           String?   // linked to active loan if relevant
+  createdAt        DateTime  @default(now())
+
+  @@index([bookItemId])
+  @@index([loanId])
 }
 
 // ===== Loans (Sirkulasi) =====
@@ -175,12 +201,13 @@ model Reservation {
 
 // ===== Wishlist / Favorit =====
 model Wishlist {
-  id        String   @id @default(cuid())
-  memberId  String
-  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  bookId    String
-  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  id                String   @id @default(cuid())
+  memberId          String
+  member            Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  bookId            String
+  book              Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+  notifiedAvailable Boolean  @default(false) // sudah dinotifikasi tersedia (Tahap 15)
 
   @@unique([memberId, bookId])
 }
@@ -313,4 +340,54 @@ model StocktakingScan {
   @@unique([sessionId, bookItemId])
   @@index([sessionId])
   @@index([bookItemId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  action     String
+  entityType String
+  entityId   String?
+  detail     String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model BookReview {
+  id        String   @id @default(cuid())
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id])
+  rating    Int      // 1-5
+  review    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([memberId, bookId])
+  @@index([bookId])
+}
+
+model BookTransfer {
+  id              String   @id @default(cuid())
+  bookItemId      String
+  bookItem        BookItem @relation(fields: [bookItemId], references: [id])
+  fromLocationId  String?
+  fromLocation    Location? @relation("FromLocation", fields: [fromLocationId], references: [id])
+  toLocationId    String
+  toLocation      Location @relation("ToLocation", fields: [toLocationId], references: [id])
+  reason          String?
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  createdAt       DateTime @default(now())
+
+  @@index([bookItemId])
+  @@index([fromLocationId])
+  @@index([toLocationId])
+  @@index([userId])
+  @@index([createdAt])
 }

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
-import { LOAN_RULES, calculateFine } from "@/lib/constants";
+import { requireAuth, isLibrarian } from "@/lib/auth";
+import { calculateFine, DAMAGE_FINE_AMOUNT } from "@/lib/constants";
 import { getLoanRule } from "@/lib/loan-rules";
+import { logAudit } from "@/lib/audit";
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { user, error } = await requireAuth();
@@ -15,12 +16,50 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     include: { member: true, bookItem: { include: { book: true } } },
   });
   if (!loan) return NextResponse.json({ error: "Peminjaman tidak ditemukan" }, { status: 404 });
+
+  // Non-librarians can only return their own loans
+  if (!isLibrarian(user!.role) && loan.memberId !== user!.member?.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   if (loan.status === "RETURNED") return NextResponse.json({ error: "Buku sudah dikembalikan" }, { status: 400 });
 
   const rule = await getLoanRule(loan.member.category);
   const now = new Date();
-  const fine = calculateFine(loan.dueDate, now, rule.finePerDay);
+  let fine = calculateFine(loan.dueDate, now, rule.finePerDay);
   const finePaid = body.finePaid !== undefined ? parseInt(body.finePaid) : fine;
+
+  // Handle condition update during return (Tahap 22)
+  const returnCondition = body.condition;
+  const conditionNote = body.conditionNote;
+  if (returnCondition && returnCondition !== "BAIK") {
+    const isLost = returnCondition === "LOST";
+    const newStatus = isLost ? "LOST" : "DAMAGED";
+    const newCondition = isLost ? "RUSAK_BERAT" : returnCondition;
+
+    await db.bookItem.update({
+      where: { id: loan.bookItemId },
+      data: { condition: newCondition, status: newStatus },
+    });
+
+    await db.conditionLog.create({
+      data: {
+        bookItemId: loan.bookItemId,
+        previousCondition: loan.bookItem.condition,
+        newCondition,
+        previousStatus: "BORROWED",
+        newStatus,
+        reason: conditionNote || `Dilaporkan saat pengembalian`,
+        reportedById: user!.id,
+        loanId: id,
+      },
+    });
+
+    // Add damage fine if not already charged
+    if (returnCondition !== "BAIK") {
+      fine += DAMAGE_FINE_AMOUNT;
+    }
+  }
 
   const updated = await db.loan.update({
     where: { id },
@@ -79,6 +118,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       relatedId: loan.id,
     },
   });
+
+  const detail = fine > 0
+    ? `${loan.bookItem.book.title} oleh ${loan.member.fullName} (denda: Rp ${fine.toLocaleString("id-ID")})`
+    : `${loan.bookItem.book.title} oleh ${loan.member.fullName}`;
+  await logAudit(user!.id, "LOAN_RETURN", "Loan", loan.id, detail);
 
   return NextResponse.json({ loan: updated, fine, nextReservation });
 }

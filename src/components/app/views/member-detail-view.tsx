@@ -13,12 +13,15 @@ import {
   Phone,
   MapPin,
   Calendar,
+  CalendarClock,
   IdCard,
   GraduationCap,
   Power,
   BookOpen,
   Clock,
   RotateCw,
+  Wallet,
+  AlertTriangle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/form/button";
@@ -82,6 +85,8 @@ import {
   MEMBER_STATUS_LABELS,
   LOAN_STATUS_LABELS,
   LOAN_STATUS_COLORS,
+  RESERVATION_STATUS_LABELS,
+  RESERVATION_STATUS_COLORS,
   formatDate,
   formatRupiah,
 } from "@/lib/constants";
@@ -112,6 +117,17 @@ interface MemberLoan {
   renewedCount: number;
   bookItem: MemberLoanBookItem;
 }
+
+interface MemberReservation {
+  id: string;
+  status: string;
+  queueOrder: number;
+  reservedAt: string;
+  expiresAt: string | null;
+  note: string | null;
+  book: { id: string; title: string; author: string };
+}
+
 interface MemberDetail {
   id: string;
   memberNumber: string;
@@ -128,6 +144,7 @@ interface MemberDetail {
   expiryDate: string | null;
   user: MemberUser;
   loans: MemberLoan[];
+  reservations: MemberReservation[];
   _count: { loans: number; reservations: number };
 }
 
@@ -348,8 +365,77 @@ export function MemberDetailView({ memberId }: { memberId: string }) {
         </Badge>
       </div>
 
+      {/* ===== Ringkasan Denda (Tahap 35) ===== */}
+      {member.loans.some(l => l.fineAmount > 0 && !l.finePaid) && (
+        <Card className="p-4 sm:p-6 border-red-200 bg-red-50/50">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-100 text-red-700">
+              <Wallet className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-red-800">Ringkasan Denda</h3>
+              <p className="text-xs text-red-600">
+                {member.loans.filter(l => l.fineAmount > 0 && !l.finePaid).length} denda belum dibayar
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 rounded-lg bg-white dark:bg-zinc-900 border border-red-200">
+              <div className="text-lg font-bold text-red-700">
+                {formatRupiah(member.loans.reduce((sum, l) => sum + (l.fineAmount > 0 && !l.finePaid ? l.fineAmount : 0), 0))}
+              </div>
+              <div className="text-xs text-muted-foreground">Total Belum Dibayar</div>
+            </div>
+            <div className="p-3 rounded-lg bg-white dark:bg-zinc-900 border border-red-200">
+              <div className="text-lg font-bold text-emerald-700">
+                {formatRupiah(member.loans.reduce((sum, l) => sum + (l.fineAmount > 0 && l.finePaid ? l.fineAmount : 0), 0))}
+              </div>
+              <div className="text-xs text-muted-foreground">Total Sudah Dibayar</div>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Member Expiry Warning (Tahap 40) */}
+      {member.expiryDate && member.status === "ACTIVE" && (() => {
+        const expiry = new Date(member.expiryDate);
+        const now = new Date();
+        const daysUntilExpiry = Math.ceil((expiry.getTime() - now.getTime()) / 86400000);
+        if (daysUntilExpiry <= 0) {
+          return (
+            <Card className="p-4 border-red-200 bg-red-50/50">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-100 text-red-700">
+                  <AlertTriangle className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-red-800">Keanggotaan Kedaluwarsa</h3>
+                  <p className="text-xs text-red-600">Keanggotaan telah berakhir pada {formatDate(member.expiryDate)}. Hubungi pustakawan untuk perpanjangan.</p>
+                </div>
+              </div>
+            </Card>
+          );
+        }
+        if (daysUntilExpiry <= 30) {
+          return (
+            <Card className="p-4 border-amber-200 bg-amber-50/50">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                  <AlertTriangle className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-amber-800">Keanggotaan Akan Berakhir</h3>
+                  <p className="text-xs text-amber-600">Keanggotaan berakhir dalam {daysUntilExpiry} hari ({formatDate(member.expiryDate)}). Segera perpanjang.</p>
+                </div>
+              </div>
+            </Card>
+          );
+        }
+        return null;
+      })()}
+
       <Tabs defaultValue="profil" className="w-full">
-        <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:flex">
+        <TabsList className="w-full sm:w-auto grid grid-cols-2 sm:grid-cols-4">
           <TabsTrigger value="profil" className="gap-1.5">
             <IdCard className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Profil</span>
@@ -357,6 +443,10 @@ export function MemberDetailView({ memberId }: { memberId: string }) {
           <TabsTrigger value="riwayat" className="gap-1.5">
             <BookOpen className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Riwayat Pinjam</span>
+          </TabsTrigger>
+          <TabsTrigger value="reservasi" className="gap-1.5">
+            <CalendarClock className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Reservasi</span>
           </TabsTrigger>
           <TabsTrigger value="kartu" className="gap-1.5">
             <IdCard className="h-3.5 w-3.5" />
@@ -618,6 +708,83 @@ export function MemberDetailView({ memberId }: { memberId: string }) {
                           ) : (
                             <span className="text-muted-foreground">-</span>
                           )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </Card>
+        </TabsContent>
+
+        {/* TAB RESERVASI (Tahap 34) */}
+        <TabsContent value="reservasi">
+          <Card className="p-0 overflow-hidden">
+            <div className="px-4 py-3 border-b flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CalendarClock className="h-4 w-4 text-primary" />
+                <h3 className="font-semibold text-foreground">
+                  Reservasi Buku
+                </h3>
+              </div>
+              <Badge variant="secondary">
+                {member.reservations?.length ?? 0} reservasi
+              </Badge>
+            </div>
+            {!member.reservations || member.reservations.length === 0 ? (
+              <div className="p-6">
+                <EmptyState
+                  icon={CalendarClock}
+                  title="Belum ada reservasi"
+                  description="Anggota ini belum pernah melakukan reservasi buku."
+                />
+              </div>
+            ) : (
+              <div className="max-h-96 overflow-y-auto scrollbar-thin">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-card z-10">
+                    <TableRow>
+                      <TableHead className="min-w-[220px]">Judul Buku</TableHead>
+                      <TableHead className="min-w-[80px]">Antrian</TableHead>
+                      <TableHead className="min-w-[110px]">Tgl Reservasi</TableHead>
+                      <TableHead className="min-w-[110px]">Kedaluwarsa</TableHead>
+                      <TableHead className="min-w-[100px]">Status</TableHead>
+                      <TableHead className="min-w-[120px]">Catatan</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {member.reservations.map((res) => (
+                      <TableRow key={res.id}>
+                        <TableCell>
+                          <div className="min-w-0">
+                            <p className="font-medium text-foreground truncate max-w-[260px]">
+                              {res.book?.title ?? "—"}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate max-w-[260px]">
+                              {res.book?.author ?? ""}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          #{res.queueOrder}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {formatDate(res.reservedAt)}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {res.expiresAt ? formatDate(res.expiresAt) : "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={RESERVATION_STATUS_COLORS[res.status] ?? ""}
+                          >
+                            {RESERVATION_STATUS_LABELS[res.status] ?? res.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground max-w-[150px] truncate">
+                          {res.note || "-"}
                         </TableCell>
                       </TableRow>
                     ))}

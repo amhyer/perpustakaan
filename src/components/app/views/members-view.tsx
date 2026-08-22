@@ -13,6 +13,9 @@ import {
   Loader2,
   Filter,
   ShieldAlert,
+  FileUp,
+  Download,
+  FileDown,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/form/button";
@@ -108,6 +111,113 @@ function suggestMemberNumber(role: Role): string {
   return `${prefix}-${year}-${rand}`;
 }
 
+// ===== Impor & ekspor CSV anggota (Tahap 14) =====
+interface ImportRow {
+  fullName: string;
+  memberNumber: string;
+  category: string;
+  classGrade: string;
+  email: string;
+  phone: string;
+}
+
+const CSV_HEADER_ALIASES: Record<string, keyof ImportRow> = {
+  nama: "fullName",
+  namalengkap: "fullName",
+  fullname: "fullName",
+  nis: "memberNumber",
+  nip: "memberNumber",
+  nomor: "memberNumber",
+  nomoranggota: "memberNumber",
+  noanggota: "memberNumber",
+  membernumber: "memberNumber",
+  kategori: "category",
+  category: "category",
+  kelas: "classGrade",
+  classgrade: "classGrade",
+  email: "email",
+  hp: "phone",
+  telepon: "phone",
+  phone: "phone",
+};
+
+function parseCsvLine(line: string): string[] {
+  const out: string[] = [];
+  let cur = "";
+  let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQ) {
+      if (ch === '"' && line[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else if (ch === '"') inQ = false;
+      else cur += ch;
+    } else if (ch === '"') inQ = true;
+    else if (ch === ",") {
+      out.push(cur.trim());
+      cur = "";
+    } else cur += ch;
+  }
+  out.push(cur.trim());
+  return out;
+}
+
+function parseMembersCSV(text: string): ImportRow[] {
+  const lines = text
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (lines.length === 0) return [];
+  const first = parseCsvLine(lines[0]);
+  const hasHeader = first.some((c) => CSV_HEADER_ALIASES[c.toLowerCase().replace(/\s+/g, "")]);
+  const rows: ImportRow[] = [];
+  const start = hasHeader ? 1 : 0;
+  for (let i = start; i < lines.length; i++) {
+    const cells = parseCsvLine(lines[i]);
+    let row: ImportRow = {
+      fullName: "",
+      memberNumber: "",
+      category: "",
+      classGrade: "",
+      email: "",
+      phone: "",
+    };
+    if (hasHeader) {
+      first.forEach((h, idx) => {
+        const key = CSV_HEADER_ALIASES[h.toLowerCase().replace(/\s+/g, "")];
+        if (key) row[key] = cells[idx] ?? "";
+      });
+    } else {
+      row.fullName = cells[0] ?? "";
+      row.memberNumber = cells[1] ?? "";
+      row.category = cells[2] ?? "";
+      row.classGrade = cells[3] ?? "";
+      row.email = cells[4] ?? "";
+      row.phone = cells[5] ?? "";
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+
+function csvEscape(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) return "";
+  const s = String(value);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function downloadCSV(filename: string, header: string[], rows: (string | number | null | undefined)[][]) {
+  const csv = "\uFEFF" + [header, ...rows].map((r) => r.map(csvEscape).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 interface AddFormState {
   email: string;
   password: string;
@@ -162,23 +272,40 @@ function MembersViewContent() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
   const [status, setStatus] = useState<string>("all");
+  const [page, setPage] = useState(1);
+  const pageSize = 12;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<AddFormState>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
+
+  // Impor CSV (Tahap 14)
+  const [importOpen, setImportOpen] = useState(false);
+  const [importRows, setImportRows] = useState<ImportRow[]>([]);
+  const [importFileName, setImportFileName] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    imported: number;
+    skipped: number;
+    errors: { row: number; reason: string }[];
+  } | null>(null);
 
   const membersUrl = useMemo(() => {
     const params = new URLSearchParams();
     if (search.trim()) params.set("q", search.trim());
     if (category !== "all") params.set("category", category);
     if (status !== "all") params.set("status", status);
+    params.set("page", String(page));
+    params.set("pageSize", String(pageSize));
     const qs = params.toString();
     return `/api/members${qs ? `?${qs}` : ""}`;
-  }, [search, category, status]);
+  }, [search, category, status, page]);
 
-  const { data: members, loading, error, refetch } = useFetch<MemberListItem[]>(
+  const { data: membersResp, loading, error, refetch } = useFetch<{ data: MemberListItem[]; total: number; page: number; pageSize: number; totalPages: number }>(
     membersUrl,
     { deps: [membersUrl] }
   );
+  const members = membersResp?.data ?? [];
+  const totalPages = membersResp?.totalPages ?? 1;
 
   const { data: stats } = useFetch<StatsResponse>(`/api/stats`);
   const overview = stats?.overview;
@@ -245,6 +372,78 @@ function MembersViewContent() {
     }
   }
 
+  function handleImportFile(file: File | undefined | null) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const rows = parseMembersCSV(String(reader.result ?? ""));
+      setImportRows(rows);
+      setImportFileName(file.name);
+      setImportResult(null);
+      if (rows.length === 0) {
+        toast.error("Tidak ada baris data yang terbaca dari file");
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function handleDownloadTemplate() {
+    downloadCSV("template-import-anggota.csv", [
+      "Nama Lengkap",
+      "NIS/Nomor",
+      "Kategori",
+      "Kelas",
+      "Email",
+      "Telepon",
+    ], [
+      ["Ani Rahmawati", "2025123001", "Siswa", "Kelas IX-A", "ani@jendelailmu.sch.id", "081234567890"],
+      ["Budi Santoso", "TCH-2026-001", "Guru", "Bahasa Indonesia", "", ""],
+    ]);
+  }
+
+  async function handleRunImport() {
+    if (importRows.length === 0) return;
+    setImporting(true);
+    try {
+      const res = await api.post<{ imported: number; skipped: number; errors: { row: number; reason: string }[] }>(
+        "/api/members/import",
+        { rows: importRows }
+      );
+      setImportResult(res);
+      toast.success(
+        res.imported > 0
+          ? `Berhasil impor ${res.imported} anggota${res.skipped > 0 ? `, ${res.skipped} dilewati` : ""}`
+          : "Tidak ada anggota yang diimpor"
+      );
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal impor anggota");
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  function handleExportCSV() {
+    if (!members || members.length === 0) {
+      toast.info("Tidak ada data anggota untuk diekspor");
+      return;
+    }
+    downloadCSV(
+      `anggota-${new Date().toISOString().slice(0, 10)}.csv`,
+      ["No", "Nomor Anggota", "Nama Lengkap", "Kategori", "Kelas", "Email", "Status", "Total Pinjaman"],
+      members.map((m, i) => [
+        i + 1,
+        m.memberNumber,
+        m.fullName,
+        ROLE_LABELS[m.category] ?? m.category,
+        m.classGrade ?? "",
+        m.user.email,
+        MEMBER_STATUS_LABELS[m.status] ?? m.status,
+        m._count?.loans ?? 0,
+      ])
+    );
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -252,10 +451,29 @@ function MembersViewContent() {
         description="Kelola data anggota perpustakaan"
         icon={Users}
         actions={
-          <Button onClick={openAddDialog} className="gap-2">
-            <UserPlus className="h-4 w-4" />
-            Tambah Anggota
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" className="gap-2" onClick={handleExportCSV}>
+              <Download className="h-4 w-4" />
+              Export CSV
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => {
+                setImportOpen(true);
+                setImportRows([]);
+                setImportFileName("");
+                setImportResult(null);
+              }}
+            >
+              <FileUp className="h-4 w-4" />
+              Impor CSV
+            </Button>
+            <Button onClick={openAddDialog} className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              Tambah Anggota
+            </Button>
+          </div>
         }
       />
 
@@ -447,6 +665,30 @@ function MembersViewContent() {
             </Table>
           </div>
         )}
+        {/* Pagination (Tahap 16 #26) */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 p-4 border-t">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              ← Sebelumnya
+            </Button>
+            <span className="text-sm text-muted-foreground px-2">
+              Hal. {page} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Berikutnya →
+            </Button>
+          </div>
+        )}
       </Card>
 
       {/* Dialog Tambah Anggota */}
@@ -607,6 +849,89 @@ function MembersViewContent() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Impor CSV (Tahap 14) */}
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto scrollbar-thin">
+          <DialogHeader>
+            <DialogTitle>Impor Anggota Massal (CSV)</DialogTitle>
+            <DialogDescription>
+              Unggah file CSV berisi daftar anggota. Kolom yang didukung: Nama
+              Lengkap, NIS/Nomor, Kategori (Guru/Siswa), Kelas, Email, Telepon.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Button variant="outline" size="sm" className="gap-2" onClick={handleDownloadTemplate}>
+              <FileDown className="h-4 w-4" />
+              Unduh Template CSV
+            </Button>
+            <label className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-center cursor-pointer hover:bg-accent/50 transition-colors">
+              <FileUp className="h-6 w-6 text-muted-foreground" />
+              <span className="text-sm font-medium">
+                {importFileName ? importFileName : "Klik untuk pilih file .csv"}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Maksimal 500 baris per impor. Baris dengan nomor/email duplikat dilewati.
+              </span>
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                onChange={(e) => handleImportFile(e.target.files?.[0])}
+              />
+            </label>
+
+            {importRows.length > 0 && (
+              <div className="rounded-lg border p-3 space-y-2">
+                <p className="text-sm font-medium">
+                  Terbaca: <b>{importRows.length}</b> baris
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Contoh: <b>{importRows[0].fullName || "(nama kosong)"}</b> —{" "}
+                  {importRows[0].memberNumber || "(tanpa nomor)"} —{" "}
+                  {importRows[0].category || "Siswa"}
+                </p>
+              </div>
+            )}
+
+            {importResult && (
+              <div className="rounded-lg border p-3 space-y-2">
+                <p className="text-sm font-medium">
+                  Hasil: <b className="text-emerald-600">{importResult.imported}</b> diimpor,{" "}
+                  <b className="text-amber-600">{importResult.skipped}</b> dilewati
+                </p>
+                {importResult.errors.length > 0 && (
+                  <div className="max-h-32 overflow-y-auto scrollbar-thin space-y-1">
+                    {importResult.errors.slice(0, 10).map((e, i) => (
+                      <p key={i} className="text-xs text-destructive">
+                        Baris {e.row}: {e.reason}
+                      </p>
+                    ))}
+                    {importResult.errors.length > 10 && (
+                      <p className="text-xs text-muted-foreground">
+                        ... dan {importResult.errors.length - 10} error lainnya
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportOpen(false)} disabled={importing}>
+              Tutup
+            </Button>
+            <Button
+              onClick={handleRunImport}
+              disabled={importing || importRows.length === 0}
+              className="gap-2"
+            >
+              {importing && <Loader2 className="h-4 w-4 animate-spin" />}
+              {importing ? "Mengimpor..." : "Mulai Impor"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

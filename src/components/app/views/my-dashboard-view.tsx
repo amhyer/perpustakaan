@@ -14,6 +14,12 @@ import {
   Sparkles,
   CreditCard,
   AlertTriangle,
+  BookPlus,
+  Library,
+  CheckCircle2,
+  XCircle,
+  Hourglass,
+  CalendarClock,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -82,6 +88,27 @@ interface WishlistItem {
   book: { id: string; title: string; author: string };
 }
 
+interface Reservation {
+  id: string;
+  bookId: string;
+  status: string;
+  expiresAt: string | null;
+  reservedAt: string;
+  queueOrder: number;
+  book: {
+    id: string;
+    title: string;
+    author: string;
+    coverColor: string;
+    coverImage: string | null;
+  };
+}
+
+interface Proposal {
+  id: string;
+  status: string;
+}
+
 type BookLite = BookWithDetails;
 
 function greetingByTime(): string {
@@ -92,18 +119,30 @@ function greetingByTime(): string {
   return "Selamat malam";
 }
 
-export function MyDashboardView() {
+export function MyDashboardView({ variant = "student" }: { variant?: "student" | "teacher" }) {
   const user = useAppStore((s) => s.user);
   const setView = useAppStore((s) => s.setView);
 
   const [renewingId, setRenewingId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const loansUrl = user?.member ? `/api/loans?mine=1` : null;
   const { data: loans, loading: loansLoading, error: loansError, refetch: refetchLoans } = useFetch<Loan[]>(loansUrl);
   const { data: announcements, loading: annLoading } = useFetch<Announcement[]>(`/api/announcements`);
   const { data: wishlist } = useFetch<WishlistItem[]>(`/api/wishlist?mine=1`);
-  const { data: recommended, loading: recLoading } = useFetch<BookLite[]>(`/api/books?limit=5`);
+  const { data: recData, loading: recLoading } = useFetch<{
+    recommended: BookLite[];
+    hasHistory: boolean;
+    label: string;
+  }>(`/api/books/recommendations`);
+  const recommended = recData?.recommended ?? [];
+  const recLabel = recData?.label ?? "Mungkin Kamu Suka";
   const { data: settings } = useFetch<Record<string, string>>(`/api/settings`);
+  const { data: myProposals, loading: proposalsLoading } = useFetch<Proposal[]>(
+    variant === "teacher" ? `/api/proposals?mine=1` : null
+  );
+  const reservationsUrl = user?.member ? `/api/reservations?mine=1` : null;
+  const { data: myReservations, refetch: refetchReservations } = useFetch<Reservation[]>(reservationsUrl);
   const showGamification = settings?.show_gamification !== "false"; // default ON
 
   const stats = useMemo(() => {
@@ -124,8 +163,12 @@ export function MyDashboardView() {
       dueSoon,
       fine: totalFine,
       wishlistCount: wishlist?.length ?? 0,
+      proposalTotal: myProposals?.length ?? 0,
+      proposalPending: myProposals?.filter((p) => p.status === "PENDING").length ?? 0,
+      proposalApproved: myProposals?.filter((p) => p.status === "APPROVED").length ?? 0,
+      proposalRejected: myProposals?.filter((p) => p.status === "REJECTED").length ?? 0,
     };
-  }, [loans, wishlist, user?.member?.category]);
+  }, [loans, wishlist, user?.member?.category, myProposals]);
 
   const activeLoans = useMemo(() => {
     const list = loans ?? [];
@@ -143,6 +186,12 @@ export function MyDashboardView() {
       })
       .slice(0, 3);
   }, [announcements]);
+
+  const activeReservations = useMemo(() => {
+    return (myReservations ?? [])
+      .filter((r) => r.status === "PENDING" || r.status === "READY")
+      .sort((a, b) => (a.status === "READY" ? -1 : b.status === "READY" ? 1 : a.queueOrder - b.queueOrder));
+  }, [myReservations]);
 
   if (!user || !user.member) {
     return (
@@ -175,6 +224,19 @@ export function MyDashboardView() {
       toast.error(e instanceof Error ? e.message : "Gagal memperpanjang peminjaman");
     } finally {
       setRenewingId(null);
+    }
+  }
+
+  async function handleCancelReservation(reservation: Reservation) {
+    setCancellingId(reservation.id);
+    try {
+      await api.put("/api/reservations", { id: reservation.id, action: "cancel" });
+      toast.success(`Reservasi "${reservation.book.title}" dibatalkan.`);
+      refetchReservations();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal membatalkan reservasi");
+    } finally {
+      setCancellingId(null);
     }
   }
 
@@ -279,6 +341,71 @@ export function MyDashboardView() {
           subtitle="Buku favorit"
         />
       </div>
+
+      {/* Teacher-only: proposals + digital collection shortcuts */}
+      {variant === "teacher" && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Card className="p-5 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="font-semibold flex items-center gap-2 text-sm">
+                <BookPlus className="h-4 w-4 text-primary" />
+                Usulan Buku Saya
+              </h2>
+              <Badge variant="outline" className="shrink-0">
+                {proposalsLoading ? "..." : stats.proposalTotal} usulan
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1.5 mb-3">
+              Ajukan buku yang Anda butuhkan untuk pembelajaran; tinjau status usulan di sini.
+            </p>
+            <div className="flex items-center gap-2 mb-4">
+              <Badge className="border-amber-200 bg-amber-100 text-amber-700">
+                <Hourglass className="h-3 w-3 mr-1" />
+                {proposalsLoading ? "..." : stats.proposalPending} menunggu
+              </Badge>
+              <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                {proposalsLoading ? "..." : stats.proposalApproved} disetujui
+              </Badge>
+              <Badge className="border-red-200 bg-red-100 text-red-700">
+                <XCircle className="h-3 w-3 mr-1" />
+                {proposalsLoading ? "..." : stats.proposalRejected} ditolak
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" className="h-8 gap-1" onClick={() => setView("proposals")}>
+                <BookPlus className="h-3.5 w-3.5" />
+                Ajukan Usulan
+              </Button>
+              <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => setView("proposals")}>
+                Riwayat
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </Card>
+
+          <Card
+            className="p-5 hover:shadow-md transition-shadow cursor-pointer group flex flex-col"
+            onClick={() => setView("catalog")}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="font-semibold flex items-center gap-2 text-sm">
+                <Library className="h-4 w-4 text-primary" />
+                Koleksi Digital
+              </h2>
+              <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-transform" />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1.5 flex-1">
+              Jelajahi katalog perpustakaan termasuk buku digital dari sumber resmi (SIBI)
+              untuk menunjang kegiatan belajar mengajar.
+            </p>
+            <Button size="sm" variant="outline" className="h-8 gap-1 mt-3 self-start" onClick={() => setView("catalog")}>
+              Buka Katalog
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+          </Card>
+        </div>
+      )}
 
       {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -493,6 +620,83 @@ export function MyDashboardView() {
         </div>
       </div>
 
+      {/* Reservasi Saya */}
+      {activeReservations.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <CalendarClock className="h-5 w-5 text-primary" />
+              Reservasi Saya
+            </h2>
+            <Button variant="ghost" size="sm" className="gap-1" onClick={() => setView("my-loans")}>
+              Lihat Semua
+              <ArrowRight className="h-3.5 h-3.5" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {activeReservations.map((r) => (
+              <Card
+                key={r.id}
+                className={`p-4 ${r.status === "READY" ? "border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/10" : ""}`}
+              >
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setView("book-detail", { id: r.book.id })}
+                    className="shrink-0"
+                    aria-label={`Lihat detail ${r.book.title}`}
+                  >
+                    <BookCover title={r.book.title} author={r.book.author} color={r.book.coverColor} coverImage={r.book.coverImage} size="sm" />
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <button
+                      onClick={() => setView("book-detail", { id: r.book.id })}
+                      className="text-left font-semibold text-sm leading-tight hover:text-primary transition-colors line-clamp-2"
+                    >
+                      {r.book.title}
+                    </button>
+                    <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{r.book.author}</p>
+                    <div className="mt-2 flex items-center gap-2">
+                      {r.status === "READY" ? (
+                        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          Siap Diambil
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-amber-100 text-amber-700 border-amber-200">
+                          <Hourglass className="h-3 w-3 mr-1" />
+                          Mengantre #{r.queueOrder}
+                        </Badge>
+                      )}
+                    </div>
+                    {r.status === "READY" && r.expiresAt && (
+                      <p className="mt-1.5 text-[11px] text-muted-foreground">
+                        Ambil sebelum {formatDateShort(r.expiresAt)}
+                      </p>
+                    )}
+                    <div className="mt-3 flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="h-8"
+                        disabled={cancellingId === r.id}
+                        onClick={() => handleCancelReservation(r)}
+                      >
+                        {cancellingId === r.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <XCircle className="h-3.5 w-3.5" />
+                        )}
+                        Batalkan
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Gamifikasi (Tahap 8A) — conditional render berdasarkan toggle settings */}
       {showGamification && user.member && (
         <GamificationSection memberId={user.member.id} />
@@ -503,7 +707,7 @@ export function MyDashboardView() {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-amber-500" />
-            Mungkin Kamu Suka
+            {recLabel}
           </h2>
           <Button variant="ghost" size="sm" className="gap-1" onClick={() => setView("catalog")}>
             Lihat Katalog

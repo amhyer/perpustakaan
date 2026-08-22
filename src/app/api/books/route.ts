@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth, requireLibrarian } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
+
+/** Cari buku dengan ISBN ternormalisasi (tanpa tanda pisah/spasi). */
+async function findIsbnDuplicate(cleanedIsbn: string, excludeBookId?: string) {
+  const withIsbn = await db.book.findMany({
+    where: { isbn: { not: null }, ...(excludeBookId ? { id: { not: excludeBookId } } : {}) },
+    select: { id: true, title: true, isbn: true },
+  });
+  return withIsbn.find((b) => b.isbn!.replace(/[-\s]/g, "") === cleanedIsbn) || null;
+}
 
 export async function GET(req: Request) {
   const { error } = await requireAuth();
@@ -12,6 +22,9 @@ export async function GET(req: Request) {
   const locationId = searchParams.get("locationId");
   const year = searchParams.get("year");
   const subject = searchParams.get("subject");
+  const source = searchParams.get("source");
+  const availableOnly = searchParams.get("availableOnly") === "true";
+  const sortParam = searchParams.get("sort") || "title-asc";
   const limit = parseInt(searchParams.get("limit") || "100");
   // Pagination (Tahap 16 #26) — backward compatible
   const pageParam = searchParams.get("page");
@@ -32,9 +45,41 @@ export async function GET(req: Request) {
   if (locationId) where.locationId = locationId;
   if (year) where.year = parseInt(year);
   if (subject) where.subject = { contains: subject };
+  if (source) where.source = source;
+  if (availableOnly) {
+    where.items = { some: { status: "AVAILABLE" } };
+  }
 
   // Mode pagination: return { data, total, page, pageSize }
   if (page !== null && !isNaN(page)) {
+    const orderDir = sortParam === "title-desc" ? "desc" : "asc";
+    const orderBy = sortParam === "newest" ? { year: "desc" as const } : sortParam === "title-desc" ? { title: "desc" as const } : { title: "asc" as const };
+
+    if (sortParam === "popular") {
+      const popularRaw = await db.loan.groupBy({
+        by: ["bookId"],
+        _count: true,
+        orderBy: { _count: { bookId: "desc" } },
+      });
+      const bookLoanCounts = new Map(popularRaw.map(p => [p.bookId, p._count]));
+      const [books, total] = await Promise.all([
+        db.book.findMany({
+          where,
+          include: {
+            category: true,
+            location: true,
+            items: { select: { id: true, status: true, itemCode: true, condition: true } },
+          },
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+        }),
+        db.book.count({ where }),
+      ]);
+      const booksWithCount = books.map(b => ({ ...b, loanCount: bookLoanCounts.get(b.id) || 0 }));
+      booksWithCount.sort((a, b) => b.loanCount - a.loanCount);
+      return NextResponse.json({ data: booksWithCount, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
+    }
+
     const [books, total] = await Promise.all([
       db.book.findMany({
         where,
@@ -43,7 +88,7 @@ export async function GET(req: Request) {
           location: true,
           items: { select: { id: true, status: true, itemCode: true, condition: true } },
         },
-        orderBy: { title: "asc" },
+        orderBy,
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
@@ -68,14 +113,24 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const { error } = await requireLibrarian();
+  const { user, error } = await requireLibrarian();
   if (error) return error;
 
   const body = await req.json();
-  const { title, author, publisher, isbn, year, pages, synopsis, coverImage, coverColor, language, subject, categoryId, locationId, itemCount } = body;
+  const { title, author, publisher, isbn, year, pages, synopsis, coverImage, coverColor, language, subject, categoryId, locationId, itemCount, sourceUrl } = body;
 
   if (!title || !author) {
     return NextResponse.json({ error: "Judul dan pengarang wajib diisi" }, { status: 400 });
+  }
+
+  // Validasi URL buku digital (Tahap 12)
+  if (sourceUrl) {
+    try {
+      const u = new URL(sourceUrl);
+      if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("invalid");
+    } catch {
+      return NextResponse.json({ error: "URL buku digital tidak valid (harus http/https)" }, { status: 400 });
+    }
   }
 
   // Validasi ISBN format (Tahap 16 #23) — ISBN-10 atau ISBN-13
@@ -84,6 +139,15 @@ export async function POST(req: Request) {
     const isValidISBN = /^(\d{10}|\d{13})$/.test(cleaned) && (cleaned.length === 10 || cleaned.length === 13);
     if (!isValidISBN) {
       return NextResponse.json({ error: "Format ISBN tidak valid (harus 10 atau 13 digit)" }, { status: 400 });
+    }
+
+    // Dedupe ISBN (Tahap 13) — konsisten dengan impor SIBI
+    const duplicate = await findIsbnDuplicate(cleaned);
+    if (duplicate) {
+      return NextResponse.json(
+        { error: `ISBN ${isbn} sudah dipakai buku "${duplicate.title}".` },
+        { status: 409 }
+      );
     }
   }
 
@@ -111,6 +175,7 @@ export async function POST(req: Request) {
       subject: subject || null,
       categoryId: categoryId || null,
       locationId: locationId || null,
+      sourceUrl: sourceUrl || null,
     },
     include: { category: true, location: true, items: true },
   });
@@ -145,5 +210,8 @@ export async function POST(req: Request) {
     where: { id: book.id },
     include: { category: true, location: true, items: true },
   });
+
+  await logAudit(user!.id, "BOOK_CREATE", "Book", book.id, `${book.title} oleh ${book.author}`);
+
   return NextResponse.json(refreshed, { status: 201 });
 }

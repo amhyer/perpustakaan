@@ -37,6 +37,10 @@ export function WishlistView() {
   const { data: wishlist, loading, error, refetch } = useFetch<WishlistItem[]>(url);
 
   const items = useMemo(() => wishlist ?? [], [wishlist]);
+  const availableNow = useMemo(
+    () => items.filter((i) => (i.book.items ?? []).some((it) => it.status === "AVAILABLE")).length,
+    [items]
+  );
 
   if (!user || !user.member) {
     return (
@@ -86,11 +90,11 @@ export function WishlistView() {
           subtitle={items.length === 0 ? "Belum ada buku" : "Buku tersimpan"}
         />
         <StatCard
-          label="Mau Baca"
-          value={loading ? "..." : items.length}
+          label="Tersedia Sekarang"
+          value={loading ? "..." : availableNow}
           icon={BookHeart}
-          color="bg-amber-100 text-amber-700"
-          subtitle="Antrean bacaan"
+          color="bg-emerald-100 text-emerald-700"
+          subtitle={availableNow > 0 ? "Segera pinjam!" : "Belum ada yang tersedia"}
         />
         <StatCard
           label="Aksi Cepat"

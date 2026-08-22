@@ -58,6 +58,26 @@ export const ITEM_STATUS_COLORS: Record<string, string> = {
   RESERVED: "bg-violet-100 text-violet-700 border-violet-200",
 };
 
+export const BOOK_CONDITION = {
+  BAIK: "BAIK",
+  RUSAK_RINGAN: "RUSAK_RINGAN",
+  RUSAK_BERAT: "RUSAK_BERAT",
+} as const;
+
+export const BOOK_CONDITION_LABELS: Record<string, string> = {
+  BAIK: "Baik",
+  RUSAK_RINGAN: "Rusak Ringan",
+  RUSAK_BERAT: "Rusak Berat",
+};
+
+export const BOOK_CONDITION_COLORS: Record<string, string> = {
+  BAIK: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  RUSAK_RINGAN: "bg-amber-100 text-amber-700 border-amber-200",
+  RUSAK_BERAT: "bg-orange-100 text-orange-700 border-orange-200",
+};
+
+export const DAMAGE_FINE_AMOUNT = 50000; // Rp 50.000 untuk buku rusak/hilang
+
 export const LOAN_STATUS = {
   LOANED: "LOANED",
   RETURNED: "RETURNED",
@@ -90,6 +110,14 @@ export const RESERVATION_STATUS_LABELS: Record<string, string> = {
   FULFILLED: "Dipenuhi",
   CANCELLED: "Dibatalkan",
   EXPIRED: "Kedaluwarsa",
+};
+
+export const RESERVATION_STATUS_COLORS: Record<string, string> = {
+  PENDING: "bg-amber-100 text-amber-700 border-amber-200",
+  READY: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  FULFILLED: "bg-sky-100 text-sky-700 border-sky-200",
+  CANCELLED: "bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300",
+  EXPIRED: "bg-red-100 text-red-700 border-red-200",
 };
 
 export const PROPOSAL_STATUS = {

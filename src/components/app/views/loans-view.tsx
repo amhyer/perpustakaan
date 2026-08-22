@@ -119,19 +119,27 @@ export function LoansView() {
 function LoansViewContent() {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 12;
   const [returnTarget, setReturnTarget] = useState<Loan | null>(null);
   const [returning, setReturning] = useState<string | null>(null);
   const [payingFine, setPayingFine] = useState<string | null>(null);
   const setView = useAppStore((s) => s.setView);
 
   const activeParam = FILTERS.find((f) => f.key === filter)?.param ?? "";
-  const url = `/api/loans${activeParam ? `?${activeParam}` : ""}`;
+  const url = useMemo(() => {
+    const base = `/api/loans${activeParam ? `?${activeParam}` : "?"}`;
+    return `${base}page=${page}&pageSize=${pageSize}`;
+  }, [activeParam, page]);
 
   // Fetch all loans for stats (we use the "all" data for counts)
-  const { data: allLoans, loading: allLoading } = useFetch<Loan[]>("/api/loans", {});
-  const { data, loading, error, refetch } = useFetch<Loan[]>(url, {
-    deps: [filter],
-  });
+  const { data: allLoans, loading: allLoading } = useFetch<Loan[]>("/api/loans?limit=200", {});
+  const { data: loansResp, loading, error, refetch } = useFetch<{ data: Loan[]; total: number; page: number; pageSize: number; totalPages: number }>(
+    url,
+    { deps: [url] }
+  );
+  const data = loansResp?.data ?? [];
+  const totalPages = loansResp?.totalPages ?? 1;
 
   const stats = useMemo(() => {
     const list = allLoans ?? [];
@@ -394,6 +402,30 @@ function LoansViewContent() {
                 })}
               </TableBody>
             </Table>
+          </div>
+        )}
+        {/* Pagination (Tahap 16 #26) */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 p-4 border-t">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              ← Sebelumnya
+            </Button>
+            <span className="text-sm text-muted-foreground px-2">
+              Hal. {page} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Berikutnya →
+            </Button>
           </div>
         )}
       </Card>

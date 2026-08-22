@@ -104,28 +104,50 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip
 
-function ChartTooltipContent({
-  active,
-  payload,
-  className,
-  indicator = "dot",
-  hideLabel = false,
-  hideIndicator = false,
-  label,
-  labelFormatter,
-  labelClassName,
-  formatter,
-  color,
-  nameKey,
-  labelKey,
-}: React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
-  React.ComponentProps<"div"> & {
-    hideLabel?: boolean
-    hideIndicator?: boolean
-    indicator?: "line" | "dot" | "dashed"
-    nameKey?: string
-    labelKey?: string
-  }) {
+function ChartTooltipContent(props: {
+  active?: unknown;
+  payload?: unknown;
+  className?: string;
+  label?: unknown;
+  labelFormatter?: unknown;
+  labelClassName?: string;
+  formatter?: unknown;
+  color?: unknown;
+  indicator?: "line" | "dot" | "dashed";
+  hideLabel?: boolean;
+  hideIndicator?: boolean;
+  nameKey?: unknown;
+  labelKey?: unknown;
+}) {
+  const {
+    active,
+    payload,
+    className,
+    indicator = "dot",
+    hideLabel = false,
+    hideIndicator = false,
+    label,
+    labelFormatter,
+    labelClassName,
+    formatter,
+    color,
+    nameKey,
+    labelKey,
+  } = props as {
+    active?: boolean;
+    payload?: any;
+    className?: string;
+    indicator?: "line" | "dot" | "dashed";
+    hideLabel?: boolean;
+    hideIndicator?: boolean;
+    label?: any;
+    labelFormatter?: any;
+    labelClassName?: string;
+    formatter?: any;
+    color?: any;
+    nameKey?: any;
+    labelKey?: any;
+  };
   const { config } = useChart()
 
   const tooltipLabel = React.useMemo(() => {
@@ -250,17 +272,20 @@ function ChartTooltipContent({
 
 const ChartLegend = RechartsPrimitive.Legend
 
-function ChartLegendContent({
-  className,
-  hideIcon = false,
-  payload,
-  verticalAlign = "bottom",
-  nameKey,
-}: React.ComponentProps<"div"> &
-  Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> & {
-    hideIcon?: boolean
-    nameKey?: string
-  }) {
+function ChartLegendContent(props: {
+  className?: string;
+  hideIcon?: boolean;
+  payload?: unknown;
+  verticalAlign?: string;
+  nameKey?: unknown;
+}) {
+  const { className, hideIcon = false, payload, verticalAlign = "bottom", nameKey } = props as {
+    className?: string;
+    hideIcon?: boolean;
+    payload?: { value?: any; dataKey?: any; color?: string }[];
+    verticalAlign?: string;
+    nameKey?: any;
+  };
   const { config } = useChart()
 
   if (!payload?.length) {

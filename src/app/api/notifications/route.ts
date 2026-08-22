@@ -35,6 +35,11 @@ export async function POST(req: Request) {
     if (body.all) {
       await db.notification.updateMany({ where: { userId: user!.id, isRead: false }, data: { isRead: true } });
     } else if (body.id) {
+      // Ownership check: ensure notification belongs to user
+      const notif = await db.notification.findUnique({ where: { id: body.id } });
+      if (!notif || notif.userId !== user!.id) {
+        return NextResponse.json({ error: "Notifikasi tidak ditemukan" }, { status: 404 });
+      }
       await db.notification.update({ where: { id: body.id }, data: { isRead: true } });
     }
     return NextResponse.json({ success: true });

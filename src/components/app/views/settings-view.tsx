@@ -22,6 +22,7 @@ import {
   PenTool,
   Database,
   Download,
+  Bell,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/form/button";
@@ -136,6 +137,10 @@ export function SettingsView() {
     fine_per_day_teacher: "",
     loan_days_student: "",
     loan_days_teacher: "",
+    max_books_student: "",
+    max_books_teacher: "",
+    max_renewals_student: "",
+    max_renewals_teacher: "",
   });
   const [rulesReady, setRulesReady] = useState(false);
   const [savingRules, setSavingRules] = useState(false);
@@ -177,6 +182,11 @@ export function SettingsView() {
   const [showGamifikasi, setShowGamifikasi] = useState(true);
   const [savingGamifikasi, setSavingGamifikasi] = useState(false);
 
+  // Notification settings (Tahap 20)
+  const [reminderEnabled, setReminderEnabled] = useState(true);
+  const [reminderDays, setReminderDays] = useState("1");
+  const [savingNotif, setSavingNotif] = useState(false);
+
   // Sync settings → form state when settings load (one-shot via flag)
   if (
     !identityReady &&
@@ -194,10 +204,16 @@ export function SettingsView() {
       fine_per_day_teacher: settings.fine_per_day_teacher ?? "",
       loan_days_student: settings.loan_days_student ?? "",
       loan_days_teacher: settings.loan_days_teacher ?? "",
+      max_books_student: settings.max_books_student ?? "",
+      max_books_teacher: settings.max_books_teacher ?? "",
+      max_renewals_student: settings.max_renewals_student ?? "",
+      max_renewals_teacher: settings.max_renewals_teacher ?? "",
     });
     setIdentityReady(true);
     setRulesReady(true);
     setShowGamifikasi(settings.show_gamification !== "false");
+    setReminderEnabled(settings.reminder_enabled !== "false");
+    setReminderDays(settings.reminder_days_before || "1");
   }
 
   // Guard: hanya pustakawan PENUH yang bisa akses (PUSTAKAWAN_JUNIOR ditolak)
@@ -246,6 +262,10 @@ export function SettingsView() {
         fine_per_day_teacher: rules.fine_per_day_teacher,
         loan_days_student: rules.loan_days_student,
         loan_days_teacher: rules.loan_days_teacher,
+        max_books_student: rules.max_books_student,
+        max_books_teacher: rules.max_books_teacher,
+        max_renewals_student: rules.max_renewals_student,
+        max_renewals_teacher: rules.max_renewals_teacher,
       });
       toast.success("Aturan peminjaman disimpan.");
       refetchSettings();
@@ -468,6 +488,24 @@ export function SettingsView() {
     }
   }
 
+  // ===== Notification settings handler (Tahap 20) =====
+  async function saveNotifSettings() {
+    setSavingNotif(true);
+    try {
+      const days = Math.max(1, Math.min(14, parseInt(reminderDays) || 1));
+      await api.put("/api/settings", {
+        reminder_enabled: reminderEnabled ? "true" : "false",
+        reminder_days_before: String(days),
+      });
+      setReminderDays(String(days));
+      toast.success("Pengaturan notifikasi tersimpan.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyimpan pengaturan");
+    } finally {
+      setSavingNotif(false);
+    }
+  }
+
   const loadingAll = loadingSettings;
 
   return (
@@ -590,6 +628,63 @@ export function SettingsView() {
             </div>
           </Card>
 
+          {/* SECTION 1c: Pengaturan Notifikasi (Tahap 20) */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                <Bell className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-foreground">Notifikasi</h2>
+                <p className="text-xs text-muted-foreground">
+                  Konfigurasi pengingat jatuh tempo dan notifikasi otomatis.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* Toggle reminder */}
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">Pengingat Jatuh Tempo</p>
+                  <p className="text-xs text-muted-foreground">
+                    Kirim notifikasi in-app sebelum jatuh tempo.
+                  </p>
+                </div>
+                <Switch
+                  checked={reminderEnabled}
+                  onCheckedChange={setReminderEnabled}
+                />
+              </div>
+
+              {/* Days before */}
+              {reminderEnabled && (
+                <div className="flex items-center gap-3">
+                  <Label htmlFor="reminder-days" className="text-xs whitespace-nowrap">
+                    Kirim sebelum jatuh tempo
+                  </Label>
+                  <Input
+                    id="reminder-days"
+                    type="number"
+                    min={1}
+                    max={14}
+                    value={reminderDays}
+                    onChange={(e) => setReminderDays(e.target.value)}
+                    className="w-20 h-8 text-center"
+                  />
+                  <span className="text-xs text-muted-foreground">hari</span>
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <Button onClick={saveNotifSettings} disabled={savingNotif} className="gap-2" size="sm">
+                  {savingNotif ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  {savingNotif ? "Menyimpan..." : "Simpan"}
+                </Button>
+              </div>
+            </div>
+          </Card>
+
           {/* SECTION 2: Aturan Peminjaman */}
           <Card className="p-6">
             <div className="flex items-center gap-2 mb-4">
@@ -707,6 +802,58 @@ export function SettingsView() {
                     setRules((prev) => ({ ...prev, loan_days_teacher: e.target.value }))
                   }
                   placeholder="14"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="set-mbs">Maks Buku Siswa</Label>
+                <Input
+                  id="set-mbs"
+                  type="number"
+                  inputMode="numeric"
+                  value={rules.max_books_student}
+                  onChange={(e) =>
+                    setRules((prev) => ({ ...prev, max_books_student: e.target.value }))
+                  }
+                  placeholder="3"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="set-mbt">Maks Buku Guru</Label>
+                <Input
+                  id="set-mbt"
+                  type="number"
+                  inputMode="numeric"
+                  value={rules.max_books_teacher}
+                  onChange={(e) =>
+                    setRules((prev) => ({ ...prev, max_books_teacher: e.target.value }))
+                  }
+                  placeholder="5"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="set-mrs">Maks Perpanjangan Siswa</Label>
+                <Input
+                  id="set-mrs"
+                  type="number"
+                  inputMode="numeric"
+                  value={rules.max_renewals_student}
+                  onChange={(e) =>
+                    setRules((prev) => ({ ...prev, max_renewals_student: e.target.value }))
+                  }
+                  placeholder="1"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="set-mrt">Maks Perpanjangan Guru</Label>
+                <Input
+                  id="set-mrt"
+                  type="number"
+                  inputMode="numeric"
+                  value={rules.max_renewals_teacher}
+                  onChange={(e) =>
+                    setRules((prev) => ({ ...prev, max_renewals_teacher: e.target.value }))
+                  }
+                  placeholder="2"
                 />
               </div>
             </div>

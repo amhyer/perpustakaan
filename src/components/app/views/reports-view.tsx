@@ -198,6 +198,8 @@ function csvEscape(value: string | number | null | undefined): string {
 export function ReportsView() {
   const [period, setPeriod] = useState<Period>("monthly");
   const [exporting, setExporting] = useState(false);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const { data: stats, loading: statsLoading, error: statsError } = useFetch<StatsResponse>("/api/stats");
   const { data: loans, loading: loansLoading, error: loansError } = useFetch<Loan[]>("/api/loans");
@@ -206,9 +208,25 @@ export function ReportsView() {
   const loading = statsLoading || loansLoading;
   const error = statsError ?? loansError;
 
+  // Filter loans by date range
+  const filteredLoans = useMemo(() => {
+    const list = loans ?? [];
+    if (!dateFrom && !dateTo) return list;
+    return list.filter((l) => {
+      const d = new Date(l.loanDate);
+      if (dateFrom && d < new Date(dateFrom)) return false;
+      if (dateTo) {
+        const to = new Date(dateTo);
+        to.setDate(to.getDate() + 1);
+        if (d >= to) return false;
+      }
+      return true;
+    });
+  }, [loans, dateFrom, dateTo]);
+
   // Group loans by month for the bar chart
   const monthlyData = useMemo(() => {
-    const list = loans ?? [];
+    const list = filteredLoans;
     const map: Record<string, number> = {};
     for (const l of list) {
       const d = new Date(l.loanDate);
@@ -227,11 +245,11 @@ export function ReportsView() {
           count,
         };
       });
-  }, [loans]);
+  }, [filteredLoans]);
 
   // Status distribution
   const statusData = useMemo(() => {
-    const list = loans ?? [];
+    const list = filteredLoans;
     const counts: Record<string, number> = { LOANED: 0, RETURNED: 0, OVERDUE: 0 };
     for (const l of list) {
       const s = counts[l.status] !== undefined ? l.status : "LOANED";
@@ -242,7 +260,7 @@ export function ReportsView() {
       { status: "RETURNED", name: LOAN_STATUS_LABELS.RETURNED, count: counts.RETURNED },
       { status: "OVERDUE", name: LOAN_STATUS_LABELS.OVERDUE, count: counts.OVERDUE },
     ].filter((d) => d.count > 0);
-  }, [loans]);
+  }, [filteredLoans]);
 
   // Top 5 popular books from stats
   const topBooksData = useMemo(() => {
@@ -255,7 +273,7 @@ export function ReportsView() {
 
   // Summary metrics
   const summary = useMemo(() => {
-    const list = loans ?? [];
+    const list = filteredLoans;
     const totalLoans = list.length;
     const totalFine = list.reduce((s, l) => s + (l.fineAmount ?? 0), 0);
     const topBook = stats?.popularBooks?.[0];
@@ -266,7 +284,7 @@ export function ReportsView() {
       topBook: topBook ? `${topBook.title} (${topBook.loanCount}×)` : "—",
       topMember: topMember ? `${topMember.fullName} (${topMember.loanCount}×)` : "—",
     };
-  }, [loans, stats]);
+  }, [filteredLoans, stats]);
 
   // Category summary table (from stats)
   const categoryRows = useMemo(() => {
@@ -281,7 +299,7 @@ export function ReportsView() {
 
   // Filter loans for display (period affects grouping label only — keep simple)
   const displayLoans = useMemo(() => {
-    const list = (loans ?? []).slice();
+    const list = filteredLoans.slice();
     // sort newest first
     list.sort((a, b) => new Date(b.loanDate).getTime() - new Date(a.loanDate).getTime());
     if (period === "daily") {
@@ -297,7 +315,7 @@ export function ReportsView() {
     // yearly: last 365 days
     const cutoff = Date.now() - 365 * 86400000;
     return list.filter((l) => new Date(l.loanDate).getTime() >= cutoff);
-  }, [loans, period]);
+  }, [filteredLoans, period]);
 
   function handleExportCSV() {
     if (!displayLoans || displayLoans.length === 0) {
@@ -437,16 +455,40 @@ export function ReportsView() {
               Filter data tabel berdasarkan periode
             </p>
           </div>
-          <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="daily">Harian (7 hari terakhir)</SelectItem>
-              <SelectItem value="monthly">Bulanan (30 hari terakhir)</SelectItem>
-              <SelectItem value="yearly">Tahunan (365 hari terakhir)</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily">Harian (7 hari terakhir)</SelectItem>
+                <SelectItem value="monthly">Bulanan (30 hari terakhir)</SelectItem>
+                <SelectItem value="yearly">Tahunan (365 hari terakhir)</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-1.5">
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="h-9 rounded-md border border-input bg-background px-3 text-xs"
+                placeholder="Dari"
+              />
+              <span className="text-xs text-muted-foreground">-</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="h-9 rounded-md border border-input bg-background px-3 text-xs"
+                placeholder="Sampai"
+              />
+              {(dateFrom || dateTo) && (
+                <Button variant="ghost" size="sm" className="h-9 px-2" onClick={() => { setDateFrom(""); setDateTo(""); }}>
+                  Reset
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       </Card>
 

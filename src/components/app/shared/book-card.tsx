@@ -17,6 +17,8 @@ export interface BookWithDetails {
   coverColor: string;
   coverImage: string | null;
   synopsis: string | null;
+  source?: string;
+  sourceUrl?: string | null;
   category?: { name: string } | null;
   location?: { name: string; code: string } | null;
   items?: { id: string; status: string }[];
@@ -37,9 +39,14 @@ export function BookCard({ book }: { book: BookWithDetails }) {
       >
         <div className="relative">
           <BookCover title={book.title} author={book.author} color={book.coverColor} coverImage={book.coverImage} />
+          {(book.source === "SIBI" || !!book.sourceUrl) && (
+            <Badge className="absolute top-2 left-2 bg-sky-500 hover:bg-sky-500 text-white border-0 shadow">
+              Digital
+            </Badge>
+          )}
           {availableCount > 0 ? (
             <Badge className="absolute top-2 right-2 bg-emerald-500 hover:bg-emerald-500 text-white border-0 shadow">
-              {availableCount} Tersedia
+              {availableCount}/{totalCount} Tersedia
             </Badge>
           ) : (
             <Badge className="absolute top-2 right-2 bg-amber-500 hover:bg-amber-500 text-white border-0 shadow">

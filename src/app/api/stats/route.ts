@@ -7,6 +7,8 @@ export async function GET() {
   if (error) return error;
 
   const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEnd = new Date(todayStart.getTime() + 86400000);
   const last30 = new Date(now.getTime() - 30 * 86400000);
 
   const [
@@ -22,8 +24,12 @@ export async function GET() {
     overdueLoans,
     pendingReservations,
     pendingProposals,
+    expiredReservations,
     recentLoans,
     overdueList,
+    loansToday,
+    returnsToday,
+    newMembersToday,
   ] = await Promise.all([
     db.book.count(),
     db.bookItem.count(),
@@ -37,8 +43,18 @@ export async function GET() {
     db.loan.count({ where: { status: "OVERDUE" } }),
     db.reservation.count({ where: { status: "PENDING" } }),
     db.bookProposal.count({ where: { status: "PENDING" } }),
+    db.reservation.count({ where: { status: "EXPIRED" } }),
     db.loan.findMany({ where: { loanDate: { gte: last30 } }, include: { member: true, bookItem: { include: { book: true } } }, orderBy: { loanDate: "desc" }, take: 100 }),
     db.loan.findMany({ where: { status: { in: ["LOANED", "OVERDUE"] }, dueDate: { lt: now } }, include: { member: true, bookItem: { include: { book: true } } }, orderBy: { dueDate: "asc" }, take: 50 }),
+    db.loan.count({ where: { loanDate: { gte: todayStart, lt: todayEnd } } }),
+    db.loan.count({ where: { returnDate: { gte: todayStart, lt: todayEnd } } }),
+    db.member.count({ where: { joinDate: { gte: todayStart, lt: todayEnd } } }),
+  ]);
+
+  const [recentLoansToday, recentReturnsToday, recentNewMembersToday] = await Promise.all([
+    db.loan.findMany({ where: { loanDate: { gte: todayStart, lt: todayEnd } }, select: { bookItem: { select: { book: { select: { title: true, author: true } } } }, member: { select: { fullName: true } } }, take: 10 }),
+    db.loan.findMany({ where: { returnDate: { gte: todayStart, lt: todayEnd } }, select: { bookItem: { select: { book: { select: { title: true, author: true } } } }, member: { select: { fullName: true } } }, take: 10 }),
+    db.member.findMany({ where: { joinDate: { gte: todayStart, lt: todayEnd } }, select: { fullName: true, category: true }, take: 10 }),
   ]);
 
   // Buku terpopuler (berdasarkan jumlah peminjaman)
@@ -124,7 +140,14 @@ export async function GET() {
       overdueLoans,
       pendingReservations,
       pendingProposals,
+      expiredReservations,
       overdueFineTotal,
+      loansToday,
+      returnsToday,
+      newMembersToday,
+      recentLoansToday,
+      recentReturnsToday,
+      recentNewMembersToday,
     },
     trend,
     popularBooks,

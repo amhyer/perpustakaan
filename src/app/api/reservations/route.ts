@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth, isLibrarian } from "@/lib/auth";
-import { LOAN_RULES } from "@/lib/constants";
 import { computeDueDateWithHolidays, getLoanRule } from "@/lib/loan-rules";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(req: Request) {
   const { user, error } = await requireAuth();
@@ -10,11 +10,34 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
   const mine = searchParams.get("mine");
+  // Pagination (Tahap 16 #26) — backward compatible
+  const pageParam = searchParams.get("page");
+  const page = pageParam ? parseInt(pageParam) : null;
+  const pageSize = parseInt(searchParams.get("pageSize") || "12");
 
   const where: Record<string, unknown> = {};
   if (status) where.status = status;
   if (mine === "1" && user!.member) where.memberId = user!.member.id;
 
+  // Mode pagination: return { data, total, page, pageSize }
+  if (page !== null && !isNaN(page)) {
+    const [reservations, total] = await Promise.all([
+      db.reservation.findMany({
+        where,
+        include: {
+          member: { select: { id: true, memberNumber: true, fullName: true, category: true, classGrade: true } },
+          book: { select: { id: true, title: true, author: true, coverColor: true, coverImage: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      db.reservation.count({ where }),
+    ]);
+    return NextResponse.json({ data: reservations, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
+  }
+
+  // Mode lama (tanpa pagination): return array biasa
   const reservations = await db.reservation.findMany({
     where,
     include: {
@@ -75,6 +98,8 @@ export async function POST(req: Request) {
     });
   }
 
+  await logAudit(user!.id, "RESERVATION_CREATE", "Reservation", reservation.id, `${reservation.book.title} oleh ${reservation.member.fullName}`);
+
   return NextResponse.json(reservation, { status: 201 });
 }
 
@@ -102,6 +127,7 @@ export async function PUT(req: Request) {
       });
       if (reservedItem) await db.bookItem.update({ where: { id: reservedItem.id }, data: { status: "AVAILABLE" } });
     }
+    await logAudit(user!.id, "RESERVATION_CANCEL", "Reservation", reservation.id, `${reservation.book.title} oleh ${reservation.member.fullName}`);
     return NextResponse.json({ success: true });
   }
 
@@ -172,6 +198,8 @@ export async function PUT(req: Request) {
         relatedId: loan.id,
       },
     });
+
+    await logAudit(user!.id, "RESERVATION_FULFILL", "Reservation", reservation.id, `${reservation.book.title} oleh ${reservation.member.fullName}`);
 
     return NextResponse.json({ success: true, loanId: loan.id });
   }

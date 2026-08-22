@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Megaphone,
@@ -91,10 +91,23 @@ export function AnnouncementsView() {
   const isLibrarian = user?.role === "LIBRARIAN" || user?.role === "PUSTAKAWAN_JUNIOR";
   const isFullLibrarian = user?.role === "LIBRARIAN";
 
-  const { data, loading, error, refetch } = useFetch<Announcement[]>(
-    "/api/announcements",
-    {}
+  const [page, setPage] = useState(1);
+  const pageSize = 12;
+
+  const announcementsUrl = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    params.set("pageSize", String(pageSize));
+    const qs = params.toString();
+    return `/api/announcements${qs ? `?${qs}` : ""}`;
+  }, [page]);
+
+  const { data: announcementsResp, loading, error, refetch } = useFetch<{ data: Announcement[]; total: number; page: number; pageSize: number; totalPages: number }>(
+    announcementsUrl,
+    { deps: [announcementsUrl] }
   );
+  const data = announcementsResp?.data ?? [];
+  const totalPages = announcementsResp?.totalPages ?? 1;
 
   // Create/Edit dialog
   const [editorOpen, setEditorOpen] = useState(false);
@@ -345,6 +358,30 @@ export function AnnouncementsView() {
               </div>
             </Card>
           ))}
+        </div>
+      )}
+      {/* Pagination (Tahap 16 #26) */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-4 p-4 border-t">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            ← Sebelumnya
+          </Button>
+          <span className="text-sm text-muted-foreground px-2">
+            Hal. {page} / {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          >
+            Berikutnya →
+          </Button>
         </div>
       )}
 

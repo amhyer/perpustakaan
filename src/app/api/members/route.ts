@@ -74,10 +74,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Format email tidak valid" }, { status: 400 });
   }
 
-  // Validasi password minimal 6 karakter (Tahap 16 #22)
+  // Validasi password minimal 6 karakter dengan complexity (Tahap 16 #22)
   if (password.length < 6) {
     return NextResponse.json({ error: "Password minimal 6 karakter" }, { status: 400 });
   }
+  if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+    return NextResponse.json({ error: "Password harus mengandung huruf besar dan angka" }, { status: 400 });
+  }
+
+  // Role validation: only STUDENT and TEACHER allowed for member creation
+  const ALLOWED_ROLES = ["STUDENT", "TEACHER"];
+  const userRole = role && ALLOWED_ROLES.includes(role) ? role : "STUDENT";
 
   const existing = await db.user.findUnique({ where: { email: email.toLowerCase() } });
   if (existing) return NextResponse.json({ error: "Email sudah terdaftar" }, { status: 400 });
@@ -87,7 +94,7 @@ export async function POST(req: Request) {
 
   const passwordHash = await hashPassword(password);
   const newUser = await db.user.create({
-    data: { email: email.toLowerCase(), passwordHash, name, role: role || "STUDENT" },
+    data: { email: email.toLowerCase(), passwordHash, name, role: userRole },
   });
 
   const member = await db.member.create({

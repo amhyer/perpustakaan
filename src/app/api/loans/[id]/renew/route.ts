@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
-import { LOAN_RULES } from "@/lib/constants";
+import { requireAuth, isLibrarian } from "@/lib/auth";
 import { computeDueDateWithHolidays, getLoanRule } from "@/lib/loan-rules";
 
 export async function PUT(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -14,6 +13,12 @@ export async function PUT(_req: Request, { params }: { params: Promise<{ id: str
     include: { member: true, bookItem: { include: { book: true } } },
   });
   if (!loan) return NextResponse.json({ error: "Peminjaman tidak ditemukan" }, { status: 404 });
+
+  // Non-librarians can only renew their own loans
+  if (!isLibrarian(user!.role) && loan.memberId !== user!.member?.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   if (loan.status === "RETURNED") return NextResponse.json({ error: "Buku sudah dikembalikan" }, { status: 400 });
 
   const rule = await getLoanRule(loan.member.category);

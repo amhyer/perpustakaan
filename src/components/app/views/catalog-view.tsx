@@ -3,11 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   BookOpen,
+  Download,
   Filter,
   Plus,
   RotateCcw,
   Search,
   X,
+  MonitorPlay,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,12 +48,13 @@ interface Location {
   code: string;
 }
 
-type SortKey = "title-asc" | "title-desc" | "newest";
+type SortKey = "title-asc" | "title-desc" | "newest" | "popular";
 
 const SORT_LABELS: Record<SortKey, string> = {
   "title-asc": "Judul A-Z",
   "title-desc": "Judul Z-A",
   newest: "Terbaru",
+  popular: "Terpopuler",
 };
 
 export function CatalogView() {
@@ -66,6 +70,8 @@ export function CatalogView() {
   const [categoryId, setCategoryId] = useState<string>("");
   const [locationId, setLocationId] = useState<string>("");
   const [year, setYear] = useState<string>("");
+  const [digitalOnly, setDigitalOnly] = useState(false);
+  const [availableOnly, setAvailableOnly] = useState(false);
   const [sort, setSort] = useState<SortKey>("title-asc");
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
@@ -91,11 +97,14 @@ export function CatalogView() {
     if (categoryId) params.set("categoryId", categoryId);
     if (locationId) params.set("locationId", locationId);
     if (year) params.set("year", year);
+    if (digitalOnly) params.set("source", "SIBI");
+    if (availableOnly) params.set("availableOnly", "true");
+    params.set("sort", sort);
     params.set("page", String(page));
     params.set("pageSize", String(pageSize));
     const qs = params.toString();
     return `/api/books${qs ? `?${qs}` : ""}`;
-  }, [searchQuery, categoryId, locationId, year, page]);
+  }, [searchQuery, categoryId, locationId, year, digitalOnly, availableOnly, sort, page]);
 
   const { data: booksResp, loading, error } = useFetch<{ data: BookWithDetails[]; total: number; page: number; pageSize: number; totalPages: number }>(
     booksUrl,
@@ -104,9 +113,10 @@ export function CatalogView() {
   const books = booksResp?.data ?? [];
   const totalPages = booksResp?.totalPages ?? 1;
 
-  // Client-side sort
+  // Client-side sort (skip for popular — API already sorts)
   const sortedBooks = useMemo(() => {
     if (!books) return [];
+    if (sort === "popular") return books;
     const arr = [...books];
     switch (sort) {
       case "title-asc":
@@ -123,12 +133,13 @@ export function CatalogView() {
   }, [books, sort]);
 
   const activeFilterCount =
-    (categoryId ? 1 : 0) + (locationId ? 1 : 0) + (year ? 1 : 0);
+    (categoryId ? 1 : 0) + (locationId ? 1 : 0) + (year ? 1 : 0) + (digitalOnly ? 1 : 0) + (availableOnly ? 1 : 0);
 
   function handleResetFilters() {
     setCategoryId("");
     setLocationId("");
     setYear("");
+    setDigitalOnly(false);
     setSearchInput("");
     setSearchQuery("");
     toast.success("Filter telah direset");
@@ -139,6 +150,54 @@ export function CatalogView() {
     setSearchQuery(searchInput.trim());
   }
 
+  // Ekspor CSV katalog (Tahap 15)
+  const [exporting, setExporting] = useState(false);
+  async function handleExportCSV() {
+    setExporting(true);
+    try {
+      const all = await api.get<BookWithDetails[]>("/api/books?limit=10000");
+      if (!all || all.length === 0) {
+        toast.info("Tidak ada buku untuk diekspor");
+        return;
+      }
+      const esc = (v: string | number | null | undefined) => {
+        if (v === null || v === undefined) return "";
+        const s = String(v);
+        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const header = [
+        "Judul", "Pengarang", "Penerbit", "ISBN", "Tahun", "Kategori",
+        "Rak", "Eksemplar", "Tersedia", "Sumber", "URL Digital",
+      ];
+      const rows = all.map((b) => [
+        b.title,
+        b.author,
+        b.publisher ?? "",
+        (b as { isbn?: string | null }).isbn ?? "",
+        b.year ?? "",
+        b.category?.name ?? "",
+        b.location?.code ?? "",
+        b.items?.length ?? 0,
+        b.items?.filter((i) => i.status === "AVAILABLE").length ?? 0,
+        b.source === "SIBI" ? "SIBI (Digital)" : "Fisik",
+        (b as { sourceUrl?: string | null }).sourceUrl ?? "",
+      ].map(esc).join(","));
+      const csv = "\uFEFF" + [header, ...rows].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `katalog-buku-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Ekspor ${all.length} buku berhasil`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal mengekspor katalog");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -146,12 +205,18 @@ export function CatalogView() {
         description="Telusuri koleksi perpustakaan kami"
         icon={BookOpen}
         actions={
-          (user?.role === "LIBRARIAN" || user?.role === "PUSTAKAWAN_JUNIOR") ? (
-            <Button onClick={() => setView("book-form")} size="sm">
-              <Plus className="h-4 w-4" />
-              Tambah Buku
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={exporting} className="gap-2">
+              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Export CSV
             </Button>
-          ) : undefined
+            {(user?.role === "LIBRARIAN" || user?.role === "PUSTAKAWAN_JUNIOR") && (
+              <Button onClick={() => setView("book-form")} size="sm">
+                <Plus className="h-4 w-4" />
+                Tambah Buku
+              </Button>
+            )}
+          </div>
         }
       />
 
@@ -183,6 +248,26 @@ export function CatalogView() {
             <div className="flex gap-2">
               <Button
                 type="button"
+                variant={digitalOnly ? "default" : "outline"}
+                onClick={() => { setDigitalOnly((v) => !v); setPage(1); }}
+                className="h-11"
+                aria-label="Hanya buku digital"
+              >
+                <MonitorPlay className="h-4 w-4" />
+                <span className="hidden sm:inline">Digital</span>
+              </Button>
+              <Button
+                type="button"
+                variant={availableOnly ? "default" : "outline"}
+                onClick={() => { setAvailableOnly((v) => !v); setPage(1); }}
+                className="h-11"
+                aria-label="Hanya yang tersedia"
+              >
+                <BookOpen className="h-4 w-4" />
+                <span className="hidden sm:inline">Tersedia</span>
+              </Button>
+              <Button
+                type="button"
                 variant={showFilters ? "default" : "outline"}
                 onClick={() => setShowFilters((v) => !v)}
                 className="h-11"
@@ -195,7 +280,7 @@ export function CatalogView() {
                   </Badge>
                 )}
               </Button>
-              <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
+              <Select value={sort} onValueChange={(v) => { setSort(v as SortKey); setPage(1); }}>
                 <SelectTrigger className="h-11 w-[160px]" aria-label="Urutkan">
                   <SelectValue placeholder="Urutkan" />
                 </SelectTrigger>

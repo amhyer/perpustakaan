@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth, requireLibrarian, requireFullLibrarian } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
+
+async function findIsbnDuplicate(cleanedIsbn: string, excludeBookId?: string) {
+  const withIsbn = await db.book.findMany({
+    where: { isbn: { not: null }, ...(excludeBookId ? { id: { not: excludeBookId } } : {}) },
+    select: { id: true, title: true, isbn: true },
+  });
+  return withIsbn.find((b) => b.isbn!.replace(/[-\s]/g, "") === cleanedIsbn) || null;
+}
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth();
@@ -12,20 +21,66 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     include: {
       category: true,
       location: true,
-      items: { orderBy: { itemCode: "asc" } },
+      items: {
+        orderBy: { itemCode: "asc" },
+        include: {
+          conditionLogs: {
+            orderBy: { createdAt: "desc" },
+            take: 20,
+          },
+        },
+      },
       reservations: { where: { status: { in: ["PENDING", "READY"] } }, include: { member: true }, orderBy: { queueOrder: "asc" } },
     },
   });
 
   if (!book) return NextResponse.json({ error: "Buku tidak ditemukan" }, { status: 404 });
-  return NextResponse.json(book);
+
+  // Fetch similar books (same category or same author, excluding current)
+  const similarBooks = await db.book.findMany({
+    where: {
+      id: { not: id },
+      OR: [
+        { categoryId: book.categoryId ?? undefined },
+        { author: book.author },
+      ],
+    },
+    select: { id: true, title: true, author: true, coverColor: true, coverImage: true, category: { select: { name: true } } },
+    take: 6,
+  });
+
+  return NextResponse.json({ ...book, similarBooks });
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireLibrarian();
+  const { user, error } = await requireLibrarian();
   if (error) return error;
   const { id } = await params;
   const body = await req.json();
+
+  // Validasi URL buku digital (Tahap 12)
+  if (body.sourceUrl) {
+    try {
+      const u = new URL(body.sourceUrl);
+      if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("invalid");
+    } catch {
+      return NextResponse.json({ error: "URL buku digital tidak valid (harus http/https)" }, { status: 400 });
+    }
+  }
+
+  // Dedupe ISBN (Tahap 13) — kecuali ISBN milik buku itu sendiri
+  if (body.isbn) {
+    const cleaned = body.isbn.replace(/[-\s]/g, "");
+    if (/^(\d{10}|\d{13})$/.test(cleaned)) {
+      const duplicate = await findIsbnDuplicate(cleaned, id);
+      if (duplicate) {
+        return NextResponse.json(
+          { error: `ISBN ${body.isbn} sudah dipakai buku "${duplicate.title}".` },
+          { status: 409 }
+        );
+      }
+    }
+  }
 
   const book = await db.book.update({
     where: { id },
@@ -43,6 +98,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       subject: body.subject || null,
       categoryId: body.categoryId || null,
       locationId: body.locationId || null,
+      sourceUrl: body.sourceUrl || null,
     },
     include: { category: true, location: true, items: true },
   });
@@ -63,11 +119,13 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }).catch(() => { /* ignore dup race */ });
   }
 
+  await logAudit(user!.id, "BOOK_UPDATE", "Book", book.id, book.title);
+
   return NextResponse.json(book);
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireFullLibrarian();
+  const { user, error } = await requireFullLibrarian();
   if (error) return error;
   const { id } = await params;
 
@@ -77,6 +135,9 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: `Tidak dapat menghapus: masih ada ${activeLoans} peminjaman aktif` }, { status: 400 });
   }
 
+  const book = await db.book.findUnique({ where: { id }, select: { title: true } });
   await db.book.delete({ where: { id } });
+  await logAudit(user!.id, "BOOK_DELETE", "Book", id, book?.title || "unknown");
+
   return NextResponse.json({ success: true });
 }

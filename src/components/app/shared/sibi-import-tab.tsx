@@ -12,20 +12,19 @@ import {
   SelectValue,
 } from "@/components/ui/form/select";
 import { useFetch } from "@/hooks/use-fetch";
-import { SIBI } from "@/lib/sibi-types";
-import Image from "next/image";
+import { api } from "@/lib/api-client";
+import { SibiBook, SibiSourceType } from "@/lib/sibi-types";
 import { toast } from "sonner";
 import { BookPlus, Check, Loader2 } from "lucide-react";
 
-type SibiSource = "text-k13" | "text-kurmer" | "non-text";
+type SibiSource = Exclude<SibiSourceType, "tag">;
 
 export function SibiImportTab({ onImportSuccess }: { onImportSuccess: () => void }) {
   const [search, setSearch] = useState("");
   const [source, setSource] = useState<SibiSource>("text-k13");
-  const [isSearching, setIsSearching] = useState(false);
-  const [results, setResults] = useState<SIBI.Book[]>([]);
-
-  const { onFetch, isFetching: isImporting } = useFetch();
+const [isSearching, setIsSearching] = useState(false);
+  const [results, setResults] = useState<SibiBook[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
 
   const handleSearch = async () => {
     if (!search) return;
@@ -44,17 +43,16 @@ export function SibiImportTab({ onImportSuccess }: { onImportSuccess: () => void
   };
 
   const handleImport = async (sibiId: string) => {
-    const result = await onFetch(`/api/books/import-sibi`, {
-      method: "POST",
-      body: JSON.stringify({ sibiId, source }),
-    });
-
-    if (result.success) {
+    setIsImporting(true);
+    try {
+      await api.post(`/api/books/import-sibi`, { sibiId, source });
       toast.success("Buku berhasil diimpor!");
       setResults(results.filter(r => r.id !== sibiId));
       onImportSuccess();
-    } else {
-        toast.error(result.error?.message || "Gagal mengimpor buku.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal mengimpor buku.");
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -73,8 +71,8 @@ export function SibiImportTab({ onImportSuccess }: { onImportSuccess: () => void
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="text-k13">Teks K-13</SelectItem>
-            <SelectItem value="text-kurmer">Kurikulum Merdeka</SelectItem>
-            <SelectItem value="non-text">Non-Teks</SelectItem>
+            <SelectItem value="penggerak">Kurikulum Merdeka</SelectItem>
+            <SelectItem value="non-teks">Non-Teks</SelectItem>
           </SelectContent>
         </Select>
         <Button onClick={handleSearch} disabled={isSearching || !search}>
@@ -86,12 +84,11 @@ export function SibiImportTab({ onImportSuccess }: { onImportSuccess: () => void
       <div className="max-h-[50vh] overflow-y-auto space-y-2 pr-2">
         {results.map((book) => (
           <div key={book.id} className="flex items-center gap-4 p-2 border rounded-md">
-            <Image
+            <img
               src={book.image}
               alt={book.title}
-              width={50}
-              height={70}
-              className="object-cover rounded"
+              loading="lazy"
+              className="h-[70px] w-[50px] shrink-0 object-cover rounded"
             />
             <div className="flex-1">
               <p className="font-semibold">{book.title}</p>

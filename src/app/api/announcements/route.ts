@@ -2,9 +2,30 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth, requireLibrarian, requireFullLibrarian } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: Request) {
   const { error } = await requireAuth();
   if (error) return error;
+  const { searchParams } = new URL(req.url);
+  // Pagination (Tahap 16 #26) — backward compatible
+  const pageParam = searchParams.get("page");
+  const page = pageParam ? parseInt(pageParam) : null;
+  const pageSize = parseInt(searchParams.get("pageSize") || "12");
+
+  // Mode pagination: return { data, total, page, pageSize }
+  if (page !== null && !isNaN(page)) {
+    const [announcements, total] = await Promise.all([
+      db.announcement.findMany({
+        include: { author: { select: { name: true } } },
+        orderBy: [{ isPinned: "desc" }, { publishedAt: "desc" }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      db.announcement.count(),
+    ]);
+    return NextResponse.json({ data: announcements, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
+  }
+
+  // Mode lama (tanpa pagination): return array biasa
   const announcements = await db.announcement.findMany({
     include: { author: { select: { name: true } } },
     orderBy: [{ isPinned: "desc" }, { publishedAt: "desc" }],
@@ -49,6 +70,11 @@ export async function PUT(req: Request) {
   if (error) return error;
 
   const body = await req.json();
+  if (!body.id) return NextResponse.json({ error: "ID wajib diisi" }, { status: 400 });
+
+  const existing = await db.announcement.findUnique({ where: { id: body.id } });
+  if (!existing) return NextResponse.json({ error: "Pengumuman tidak ditemukan" }, { status: 404 });
+
   const announcement = await db.announcement.update({
     where: { id: body.id },
     data: {
@@ -68,6 +94,9 @@ export async function DELETE(req: Request) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "ID wajib diisi" }, { status: 400 });
+
+  const existing = await db.announcement.findUnique({ where: { id } });
+  if (!existing) return NextResponse.json({ error: "Pengumuman tidak ditemukan" }, { status: 404 });
 
   await db.announcement.delete({ where: { id } });
   return NextResponse.json({ success: true });

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth, requireFullLibrarian } from "@/lib/auth";
-import { LOAN_RULES, calculateFine, formatDate } from "@/lib/constants";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth();
@@ -28,19 +27,3 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   await db.loan.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }
-
-// Helper untuk update overdue & denda dinamis (dipakai bersama)
-export async function refreshLoanStatus() {
-  const now = new Date();
-  const overdueLoans = await db.loan.findMany({
-    where: { status: "LOANED", dueDate: { lt: now } },
-    include: { member: true },
-  });
-  for (const l of overdueLoans) {
-    const rule = LOAN_RULES[l.member.category] ?? LOAN_RULES.STUDENT;
-    const fine = calculateFine(l.dueDate, null, rule.finePerDay);
-    await db.loan.update({ where: { id: l.id }, data: { status: "OVERDUE", fineAmount: fine } });
-  }
-}
-
-export { LOAN_RULES, calculateFine, formatDate };

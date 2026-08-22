@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import path from "path";
 import { UPLOAD_DIR } from "@/lib/upload";
 import { promises as fs } from "fs";
+import { requireAuth } from "@/lib/auth";
 
 // GET /api/uploads/[...file] — serve uploaded file dari UPLOAD_DIR
 // Catch-all route: /api/uploads/attachments/xxx.pdf → file = ["attachments", "xxx.pdf"]
-// Semua role bisa akses (file publik untuk anggota yang sudah login).
 
 const MIME_MAP: Record<string, string> = {
   ".pdf": "application/pdf",
@@ -23,6 +23,9 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ file: string[] }> }
 ) {
+  const { error } = await requireAuth();
+  if (error) return error;
+
   const { file: fileParts } = await params;
 
   // Cegah path traversal: reject kalau ada ".."
