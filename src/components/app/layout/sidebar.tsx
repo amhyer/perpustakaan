@@ -30,6 +30,7 @@ import {
   Sparkles,
   Shield,
   Tag,
+  FileText,
 } from "lucide-react";
 import { Logo } from "@/components/app/logo";
 import { cn } from "@/lib/utils";
@@ -87,9 +88,14 @@ const MEMBER_NAV: NavItem[] = [
 export function Sidebar() {
   const { user, view, setView, sidebarOpen, setSidebarOpen } = useAppStore();
   const isLibrarianRole = user?.role === "LIBRARIAN" || user?.role === "PUSTAKAWAN_JUNIOR";
-  // PUSTAKAWAN_JUNIOR tidak bisa akses Pengaturan — filter dari nav
+  // PUSTAKAWAN_JUNIOR tidak bisa akses Pengaturan & Dashboard Eksekutif — filter dari nav
   const fullNav = isLibrarianRole
-    ? LIBRARIAN_NAV.filter((item) => user?.role === "PUSTAKAWAN_JUNIOR" ? item.key !== "settings" : true)
+    ? LIBRARIAN_NAV.filter((item) => {
+        if (user?.role === "PUSTAKAWAN_JUNIOR") {
+          return item.key !== "settings" && item.key !== "executive-dashboard";
+        }
+        return true;
+      })
     : MEMBER_NAV;
   const nav = fullNav;
   const activeKey = view.key;
