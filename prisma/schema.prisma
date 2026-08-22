@@ -65,6 +65,10 @@ model Member {
   assetLoans   AssetLoan[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@index([category, status])
+  @@index([status, expiryDate])
+  @@index([joinDate])
 }
 
 // ===== Categories (GMD / Klasifikasi) =====
@@ -184,6 +188,10 @@ model Loan {
   @@index([memberId])
   @@index([status])
   @@index([dueDate])
+  @@index([status, dueDate])
+  @@index([loanDate])
+  @@index([returnDate])
+  @@index([bookItemId])
 }
 
 // ===== Reservations / Booking =====
@@ -251,6 +259,9 @@ model Announcement {
   publishedAt DateTime  @default(now())
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  @@index([isPinned, publishedAt])
+  @@index([publishedAt])
 }
 
 // ===== Notifications =====
@@ -266,6 +277,8 @@ model Notification {
   createdAt DateTime @default(now())
 
   @@index([userId])
+  @@index([userId, isRead])
+  @@index([createdAt])
 }
 
 // ===== Settings (aturan perpustakaan) =====
@@ -545,6 +558,8 @@ model EmailLog {
   @@index([to])
   @@index([status])
   @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([category, createdAt])
 }
 
 // ===== WhatsApp Log (Tahap 21 - Komunikasi) =====
@@ -562,6 +577,8 @@ model WhatsAppLog {
   @@index([phone])
   @@index([status])
   @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([category, createdAt])
 }
 
 // ===== API Key (Tahap 22 - Integrasi) =====
