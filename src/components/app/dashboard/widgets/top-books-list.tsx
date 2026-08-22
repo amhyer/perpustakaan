@@ -10,8 +10,8 @@ import {
 } from "@/components/ui/layout/card";
 import { Button } from "@/components/ui/form/button";
 import { Badge } from "@/components/ui/data-display/badge";
-import { EmptyState } from "@/components/app/shared/page-header";
 import { BookCover } from "@/components/app/shared/book-cover";
+import { RoleEmptyState, type UserRole } from "@/components/app/shared/role-empty-state";
 import type { PopularBook } from "./types";
 
 interface TopBooksListProps {
@@ -25,6 +25,8 @@ interface TopBooksListProps {
   emptyDescription?: string;
   maxHeightClass?: string;
   className?: string;
+  /** Optional role untuk role-specific empty state (Fix #7) */
+  userRole?: UserRole;
 }
 
 /**
@@ -41,10 +43,11 @@ export function TopBooksList({
   onSelectBook,
   onViewAll,
   viewAllLabel = "Lihat Semua",
-  emptyTitle = "Belum ada data",
-  emptyDescription = "Belum ada peminjaman tercatat.",
+  emptyTitle,
+  emptyDescription,
   maxHeightClass = "max-h-96",
   className,
+  userRole,
 }: TopBooksListProps) {
   return (
     <Card className={className}>
@@ -67,11 +70,22 @@ export function TopBooksList({
       </CardHeader>
       <CardContent>
         {books.length === 0 ? (
-          <EmptyState
-            icon={BookOpen}
-            title={emptyTitle}
-            description={emptyDescription}
-          />
+          userRole ? (
+            <RoleEmptyState
+              context="no-loans"
+              userRole={userRole}
+              title={emptyTitle}
+              description={emptyDescription}
+              compact
+            />
+          ) : (
+            <div className="py-10 text-center text-sm text-muted-foreground">
+              {emptyTitle ?? "Belum ada data"}
+              {emptyDescription && (
+                <p className="text-xs mt-1">{emptyDescription}</p>
+              )}
+            </div>
+          )
         ) : (
           <ul className={`${maxHeightClass} overflow-y-auto scrollbar-thin divide-y divide-border`}>
             {books.map((book, i) => (

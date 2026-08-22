@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/layout/card";
 import { Button } from "@/components/ui/form/button";
 import { Badge } from "@/components/ui/data-display/badge";
-import { EmptyState } from "@/components/app/shared/page-header";
+import { RoleEmptyState, type UserRole } from "@/components/app/shared/role-empty-state";
 import { ROLE_LABELS, ROLE_COLORS } from "@/lib/constants";
 import type { TopMember } from "./types";
 
@@ -34,6 +34,8 @@ interface TopMembersListProps {
   emptyDescription?: string;
   maxHeightClass?: string;
   className?: string;
+  /** Optional role untuk role-specific empty state (Fix #7) */
+  userRole?: UserRole;
 }
 
 /**
@@ -50,10 +52,11 @@ export function TopMembersList({
   onSelectMember,
   onViewAll,
   viewAllLabel = "Lihat Semua",
-  emptyTitle = "Belum ada data",
-  emptyDescription = "Belum ada anggota yang melakukan peminjaman.",
+  emptyTitle,
+  emptyDescription,
   maxHeightClass = "max-h-96",
   className,
+  userRole,
 }: TopMembersListProps) {
   return (
     <Card className={className}>
@@ -76,11 +79,22 @@ export function TopMembersList({
       </CardHeader>
       <CardContent>
         {members.length === 0 ? (
-          <EmptyState
-            icon={Users}
-            title={emptyTitle}
-            description={emptyDescription}
-          />
+          userRole ? (
+            <RoleEmptyState
+              context="no-top-members"
+              userRole={userRole}
+              title={emptyTitle}
+              description={emptyDescription}
+              compact
+            />
+          ) : (
+            <div className="py-10 text-center text-sm text-muted-foreground">
+              {emptyTitle ?? "Belum ada data"}
+              {emptyDescription && (
+                <p className="text-xs mt-1">{emptyDescription}</p>
+              )}
+            </div>
+          )
         ) : (
           <ul className={`${maxHeightClass} overflow-y-auto scrollbar-thin divide-y divide-border`}>
             {members.map((m, i) => (

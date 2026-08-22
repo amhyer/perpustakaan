@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/layout/card";
 import { Button } from "@/components/ui/form/button";
 import { Badge } from "@/components/ui/data-display/badge";
-import { EmptyState } from "@/components/app/shared/page-header";
+import { RoleEmptyState, type UserRole } from "@/components/app/shared/role-empty-state";
 import {
   Table,
   TableBody,
@@ -34,6 +34,8 @@ interface RecentLoansTableProps {
   emptyTitle?: string;
   emptyDescription?: string;
   className?: string;
+  /** Optional role untuk role-specific empty state (Fix #7) */
+  userRole?: UserRole;
 }
 
 /**
@@ -51,9 +53,10 @@ export function RecentLoansTable({
   onSelectBook,
   onViewAll,
   viewAllLabel = "Lihat Semua",
-  emptyTitle = "Belum ada peminjaman",
-  emptyDescription = "Riwayat peminjaman akan muncul di sini.",
+  emptyTitle,
+  emptyDescription,
   className,
+  userRole,
 }: RecentLoansTableProps) {
   const sliced = loans.slice(0, limit);
 
@@ -80,11 +83,22 @@ export function RecentLoansTable({
       </CardHeader>
       <CardContent>
         {sliced.length === 0 ? (
-          <EmptyState
-            icon={ClipboardList}
-            title={emptyTitle}
-            description={emptyDescription}
-          />
+          userRole ? (
+            <RoleEmptyState
+              context="no-recent-loans"
+              userRole={userRole}
+              title={emptyTitle}
+              description={emptyDescription}
+              compact
+            />
+          ) : (
+            <div className="py-10 text-center text-sm text-muted-foreground">
+              {emptyTitle ?? "Belum ada peminjaman"}
+              {emptyDescription && (
+                <p className="text-xs mt-1">{emptyDescription}</p>
+              )}
+            </div>
+          )
         ) : (
           <div className="overflow-x-auto scrollbar-thin">
             <Table>
