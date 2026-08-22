@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import type { PrismaClient } from "@prisma/client";
-import { notify, notifyDueDateBatch, notifyOverdueBatch } from "@/lib/notification-service";
+import { notify } from "@/lib/notification-service";
+import { runSmartReminders } from "@/lib/scheduler";
 
 /**
  * (d) Notifikasi "wishlist tersedia": untuk wishlist yang belum dinotifikasi
@@ -63,10 +64,11 @@ async function notifyWishlistAvailable(prisma: PrismaClient, now: Date): Promise
 // POST /api/cron/daily-tasks — cron job harian
 // Dilindungi CRON_SECRET via header Authorization: Bearer <secret>
 // Tugas:
-// (a) Pinjaman aktif dengan jatuh tempo BESOK → notifikasi in-app (idempotent)
-// (b) Pinjaman aktif yang jatuh temponya sudah lewat → update status OVERDUE
-// (c) Reservasi READY yang kedaluwarsa → EXPIRED, bebaskan eksemplar,
-//     lalu promosikan reservasi PENDING berikutnya → READY (bila ada eksemplar bebas)
+// (a) Reminder pintar — multi-interval (H-3, H-1, H+1, H+3, H+7) via notification-service
+// (b) Pinjaman lewat jatuh tempo → status OVERDUE
+// (c) Reservasi READY kedaluwarsa → EXPIRED + promote antrean
+// (d) Wishlist: buku tersedia → notifikasi
+// (e) Keanggotaan kedaluwarsa → auto-deactivate
 export async function POST(req: Request) {
   // Auth via Bearer token
   const cronSecret = process.env.CRON_SECRET;
@@ -82,101 +84,23 @@ export async function POST(req: Request) {
   try {
     const now = new Date();
 
-    // Baca pengaturan notifikasi dari Settings
-    const [reminderEnabledRow, reminderDaysRow] = await Promise.all([
-      db.setting.findUnique({ where: { key: "reminder_enabled" } }),
-      db.setting.findUnique({ where: { key: "reminder_days_before" } }),
-    ]);
+    // Cek apakah reminder enabled
+    const reminderEnabledRow = await db.setting.findUnique({ where: { key: "reminder_enabled" } });
     const reminderEnabled = reminderEnabledRow?.value !== "false"; // default true
-    const reminderDays = Math.max(1, Math.min(14, parseInt(reminderDaysRow?.value || "1") || 1));
 
-    // (a) Pinjaman dengan jatuh tempo N hari lagi → notifikasi (idempotent)
-    const targetDate = new Date(now);
-    targetDate.setDate(targetDate.getDate() + reminderDays);
-    const targetStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
-    const targetEnd = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate() + 1);
-
-    let notificationsCreated = 0;
+    // (a) Reminder pintar (multi-channel) — hanya jika enabled
+    let preDueReminders = 0;
+    let overdueReminders = 0;
+    let smartErrors = 0;
     if (reminderEnabled) {
-      const dueLoans = await db.loan.findMany({
-        where: {
-          status: "LOANED",
-          dueDate: { gte: targetStart, lt: targetEnd },
-        },
-        include: {
-          member: {
-            select: {
-              userId: true,
-              fullName: true,
-              category: true,
-              phone: true,
-            },
-          },
-          bookItem: { include: { book: { select: { title: true } } } },
-        },
-      });
-
-      // Filter loan yang belum dinotifikasi hari ini (idempotent)
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-      const loansToNotify: typeof dueLoans = [];
-      for (const loan of dueLoans) {
-        const existing = await db.notification.findFirst({
-          where: {
-            userId: loan.member.userId,
-            type: "DUE_DATE",
-            relatedId: loan.id,
-            createdAt: { gte: todayStart, lt: todayEnd },
-          },
-        });
-        if (!existing) loansToNotify.push(loan);
-      }
-
-      // Kirim via multi-channel (in-app + email + WA)
-      const result = await notifyDueDateBatch(loansToNotify);
-      notificationsCreated = result.notified;
+      const smartResult = await runSmartReminders();
+      preDueReminders = smartResult.preDueReminders;
+      overdueReminders = smartResult.overdueReminders;
+      smartErrors = smartResult.errors;
     }
-
-    // (a2) Pinjaman OVERDUE: kirim notifikasi OVERDUE (idempotent: sekali per loan per hari)
-    const overdueLoans = await db.loan.findMany({
-      where: {
-        status: "OVERDUE",
-      },
-      include: {
-        member: {
-          select: {
-            userId: true,
-            fullName: true,
-            category: true,
-            phone: true,
-          },
-        },
-        bookItem: { include: { book: { select: { title: true } } } },
-      },
-    });
-
-    // Filter loan yang belum dinotifikasi hari ini
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-    const overdueToNotify: typeof overdueLoans = [];
-    for (const loan of overdueLoans) {
-      const existing = await db.notification.findFirst({
-        where: {
-          userId: loan.member.userId,
-          type: "OVERDUE",
-          relatedId: loan.id,
-          createdAt: { gte: todayStart, lt: todayEnd },
-        },
-      });
-      if (!existing) overdueToNotify.push(loan);
-    }
-
-    // Kirim via multi-channel
-    const overdueResult = await notifyOverdueBatch(overdueToNotify);
-    const overdueNotified = overdueResult.notified;
 
     // (b) Update pinjaman LOANED yang sudah lewat jatuh tempo → OVERDUE
-    const overdueResult = await db.loan.updateMany({
+    const overdueUpdateResult = await db.loan.updateMany({
       where: {
         status: "LOANED",
         dueDate: { lt: now },
@@ -302,11 +226,12 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       date: now.toISOString().slice(0, 10),
-      config: { reminderEnabled, reminderDays },
+      config: { reminderEnabled },
       tasks: {
-        dueDateNotified: notificationsCreated,
-        overdueNotified,
-        overdueUpdated: overdueResult.count,
+        preDueReminders,
+        overdueReminders,
+        smartErrors,
+        overdueUpdated: overdueUpdateResult.count,
         reservationsExpired: expiredIds.length,
         reservationsPromoted,
         wishlistNotified,

@@ -6,6 +6,7 @@ import type { CurrentUser } from "@/lib/api-client";
 export type ViewKey =
   // Librarian
   | "dashboard"
+  | "executive-dashboard"
   | "catalog"
   | "book-detail"
   | "book-form"

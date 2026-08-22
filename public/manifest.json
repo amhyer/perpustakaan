@@ -1,0 +1,50 @@
+{
+  "name": "Perpustakaan Jendela Ilmu",
+  "short_name": "Jendela Ilmu",
+  "description": "Sistem Manajemen Perpustakaan Sekolah Modern",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f1e8",
+  "theme_color": "#1e3a5f",
+  "orientation": "portrait-primary",
+  "lang": "id",
+  "dir": "ltr",
+  "categories": ["education", "productivity", "books"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Katalog Buku",
+      "short_name": "Katalog",
+      "description": "Cari buku di katalog",
+      "url": "/?view=catalog",
+      "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Pinjaman Saya",
+      "short_name": "Pinjaman",
+      "description": "Lihat pinjaman aktif",
+      "url": "/?view=my-loans",
+      "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Kartu Anggota",
+      "short_name": "Kartu",
+      "description": "Tampilkan kartu anggota digital",
+      "url": "/?view=my-card",
+      "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
+    }
+  ]
+}

@@ -9,6 +9,7 @@ import { Logo } from "@/components/app/logo";
 
 // Views
 import { DashboardView } from "@/components/app/views/dashboard-view";
+import { ExecutiveDashboardView } from "@/components/app/views/executive-dashboard-view";
 import { CatalogView } from "@/components/app/views/catalog-view";
 import { BookDetailView } from "@/components/app/views/book-detail-view";
 import { BookFormView } from "@/components/app/views/book-form-view";
@@ -70,6 +71,8 @@ export default function Page() {
     switch (view.key) {
       case "dashboard":
         return <DashboardView />;
+      case "executive-dashboard":
+        return <ExecutiveDashboardView />;
       case "catalog":
         return <CatalogView />;
       case "book-detail":
