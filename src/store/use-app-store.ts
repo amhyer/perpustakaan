@@ -47,15 +47,22 @@ export type ViewKey =
   | "ebook-reader";
 
 /**
- * Helper untuk resolve default dashboard berdasar role + preferensi user.
+ * Resolve default dashboard berdasar role + preferensi user.
+ *
+ * Dipakai oleh:
+ * - setUser() — saat user login atau refresh preferensi
+ * - Sidebar goToHome() — saat user klik logo
  *
  * Logika:
  * 1. Jika defaultDashboard = 'default' (atau tidak ada) → auto-route
  *    (LIBRARIAN → dashboard, TEACHER/STUDENT → my-dashboard)
  * 2. Jika explicit (mis. 'executive-dashboard') → pakai itu, tapi validasi role
- * 3. Fallback ke auto-route jika value tidak valid
+ * 3. Fallback ke my-dashboard jika role tidak boleh akses
+ *
+ * Export sebagai helper untuk dipakai di tempat lain (sidebar, dll)
+ * yang butuh logika sama tanpa harus setup store.
  */
-function resolveDefaultDashboard(
+export function resolveDefaultDashboard(
   user: CurrentUser | null
 ): ViewKey {
   if (!user) return "dashboard";
@@ -70,11 +77,9 @@ function resolveDefaultDashboard(
 
   const preferred = user.defaultDashboard as ViewKey;
 
-  // Validasi: siswa/guru tidak boleh eksekutif / customizable
-  if (
-    !isLibrarian &&
-    (preferred === "executive-dashboard" || preferred === "customizable-dashboard")
-  ) {
+  // Validasi role: TEACHER/STUDENT hanya boleh 'my-dashboard'.
+  // Dashboard eksekutif/customizable/standard khusus untuk pustakawan.
+  if (!isLibrarian && preferred !== "my-dashboard") {
     return "my-dashboard";
   }
 

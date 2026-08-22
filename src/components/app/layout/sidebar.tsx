@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/app/logo";
 import { cn } from "@/lib/utils";
-import { useAppStore, type ViewKey } from "@/store/use-app-store";
+import { useAppStore, type ViewKey, resolveDefaultDashboard } from "@/store/use-app-store";
 import { ROLE_LABELS } from "@/lib/constants";
 
 interface NavItem {
@@ -92,20 +92,7 @@ export function Sidebar() {
   /** Handler untuk navigasi ke dashboard pilihan user (Sprint 4 — Fix #9) */
   function goToHome() {
     if (!user) return;
-    if (!user.defaultDashboard || user.defaultDashboard === "default") {
-      setView(isLibrarianRole ? "dashboard" : "my-dashboard");
-      return;
-    }
-    const preferred = user.defaultDashboard as ViewKey;
-    // Validasi role sekali lagi (defense in depth)
-    if (
-      !isLibrarianRole &&
-      (preferred === "executive-dashboard" || preferred === "customizable-dashboard")
-    ) {
-      setView("my-dashboard");
-      return;
-    }
-    setView(preferred);
+    setView(resolveDefaultDashboard(user));
   }
   // PUSTAKAWAN_JUNIOR tidak bisa akses Pengaturan & Dashboard Eksekutif — filter dari nav
   const fullNav = isLibrarianRole
