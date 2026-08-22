@@ -60,4 +60,5 @@ slims9_bulian-9.8.0/
 /public/uploads/
 *.csv
 *.docx
-*.err
+*.err.github/workflows/
+**/.github/workflows/

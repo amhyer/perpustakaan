@@ -7,41 +7,45 @@ import { AppShell } from "@/components/app/layout/app-shell";
 import { LoginScreen } from "@/components/app/auth/login-screen";
 import { Logo } from "@/components/app/logo";
 
-// Views
-import { DashboardView } from "@/components/app/views/dashboard-view";
-import { ExecutiveDashboardView } from "@/components/app/views/executive-dashboard-view";
-import { RoomsView } from "@/components/app/views/rooms-view";
-import { VisitorsView } from "@/components/app/views/visitors-view";
-import { AssetsView } from "@/components/app/views/assets-view";
-import { ApiKeysView } from "@/components/app/views/api-keys-view";
-import { MySessionsView } from "@/components/app/views/my-sessions-view";
-import { CatalogView } from "@/components/app/views/catalog-view";
-import { BookDetailView } from "@/components/app/views/book-detail-view";
-import { BookFormView } from "@/components/app/views/book-form-view";
-import { MembersView } from "@/components/app/views/members-view";
-import { MemberDetailView } from "@/components/app/views/member-detail-view";
-import { CirculationView } from "@/components/app/views/circulation-view";
-import { LoansView } from "@/components/app/views/loans-view";
-import { ReservationsView } from "@/components/app/views/reservations-view";
-import { ProposalsView } from "@/components/app/views/proposals-view";
-import { AnnouncementsView } from "@/components/app/views/announcements-view";
-import { ReportsView } from "@/components/app/views/reports-view";
-import { SettingsView } from "@/components/app/views/settings-view";
-import { KioskModeView } from "@/components/app/views/kiosk-mode-view";
-import { BatchCardsView } from "@/components/app/views/batch-cards-view";
-import { StocktakingView } from "@/components/app/views/stocktaking-view";
-import { FinesView } from "@/components/app/views/fines-view";
-import { MyProfileView } from "@/components/app/views/my-profile-view";
-import { ReadingHistoryView } from "@/components/app/views/reading-history-view";
-import { ReservationsQueueView } from "@/components/app/views/reservations-queue-view";
-import { NotificationLogView } from "@/components/app/views/notification-log-view";
-import { AuditLogView } from "@/components/app/views/audit-log-view";
-import { BookTransferView } from "@/components/app/views/book-transfer-view";
-import { MyDashboardView } from "@/components/app/views/my-dashboard-view";
-import { MyLoansView } from "@/components/app/views/my-loans-view";
-import { MyCardView } from "@/components/app/views/my-card-view";
-import { WishlistView } from "@/components/app/views/wishlist-view";
-import { NotificationsView } from "@/components/app/views/notifications-view";
+// Lazy-loaded views untuk code splitting
+// Setiap view di-load on-demand, mengurangi initial bundle size
+import {
+  DashboardView,
+  ExecutiveDashboardView,
+  CatalogView,
+  BookDetailView,
+  BookFormView,
+  MembersView,
+  MemberDetailView,
+  CirculationView,
+  LoansView,
+  ReservationsView,
+  ReservationsQueueView,
+  ProposalsView,
+  AnnouncementsView,
+  ReportsView,
+  SettingsView,
+  BatchCardsView,
+  StocktakingView,
+  FinesView,
+  MyProfileView,
+  ReadingHistoryView,
+  ReservationsQueueView as _ReservationsQueueViewAlias,
+  NotificationLogView,
+  AuditLogView,
+  BookTransferView,
+  MyDashboardView,
+  MyLoansView,
+  MyCardView,
+  WishlistView,
+  NotificationsView,
+  RoomsView,
+  VisitorsView,
+  AssetsView,
+  ApiKeysView,
+  MySessionsView,
+  KioskModeView,
+} from "@/components/app/views";
 
 export default function Page() {
   const { user, setUser, view, refreshKey } = useAppStore();
@@ -78,16 +82,6 @@ export default function Page() {
         return <DashboardView />;
       case "executive-dashboard":
         return <ExecutiveDashboardView />;
-      case "rooms":
-        return <RoomsView />;
-      case "visitors":
-        return <VisitorsView />;
-      case "assets":
-        return <AssetsView />;
-      case "api-keys":
-        return <ApiKeysView />;
-      case "my-sessions":
-        return <MySessionsView />;
       case "catalog":
         return <CatalogView />;
       case "book-detail":
@@ -120,16 +114,14 @@ export default function Page() {
         return <FinesView />;
       case "settings":
         return <SettingsView />;
-      case "my-dashboard":
-        return <MyDashboardView variant={user.role === "TEACHER" ? "teacher" : "student"} />;
-      case "my-loans":
-        return <MyLoansView />;
-      case "my-card":
-        return <MyCardView />;
-      case "my-profile":
-        return <MyProfileView />;
-      case "reading-history":
-        return <ReadingHistoryView />;
+      case "rooms":
+        return <RoomsView />;
+      case "visitors":
+        return <VisitorsView />;
+      case "assets":
+        return <AssetsView />;
+      case "api-keys":
+        return <ApiKeysView />;
       case "notification-log":
         return <NotificationLogView />;
       case "audit-log":
@@ -140,6 +132,18 @@ export default function Page() {
         return <WishlistView />;
       case "notifications":
         return <NotificationsView />;
+      case "my-dashboard":
+        return <MyDashboardView variant={user.role === "TEACHER" ? "teacher" : "student"} />;
+      case "my-loans":
+        return <MyLoansView />;
+      case "my-card":
+        return <MyCardView />;
+      case "my-profile":
+        return <MyProfileView />;
+      case "reading-history":
+        return <ReadingHistoryView />;
+      case "my-sessions":
+        return <MySessionsView />;
       default:
         return <DashboardView />;
     }

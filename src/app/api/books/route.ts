@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth, requireLibrarian } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { parsePagination, parseSort, paginatedResponse, parseList } from "@/lib/query-helpers";
+import { logger, startTimer } from "@/lib/logger";
 
 /** Cari buku dengan ISBN ternormalisasi (tanpa tanda pisah/spasi). */
 async function findIsbnDuplicate(cleanedIsbn: string, excludeBookId?: string) {
@@ -12,25 +14,31 @@ async function findIsbnDuplicate(cleanedIsbn: string, excludeBookId?: string) {
   return withIsbn.find((b) => b.isbn!.replace(/[-\s]/g, "") === cleanedIsbn) || null;
 }
 
+const ALLOWED_SORT_FIELDS = ["title", "year", "author", "createdAt", "popular"];
+
 export async function GET(req: Request) {
   const { error } = await requireAuth();
   if (error) return error;
 
-  const { searchParams } = new URL(req.url);
+  const timer = startTimer("GET /api/books");
+  const searchParams = new URL(req.url).searchParams;
+
+  // Query params
   const q = searchParams.get("q") || "";
-  const categoryId = searchParams.get("categoryId");
-  const locationId = searchParams.get("locationId");
+  const categoryIds = parseList(searchParams, "categoryId");
+  const locationIds = parseList(searchParams, "locationId");
   const year = searchParams.get("year");
   const subject = searchParams.get("subject");
   const source = searchParams.get("source");
   const availableOnly = searchParams.get("availableOnly") === "true";
-  const sortParam = searchParams.get("sort") || "title-asc";
-  const limit = parseInt(searchParams.get("limit") || "100");
-  // Pagination (Tahap 16 #26) — backward compatible
-  const pageParam = searchParams.get("page");
-  const page = pageParam ? parseInt(pageParam) : null;
-  const pageSize = parseInt(searchParams.get("pageSize") || "12");
 
+  // Pagination
+  const pagination = parsePagination(searchParams, { defaultPageSize: 12, maxPageSize: 100 });
+
+  // Sort
+  const sort = parseSort(searchParams, ALLOWED_SORT_FIELDS, { field: "title", order: "asc" });
+
+  // Build where clause
   const where: Record<string, unknown> = {};
   if (q) {
     where.OR = [
@@ -41,8 +49,10 @@ export async function GET(req: Request) {
       { subject: { contains: q } },
     ];
   }
-  if (categoryId) where.categoryId = categoryId;
-  if (locationId) where.locationId = locationId;
+  if (categoryIds.length === 1) where.categoryId = categoryIds[0];
+  else if (categoryIds.length > 1) where.categoryId = { in: categoryIds };
+  if (locationIds.length === 1) where.locationId = locationIds[0];
+  else if (locationIds.length > 1) where.locationId = { in: locationIds };
   if (year) where.year = parseInt(year);
   if (subject) where.subject = { contains: subject };
   if (source) where.source = source;
@@ -50,35 +60,15 @@ export async function GET(req: Request) {
     where.items = { some: { status: "AVAILABLE" } };
   }
 
-  // Mode pagination: return { data, total, page, pageSize }
-  if (page !== null && !isNaN(page)) {
-    const orderDir = sortParam === "title-desc" ? "desc" : "asc";
-    const orderBy = sortParam === "newest" ? { year: "desc" as const } : sortParam === "title-desc" ? { title: "desc" as const } : { title: "asc" as const };
-
-    if (sortParam === "popular") {
-      const popularRaw = await db.loan.groupBy({
-        by: ["bookId"],
-        _count: true,
-        orderBy: { _count: { bookId: "desc" } },
-      });
-      const bookLoanCounts = new Map(popularRaw.map(p => [p.bookId, p._count]));
-      const [books, total] = await Promise.all([
-        db.book.findMany({
-          where,
-          include: {
-            category: true,
-            location: true,
-            items: { select: { id: true, status: true, itemCode: true, condition: true } },
-          },
-          skip: (page - 1) * pageSize,
-          take: pageSize,
-        }),
-        db.book.count({ where }),
-      ]);
-      const booksWithCount = books.map(b => ({ ...b, loanCount: bookLoanCounts.get(b.id) || 0 }));
-      booksWithCount.sort((a, b) => b.loanCount - a.loanCount);
-      return NextResponse.json({ data: booksWithCount, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
-    }
+  // Sort handling
+  if (sort.field === "popular") {
+    // Popular butuh groupBy + sort manual di memory
+    const popularRaw = await db.loan.groupBy({
+      by: ["bookId"],
+      _count: true,
+      orderBy: { _count: { bookId: "desc" } },
+    });
+    const bookLoanCounts = new Map(popularRaw.map((p) => [p.bookId, p._count]));
 
     const [books, total] = await Promise.all([
       db.book.findMany({
@@ -88,28 +78,40 @@ export async function GET(req: Request) {
           location: true,
           items: { select: { id: true, status: true, itemCode: true, condition: true } },
         },
-        orderBy,
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip: pagination.offset,
+        take: pagination.pageSize,
       }),
       db.book.count({ where }),
     ]);
-    return NextResponse.json({ data: books, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
+
+    const booksWithCount = books
+      .map((b) => ({ ...b, loanCount: bookLoanCounts.get(b.id) || 0 }))
+      .sort((a, b) => b.loanCount - a.loanCount);
+
+    timer.end({ count: booksWithCount.length, total });
+    return NextResponse.json(paginatedResponse(booksWithCount, total, pagination));
   }
 
-  // Mode lama (tanpa pagination): return array biasa
-  const books = await db.book.findMany({
-    where,
-    include: {
-      category: true,
-      location: true,
-      items: { select: { id: true, status: true, itemCode: true, condition: true } },
-    },
-    orderBy: { title: "asc" },
-    take: limit,
-  });
+  // Normal sort
+  const orderBy: any = { [sort.field]: sort.order };
 
-  return NextResponse.json(books);
+  const [books, total] = await Promise.all([
+    db.book.findMany({
+      where,
+      include: {
+        category: true,
+        location: true,
+        items: { select: { id: true, status: true, itemCode: true, condition: true } },
+      },
+      orderBy,
+      skip: pagination.offset,
+      take: pagination.pageSize,
+    }),
+    db.book.count({ where }),
+  ]);
+
+  timer.end({ count: books.length, total, sort: `${sort.field}-${sort.order}` });
+  return NextResponse.json(paginatedResponse(books, total, pagination));
 }
 
 export async function POST(req: Request) {
@@ -123,7 +125,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Judul dan pengarang wajib diisi" }, { status: 400 });
   }
 
-  // Validasi URL buku digital (Tahap 12)
+  // Validasi URL buku digital
   if (sourceUrl) {
     try {
       const u = new URL(sourceUrl);
@@ -133,15 +135,13 @@ export async function POST(req: Request) {
     }
   }
 
-  // Validasi ISBN format (Tahap 16 #23) — ISBN-10 atau ISBN-13
+  // Validasi ISBN format
   if (isbn) {
     const cleaned = isbn.replace(/[-\s]/g, "");
-    const isValidISBN = /^(\d{10}|\d{13})$/.test(cleaned) && (cleaned.length === 10 || cleaned.length === 13);
+    const isValidISBN = /^(\d{10}|\d{13})$/.test(cleaned);
     if (!isValidISBN) {
       return NextResponse.json({ error: "Format ISBN tidak valid (harus 10 atau 13 digit)" }, { status: 400 });
     }
-
-    // Dedupe ISBN (Tahap 13) — konsisten dengan impor SIBI
     const duplicate = await findIsbnDuplicate(cleaned);
     if (duplicate) {
       return NextResponse.json(
@@ -151,8 +151,8 @@ export async function POST(req: Request) {
     }
   }
 
-  // Validasi tahun terbit (Tahap 16 #24) — range 1900 sampai tahun depan
-  if (year !== null && year !== undefined && year !== "") {
+  // Validasi tahun terbit
+  if (year) {
     const yearNum = parseInt(year, 10);
     const currentYear = new Date().getFullYear();
     if (isNaN(yearNum) || yearNum < 1900 || yearNum > currentYear + 1) {
@@ -180,27 +180,28 @@ export async function POST(req: Request) {
     include: { category: true, location: true, items: true },
   });
 
-  // Auto-add author & publisher ke master tabel (Tahap 15-C)
-  // Upsert by name — kalau sudah ada, no-op; kalau baru, create
-  if (author && author.trim()) {
+  // Auto-add author & publisher ke master
+  if (author?.trim()) {
     await db.author.upsert({
       where: { name: author.trim() },
       update: {},
       create: { name: author.trim() },
-    }).catch(() => { /* ignore dup race */ });
+    }).catch(() => {});
   }
-  if (publisher && publisher.trim()) {
+  if (publisher?.trim()) {
     await db.publisher.upsert({
       where: { name: publisher.trim() },
       update: {},
       create: { name: publisher.trim() },
-    }).catch(() => { /* ignore dup race */ });
+    }).catch(() => {});
   }
 
   // Buat eksemplar
   const count = Math.max(1, parseInt(itemCount || "1"));
   for (let i = 1; i <= count; i++) {
-    const code = isbn ? `${isbn.slice(-6)}-${i}-${Date.now().toString().slice(-3)}` : `BK-${book.id.slice(-4)}-${i}`;
+    const code = isbn
+      ? `${isbn.slice(-6)}-${i}-${Date.now().toString().slice(-3)}`
+      : `BK-${book.id.slice(-4)}-${i}`;
     await db.bookItem.create({
       data: { bookId: book.id, itemCode: code, status: "AVAILABLE", condition: "BAIK" },
     });
@@ -212,6 +213,7 @@ export async function POST(req: Request) {
   });
 
   await logAudit(user!.id, "BOOK_CREATE", "Book", book.id, `${book.title} oleh ${book.author}`);
+  logger.info("Book created", { bookId: book.id, userId: user!.id });
 
   return NextResponse.json(refreshed, { status: 201 });
 }

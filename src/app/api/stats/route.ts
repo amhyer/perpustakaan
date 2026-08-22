@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
+import { logger, startTimer } from "@/lib/logger";
 
 /**
  * GET /api/stats — dashboard stats untuk pustakawan.
@@ -15,6 +16,7 @@ export async function GET() {
   const { error } = await requireAuth();
   if (error) return error;
 
+  const timer = startTimer("GET /api/stats");
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const todayEnd = new Date(todayStart.getTime() + 86400000);
@@ -187,6 +189,8 @@ export async function GET() {
     const days = Math.ceil((now.getTime() - l.dueDate.getTime()) / 86400000);
     return sum + Math.max(0, days) * rule.finePerDay;
   }, 0);
+
+  timer.end({ overdueCount: overdueList.length });
 
   return NextResponse.json({
     overview: {

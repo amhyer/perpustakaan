@@ -5,9 +5,18 @@ import path from "path";
 export default defineConfig({
   test: {
     globals: true,
-    environment: "node",
-    include: ["src/**/*.{test,spec}.{ts,tsx}", "tests/unit/**/*.{test,spec}.{ts,tsx}"],
-    exclude: ["node_modules", ".next", "dist", "tests/python-runtime-*", "tests/database-*"],
+    environment: "happy-dom",
+    include: [
+      "src/**/*.{test,spec}.{ts,tsx}",
+      "tests/unit/**/*.{test,spec}.{ts,tsx}",
+    ],
+    exclude: [
+      "node_modules",
+      ".next",
+      "dist",
+      "tests/python-runtime-*",
+      "tests/database-*",
+    ],
     setupFiles: ["./tests/setup.ts"],
     coverage: {
       provider: "v8",
