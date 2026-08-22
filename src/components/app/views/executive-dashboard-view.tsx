@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/app/shared/page-header";
 import { RoleBadge } from "@/components/app/shared/role-badge";
+import { SetAsHomeButton } from "@/components/app/shared/set-as-home-button";
 import { useAppStore } from "@/store/use-app-store";
 import { useFetch } from "@/hooks/use-fetch";
 import { formatDate } from "@/lib/constants";
@@ -64,7 +65,12 @@ export function ExecutiveDashboardView() {
           title="Dashboard Eksekutif"
           description="Ringkasan eksekutif untuk kepala sekolah & stakeholder"
           icon={Sparkles}
-          actions={<RoleBadge user={user} />}
+          actions={
+            <div className="flex items-center gap-2 flex-wrap">
+              <RoleBadge user={user} />
+              <SetAsHomeButton viewKey="executive-dashboard" label="Dashboard Eksekutif" />
+            </div>
+          }
         />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -104,7 +110,12 @@ export function ExecutiveDashboardView() {
         title="Dashboard Eksekutif"
         description="Ringkasan eksekutif untuk kepala sekolah & stakeholder. Update: real-time"
         icon={Sparkles}
-        actions={<RoleBadge user={user} />}
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            <RoleBadge user={user} />
+            <SetAsHomeButton viewKey="executive-dashboard" label="Dashboard Eksekutif" />
+          </div>
+        }
       />
 
       {/* KPI Cards — extracted to ExecutiveKpiCard */}

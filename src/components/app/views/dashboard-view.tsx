@@ -39,6 +39,7 @@ import { Spinner } from "@/components/app/shared/loading";
 import { EmptyState } from "@/components/app/shared/page-header";
 import { StatCard } from "@/components/app/shared/stat-card";
 import { RoleBadge } from "@/components/app/shared/role-badge";
+import { SetAsHomeButton } from "@/components/app/shared/set-as-home-button";
 import { useFetch } from "@/hooks/use-fetch";
 import { useAppStore, type ViewKey } from "@/store/use-app-store";
 import {
@@ -298,6 +299,17 @@ function DashboardViewContent() {
                 Tambah Anggota
               </Button>
             </div>
+          </div>
+
+          {/* Sprint 4 — Fix #9: Quick action 'Set as Home' */}
+          <div className="mt-4 flex items-center gap-2 flex-wrap">
+            <SetAsHomeButton
+              viewKey="dashboard"
+              label="Dashboard Standar"
+              variant="ghost"
+              size="sm"
+              className="bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-sm"
+            />
           </div>
 
           {/* Mini highlights */}

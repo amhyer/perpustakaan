@@ -70,6 +70,7 @@ import {
 } from "@/components/ui/overlay/dialog";
 
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
+import { DefaultDashboardSelector } from "@/components/app/shared/default-dashboard-selector";
 
 import { useFetch } from "@/hooks/use-fetch";
 import { api } from "@/lib/api-client";
@@ -751,6 +752,9 @@ export function SettingsView() {
               />
             </div>
           </Card>
+
+          {/* SECTION 1b.5: Default Dashboard (Sprint 4 — Fix #9) */}
+          <DefaultDashboardSelector />
 
           {/* SECTION 1c: Pengaturan Notifikasi (Tahap 20) */}
           <Card className="p-6">

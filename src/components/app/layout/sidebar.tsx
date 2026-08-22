@@ -88,6 +88,25 @@ const MEMBER_NAV: NavItem[] = [
 export function Sidebar() {
   const { user, view, setView, sidebarOpen, setSidebarOpen } = useAppStore();
   const isLibrarianRole = user?.role === "LIBRARIAN" || user?.role === "PUSTAKAWAN_JUNIOR";
+
+  /** Handler untuk navigasi ke dashboard pilihan user (Sprint 4 — Fix #9) */
+  function goToHome() {
+    if (!user) return;
+    if (!user.defaultDashboard || user.defaultDashboard === "default") {
+      setView(isLibrarianRole ? "dashboard" : "my-dashboard");
+      return;
+    }
+    const preferred = user.defaultDashboard as ViewKey;
+    // Validasi role sekali lagi (defense in depth)
+    if (
+      !isLibrarianRole &&
+      (preferred === "executive-dashboard" || preferred === "customizable-dashboard")
+    ) {
+      setView("my-dashboard");
+      return;
+    }
+    setView(preferred);
+  }
   // PUSTAKAWAN_JUNIOR tidak bisa akses Pengaturan & Dashboard Eksekutif — filter dari nav
   const fullNav = isLibrarianRole
     ? LIBRARIAN_NAV.filter((item) => {
@@ -118,7 +137,7 @@ export function Sidebar() {
       >
         {/* Header */}
         <div className="px-5 py-5 border-b border-sidebar-border">
-          <button onClick={() => setView(isLibrarianRole ? "dashboard" : "my-dashboard")}>
+          <button onClick={goToHome}>
             <Logo variant="light" />
           </button>
         </div>

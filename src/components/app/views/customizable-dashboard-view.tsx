@@ -32,6 +32,7 @@ import { Badge } from "@/components/ui/data-display/badge";
 import { Label } from "@/components/ui/form/label";
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 import { RoleBadge } from "@/components/app/shared/role-badge";
+import { SetAsHomeButton } from "@/components/app/shared/set-as-home-button";
 import { useFetch } from "@/hooks/use-fetch";
 import { useAppStore } from "@/store/use-app-store";
 import { Skeleton } from "@/components/app/shared/skeleton";
@@ -201,6 +202,7 @@ export function CustomizableDashboardView() {
         actions={
           <div className="flex items-center gap-2 flex-wrap">
             <RoleBadge user={user} />
+            <SetAsHomeButton viewKey="customizable-dashboard" label="Dashboard Kustom" />
             {user?.role === "LIBRARIAN" ? (
               <>
                 <Button
