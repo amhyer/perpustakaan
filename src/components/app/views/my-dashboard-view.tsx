@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/data-display/badge";
 import { Progress } from "@/components/ui/feedback/progress";
 
 import { RoleEmptyState } from "@/components/app/shared/role-empty-state";
+import { RoleBadge } from "@/components/app/shared/role-badge";
 import { StatCard } from "@/components/app/shared/stat-card";
 import { BookCover } from "@/components/app/shared/book-cover";
 import { BookCard, type BookWithDetails } from "@/components/app/shared/book-card";
@@ -280,6 +281,7 @@ export function MyDashboardView({ variant = "student" }: { variant?: "student" |
               <Badge className={`${ROLE_COLORS[user.member.category] ?? ""} border-0`}>
                 {ROLE_LABELS[user.member.category] ?? user.member.category}
               </Badge>
+              <RoleBadge user={user} showIcon={false} className="bg-white/20 text-white border-white/30" />
               <span className="text-xs font-mono bg-white/15 px-2 py-0.5 rounded-md text-white/90">
                 {user.member.memberNumber}
               </span>
