@@ -28,7 +28,6 @@ import {
   CardTitle,
 } from "@/components/ui/layout/card";
 import { Button } from "@/components/ui/form/button";
-import { Badge } from "@/components/ui/data-display/badge";
 import { Label } from "@/components/ui/form/label";
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 import { RoleBadge } from "@/components/app/shared/role-badge";
@@ -82,7 +81,7 @@ const DEFAULT_LAYOUT: DashboardLayout = {
   ],
 };
 
-const STORAGE_KEY = "dashboard:layout";
+const STORAGE_KEY_BASE = "dashboard:layout";
 const SIZE_CLASSES: Record<WidgetSize, string> = {
   sm: "col-span-1",
   md: "col-span-1 lg:col-span-2",
@@ -96,10 +95,14 @@ export function CustomizableDashboardView() {
   const [editMode, setEditMode] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
+  // localStorage key per user — agar layout tidak conflict antar akun
+  // di device yang sama
+  const storageKey = user?.id ? `${STORAGE_KEY_BASE}:${user.id}` : STORAGE_KEY_BASE;
+
   // Load layout from localStorage
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = localStorage.getItem(STORAGE_KEY);
+    if (typeof window === "undefined" || !user?.id) return;
+    const stored = localStorage.getItem(storageKey);
     if (stored) {
       try {
         setLayout(JSON.parse(stored));
@@ -107,7 +110,7 @@ export function CustomizableDashboardView() {
         setLayout(DEFAULT_LAYOUT);
       }
     }
-  }, []);
+  }, [storageKey, user?.id]);
 
   const { data: stats, loading } = useFetch<StatsResponse>("/api/stats");
 
@@ -175,7 +178,7 @@ export function CustomizableDashboardView() {
   };
 
   const save = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
+    localStorage.setItem(storageKey, JSON.stringify(layout));
     setHasChanges(false);
     setEditMode(false);
     toast.success("Layout dashboard disimpan");

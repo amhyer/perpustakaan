@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { LayoutDashboard, Home, Sparkles, GripVertical, Check } from "lucide-react";
 import { Card } from "@/components/ui/layout/card";
-import { Button } from "@/components/ui/form/button";
 import { Badge } from "@/components/ui/data-display/badge";
 import { useAppStore } from "@/store/use-app-store";
 import { api } from "@/lib/api-client";

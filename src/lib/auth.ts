@@ -97,11 +97,7 @@ export async function getCurrentUser() {
 
   // Ambil preferensi default dashboard (Sprint 4 — Fix #9). Lazy create
   // jika belum ada — idempotent, aman dipanggil tiap request.
-  const pref = await db.userPreference.upsert({
-    where: { userId: user.id },
-    update: {},
-    create: { userId: user.id, defaultDashboard: "default" },
-  });
+  const pref = await getOrCreateUserPreference(user.id);
 
   return {
     id: user.id,
@@ -111,6 +107,20 @@ export async function getCurrentUser() {
     member: user.member,
     defaultDashboard: pref.defaultDashboard,
   };
+}
+
+/**
+ * Ambil preferensi user, atau buat dengan default jika belum ada.
+ * Digunakan oleh getCurrentUser, login, dan 2FA verify untuk konsistensi.
+ *
+ * Sprint 4 — Fix #9.
+ */
+export async function getOrCreateUserPreference(userId: string) {
+  return db.userPreference.upsert({
+    where: { userId },
+    update: {},
+    create: { userId, defaultDashboard: "default" },
+  });
 }
 
 // Helper untuk API routes: ambil user wajib login

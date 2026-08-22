@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, ClipboardList, ChevronRight } from "lucide-react";
+import { Clock, ChevronRight } from "lucide-react";
 import {
   Card,
   CardContent,

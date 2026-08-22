@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { createSessionToken, setSessionCookie, verifyPassword } from "@/lib/auth";
+import { createSessionToken, setSessionCookie, verifyPassword, getOrCreateUserPreference } from "@/lib/auth";
 import { rateLimit, getClientIdentifier, rateLimitResponse, RATE_LIMITS } from "@/lib/rate-limit";
 import { createTempToken } from "@/lib/temp-token";
 import crypto from "crypto";
@@ -88,11 +88,7 @@ export async function POST(req: Request) {
     });
 
     // Ambil default dashboard preference (Sprint 4 — Fix #9)
-    const pref = await db.userPreference.upsert({
-      where: { userId: user.id },
-      update: {},
-      create: { userId: user.id, defaultDashboard: "default" },
-    });
+    const pref = await getOrCreateUserPreference(user.id);
 
     return NextResponse.json({
       id: user.id,

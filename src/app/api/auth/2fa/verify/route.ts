@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { rateLimit, getClientIdentifier, rateLimitResponse, RATE_LIMITS } from "@/lib/rate-limit";
 import { verifyTempToken } from "@/lib/temp-token";
 import { verifyTotpCode, isValidTotpFormat, verifyBackupCode } from "@/lib/two-factor";
-import { createSessionToken, setSessionCookie } from "@/lib/auth";
+import { createSessionToken, setSessionCookie, getOrCreateUserPreference } from "@/lib/auth";
 
 /**
  * POST /api/auth/2fa/verify — verifikasi kode TOTP setelah login.
@@ -95,11 +95,7 @@ export async function POST(req: Request) {
     await setSessionCookie(sessionToken);
 
     // Ambil default dashboard preference (Sprint 4 — Fix #9)
-    const pref = await db.userPreference.upsert({
-      where: { userId: user.id },
-      update: {},
-      create: { userId: user.id, defaultDashboard: "default" },
-    });
+    const pref = await getOrCreateUserPreference(user.id);
 
     return NextResponse.json({
       id: user.id,

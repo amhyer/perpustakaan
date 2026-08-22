@@ -1,6 +1,6 @@
 "use client";
 
-import { Trophy, BookOpen, ChevronRight } from "lucide-react";
+import { Trophy, ChevronRight } from "lucide-react";
 import {
   Card,
   CardContent,

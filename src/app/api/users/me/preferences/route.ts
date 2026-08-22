@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, getOrCreateUserPreference } from "@/lib/auth";
 import { VALID_DASHBOARD_VIEWS } from "@/lib/constants";
 
 /**
@@ -15,11 +15,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
 
   // Upsert untuk pastikan row selalu ada
-  const pref = await db.userPreference.upsert({
-    where: { userId: user.id },
-    update: {},
-    create: { userId: user.id, defaultDashboard: "default" },
-  });
+  const pref = await getOrCreateUserPreference(user.id);
 
   return NextResponse.json({
     defaultDashboard: pref.defaultDashboard,
