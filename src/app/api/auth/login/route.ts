@@ -87,6 +87,13 @@ export async function POST(req: Request) {
       },
     });
 
+    // Ambil default dashboard preference (Sprint 4 — Fix #9)
+    const pref = await db.userPreference.upsert({
+      where: { userId: user.id },
+      update: {},
+      create: { userId: user.id, defaultDashboard: "default" },
+    });
+
     return NextResponse.json({
       id: user.id,
       email: user.email,
@@ -102,6 +109,7 @@ export async function POST(req: Request) {
             classGrade: member.classGrade,
           }
         : null,
+      defaultDashboard: pref.defaultDashboard,
     });
   } catch {
     return NextResponse.json({ error: "Terjadi kesalahan server" }, { status: 500 });

@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 
+/**
+ * GET /api/auth/me — return current user + preferensi default dashboard.
+ *
+ * Preferensi disimpan terpisah di tabel UserPreference (1-to-1 dengan User).
+ * Auto-handled di getCurrentUser() — single source of truth.
+ */
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ user: null }, { status: 200 });
   }
+
   return NextResponse.json({
     id: user.id,
     email: user.email,
@@ -21,5 +28,6 @@ export async function GET() {
           classGrade: user.member.classGrade,
         }
       : null,
+    defaultDashboard: user.defaultDashboard,
   });
 }

@@ -94,6 +94,13 @@ export async function POST(req: Request) {
     });
     await setSessionCookie(sessionToken);
 
+    // Ambil default dashboard preference (Sprint 4 — Fix #9)
+    const pref = await db.userPreference.upsert({
+      where: { userId: user.id },
+      update: {},
+      create: { userId: user.id, defaultDashboard: "default" },
+    });
+
     return NextResponse.json({
       id: user.id,
       email: user.email,
@@ -109,6 +116,7 @@ export async function POST(req: Request) {
             classGrade: user.member.classGrade,
           }
         : null,
+      defaultDashboard: pref.defaultDashboard,
     });
   } catch (err) {
     return NextResponse.json(
