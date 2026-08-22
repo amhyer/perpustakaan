@@ -260,15 +260,43 @@ bunx prisma migrate deploy
 bunx prisma db push
 ```
 
+### Bug Fix Pasca-Testing
+
+Saat static analysis di local (tanpa `bun install`), ditemukan **2 bug**:
+
+| Commit | Bug | Fix |
+|--------|-----|-----|
+| `bacf5ab` | MyDashboardView tidak punya `RoleBadge` (hanya inline Badge dengan `ROLE_LABELS[category]`) | Tambah `RoleBadge` di welcome banner — konsisten dengan 3 dashboard lain |
+| `19c6f2b` | `resolveDefaultDashboard` di store hanya block `executive-dashboard` & `customizable-dashboard` untuk siswa/guru. `dashboard` (standard) lolos, sehingga siswa akan diarahkan ke Dashboard Pustakawan. | Tighten validasi: TEACHER/STUDENT hanya boleh `my-dashboard` (selain `default`). Refactor sidebar pakai `resolveDefaultDashboard` exported dari store (DRY). |
+
+### Verifikasi Otomatis
+
+Dua script verifikasi yang di-commit:
+
+```bash
+# 1. Integrasi komponen, schema, API, line counts
+bash scripts/verify-sprint1-4.sh
+#   → 0 fails dari 50+ check
+
+# 2. Logic test untuk resolveDefaultDashboard
+bash scripts/test-resolve-default.sh
+#   → 16 test case pass (termasuk security: siswa/guru coba akses dashboard pustakawan)
+```
+
+Test ini mengcover semua logic utama Sprint 1-4 dan akan gagal jika ada regresi di kemudian hari.
+
 ---
 
 ## ✅ Metode Verifikasi
 - `bun run lint` lulus tanpa warning
 - `bun run test` lulus 420+ test cases
+- `bash scripts/verify-sprint1-4.sh` lulus (50+ check)
+- `bash scripts/test-resolve-default.sh` lulus (16 test case)
 - Migration SQL sudah disiapkan di `prisma/migrations/`
 - Manual: login sebagai 4 role, coba pilih "Set sebagai Beranda", logout, login lagi
 
 ---
 
-**Dibuat**: 2026-08-22 · **Status**: ✅ Semua Sprint 1-4 selesai
+**Dibuat**: 2026-08-22 · **Last updated**: 2026-08-22 (post-test fix)
+**Status**: ✅ Semua Sprint 1-4 selesai, 2 bug ditemukan & di-fix via static analysis
 
