@@ -38,9 +38,9 @@ import { Skeleton } from "@/components/app/shared/skeleton";
 import { toast } from "sonner";
 import { formatRupiah } from "@/lib/constants";
 import {
-  TrendAreaChart,
   TopBooksList,
   TopMembersList,
+  LazyChart,
   type StatsResponse,
 } from "@/components/app/dashboard/widgets";
 
@@ -461,16 +461,24 @@ function WidgetContent({ type, stats, size, onSelectBook, onSelectMember }: Widg
   const trend = stats.trend;
   const isLarge = size === "lg";
 
-  // Widget 'chart-trend' — reuse shared TrendAreaChart
+  // Widget 'chart-trend' — lazy-loaded (recharts ~100kb)
   if (type === "chart-trend") {
     return (
       <div className={isLarge ? "" : "-mx-6 -mb-6"}>
-        <TrendAreaChart
-          data={trend}
-          title=""
-          description=""
+        <LazyChart
+          importFn={() =>
+            import("@/components/app/dashboard/widgets/trend-area-chart").then((m) => ({
+              default: m.TrendAreaChart,
+            }))
+          }
+          componentProps={{
+            data: trend,
+            title: "",
+            description: "",
+            height: isLarge ? 220 : 180,
+            className: "border-0 shadow-none",
+          }}
           height={isLarge ? 220 : 180}
-          className="border-0 shadow-none"
         />
       </div>
     );

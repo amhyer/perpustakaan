@@ -17,9 +17,9 @@ import { useFetch } from "@/hooks/use-fetch";
 import { formatDate } from "@/lib/constants";
 import {
   ExecutiveKpiCard,
-  ExecutiveTrendChart,
   ExecutiveTopList,
   ExecutiveAlertCard,
+  LazyChart,
 } from "@/components/app/dashboard/widgets";
 
 interface ExecutiveData {
@@ -151,8 +151,16 @@ export function ExecutiveDashboardView() {
         />
       </div>
 
-      {/* Tren Chart — extracted to ExecutiveTrendChart */}
-      <ExecutiveTrendChart data={monthlyTrend} />
+      {/* Tren Chart — lazy loaded (recharts ~100kb) */}
+      <LazyChart
+        importFn={() =>
+          import("@/components/app/dashboard/widgets/executive-trend-chart").then(
+            (m) => ({ default: m.ExecutiveTrendChart })
+          )
+        }
+        componentProps={{ data: monthlyTrend }}
+        height={288}
+      />
 
       {/* Top Books + Top Members — extracted to ExecutiveTopList */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

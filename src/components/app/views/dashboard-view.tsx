@@ -50,13 +50,12 @@ import {
   LIBRARY_TAGLINE,
 } from "@/lib/constants";
 import {
-  TrendAreaChart,
-  CategoryDonutChart,
   TopBooksList,
   TopMembersList,
   RecentLoansTable,
   type StatsResponse,
 } from "@/components/app/dashboard/widgets";
+import { LazyChart } from "@/components/app/dashboard/widgets/lazy-chart";
 
 // ===== Quick action (P0-2) =====
 interface QuickActionDef {
@@ -498,13 +497,29 @@ function DashboardViewContent() {
         </CardContent>
       </Card>
 
-      {/* ===== Charts section — extracted widgets ===== */}
+      {/* ===== Charts section — lazy loaded (recharts ~100kb) ===== */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <TrendAreaChart
-          data={data.trend}
-          className="lg:col-span-2"
+        <LazyChart
+          importFn={() =>
+            import("@/components/app/dashboard/widgets/trend-area-chart").then((m) => ({
+              default: m.TrendAreaChart,
+            }))
+          }
+          componentProps={{
+            data: data.trend,
+            className: "lg:col-span-2",
+          }}
+          height={256}
         />
-        <CategoryDonutChart data={data.categoryStats} />
+        <LazyChart
+          importFn={() =>
+            import("@/components/app/dashboard/widgets/category-donut-chart").then((m) => ({
+              default: m.CategoryDonutChart,
+            }))
+          }
+          componentProps={{ data: data.categoryStats }}
+          height={256}
+        />
       </div>
 
       {/* ===== Popular books & Top members — extracted widgets ===== */}
