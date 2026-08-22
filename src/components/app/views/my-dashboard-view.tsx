@@ -116,6 +116,10 @@ interface Proposal {
   bookTitle?: string;
   reason?: string;
   createdAt?: string;
+  /** Author name (pustakawan jika ada) */
+  authorName?: string;
+  /** Tanggal diajukan (alias dari createdAt) */
+  submittedAt?: string;
 }
 
 type BookLite = BookWithDetails;
@@ -712,7 +716,7 @@ function TeacherSections({
         {/* Recent proposals list */}
         {proposals && proposals.length > 0 ? (
           <div className="space-y-2 mb-4">
-            {(proposals as any[]).slice(0, 3).map((p, i) => (
+            {proposals.slice(0, 3).map((p, i) => (
               <div
                 key={i}
                 className="flex items-center gap-2 text-xs p-2 rounded bg-muted/50"
