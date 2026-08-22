@@ -220,12 +220,55 @@ const fullNav = isLibrarianRole
 
 ---
 
-## ✅ Metode Verifikasi
-- `bun run lint` lulus tanpa warning
-- `bun run test` lulus 420+ test cases (cek tidak ada test yang rusak)
-- Manual: login sebagai PUSTAKAWAN_JUNIOR, TEACHER, STUDENT, LIBRARIAN — pastikan routing benar
-- Visual: 4 dashboard tampil jelas berbeda
+## ✅ Status Eksekusi
+
+| Sprint | Fix | Commit | Status |
+|--------|-----|--------|--------|
+| **1** | #1, #3, #4, #5, #8 | `399275d`..`12230fa` (5 commit) | ✅ Selesai |
+| **2** | #2, #10 | `693f9b5` + `0f2789f` (2 commit) | ✅ Selesai |
+| **3** | #6, #7 | `cb69e5e`..`a1f9983` (3 commit) | ✅ Selesai |
+| **4** | #9 | `d9ceefc`..`4c66747` (6 commit) | ✅ Selesai |
+
+**Total**: 16 commit, semua sudah di-push ke `arena/01a0285b-perpustakaan`.
+
+### Sprint 4 — Fix #9 (Preferensi Default Dashboard)
+
+Kompleksitas: butuh perubahan DB + API + UI di 4 tempat.
+
+**Komponen yang ditambah/diubah:**
+- 📦 `prisma/schema.prisma` — model `UserPreference` (1-to-1 dengan User)
+- 📦 `prisma/migrations/20260822_add_user_preference/migration.sql` — SQL migration
+- 🔌 `GET /api/users/me/preferences` — ambil preferensi
+- 🔌 `PUT /api/users/me/preferences` — update preferensi (dengan validasi role)
+- 🔌 `getCurrentUser()` di `lib/auth.ts` — auto-include `defaultDashboard`
+- 🔌 `resolveDefaultDashboard()` di store — auto-route dengan preferensi
+- 🎨 `DefaultDashboardSelector` — UI card di Settings
+- 🎨 `SetAsHomeButton` — quick action di 3 dashboard
+- 🎨 Logo sidebar — goToHome() hormati preferensi
+
+**Cara kerja:**
+1. User login → `getCurrentUser()` upsert `UserPreference` (jika belum ada)
+2. Response include `defaultDashboard`
+3. Store `setUser()` panggil `resolveDefaultDashboard()` → user langsung ke pilihan
+4. User klik "Set sebagai Beranda" → PUT ke API → refetch /auth/me → store update
+5. Next login, dashboard pilihan jadi beranda
+
+**Migration (di local, user jalankan manual):**
+```bash
+bunx prisma migrate deploy
+# atau
+bunx prisma db push
+```
 
 ---
 
-**Dibuat**: 2026-08-22 · **Status**: Menunggu approval user untuk mulai Sprint 1
+## ✅ Metode Verifikasi
+- `bun run lint` lulus tanpa warning
+- `bun run test` lulus 420+ test cases
+- Migration SQL sudah disiapkan di `prisma/migrations/`
+- Manual: login sebagai 4 role, coba pilih "Set sebagai Beranda", logout, login lagi
+
+---
+
+**Dibuat**: 2026-08-22 · **Status**: ✅ Semua Sprint 1-4 selesai
+
