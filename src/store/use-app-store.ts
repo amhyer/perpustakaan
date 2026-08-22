@@ -40,7 +40,11 @@ export type ViewKey =
   | "reading-history"
   | "wishlist"
   | "notifications"
-  | "search-results";
+  | "search-results"
+  // E-book reader
+  | "ebook-reader"
+  // Barcode labels
+  | "barcode-labels";
 
 interface ViewState {
   key: ViewKey;

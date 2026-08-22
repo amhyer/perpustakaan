@@ -45,6 +45,9 @@ import {
   ApiKeysView,
   MySessionsView,
   KioskModeView,
+  EBookReaderView,
+  BarcodeLabelsView,
+  CustomizableDashboardView,
 } from "@/components/app/views";
 
 export default function Page() {
@@ -144,6 +147,12 @@ export default function Page() {
         return <ReadingHistoryView />;
       case "my-sessions":
         return <MySessionsView />;
+      case "ebook-reader":
+        return <EBookReaderView />;
+      case "barcode-labels":
+        return <BarcodeLabelsView />;
+      case "customizable-dashboard":
+        return <CustomizableDashboardView />;
       default:
         return <DashboardView />;
     }

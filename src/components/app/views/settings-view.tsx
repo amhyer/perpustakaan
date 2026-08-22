@@ -30,6 +30,7 @@ import {
   Copy,
   Check,
   AlertTriangle,
+  Sparkles,
 } from "lucide-react";
 import QRCode from "qrcode.react";
 
@@ -73,6 +74,7 @@ import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 import { useFetch } from "@/hooks/use-fetch";
 import { api } from "@/lib/api-client";
 import { useAppStore } from "@/store/use-app-store";
+import { useOnboarding } from "@/components/app/onboarding/onboarding-wizard";
 import {
   LOAN_RULES,
   ROLE_LABELS,
@@ -115,6 +117,7 @@ const EMPTY_ENTRY: SimpleEntryForm = { name: "", code: "", description: "" };
 
 export function SettingsView() {
   const user = useAppStore((s) => s.user);
+  const onboarding = useOnboarding();
 
   const { data: settings, loading: loadingSettings, refetch: refetchSettings } =
     useFetch<SettingsMap>("/api/settings", {});
@@ -921,6 +924,65 @@ export function SettingsView() {
             )}
           </Card>
 
+          {/* SECTION 1f: Bantuan & Onboarding (Tahap 23) */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-foreground">Bantuan & Onboarding</h2>
+                <p className="text-xs text-muted-foreground">
+                  Akses tur singkat dan dokumentasi kapan saja.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3 p-3 rounded-lg border bg-muted/30">
+                <div>
+                  <p className="text-sm font-medium">Tur Onboarding</p>
+                  <p className="text-xs text-muted-foreground">
+                    Pelajari fitur-fitur utama perpustakaan dalam 10 langkah singkat.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    onboarding.start();
+                    window.location.reload();
+                  }}
+                  className="gap-2 shrink-0"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Mulai Tur
+                </Button>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 p-3 rounded-lg border bg-muted/30">
+                <div>
+                  <p className="text-sm font-medium">Reset Status Onboarding</p>
+                  <p className="text-xs text-muted-foreground">
+                    Tandai tur sebagai belum selesai (untuk testing).
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    onboarding.reset();
+                    toast.success("Status on-boarding direset");
+                  }}
+                  className="gap-2 shrink-0"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Reset
+                </Button>
+              </div>
+            </div>
+          </Card>
+
           {/* SECTION 2: Aturan Peminjaman */}
           <Card className="p-6">
             <div className="flex items-center gap-2 mb-4">
@@ -1297,757 +1359,4 @@ export function SettingsView() {
             )}
             {holidays && holidays.length > 0 && (
               <p className="text-xs text-muted-foreground mt-3 italic">
-                Catatan: menghapus hari libur tidak memengaruhi peminjaman yang
-                sudah terlanjur dibuat sebelumnya.
-              </p>
-            )}
-          </Card>
-
-          {/* SECTION 6: Master Penerbit & Pengarang */}
-          <Card className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-                <Building2 className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-foreground">Master Penerbit & Pengarang</h2>
-                <p className="text-xs text-muted-foreground">
-                  Sumber saran autocomplete di form buku. Field di buku tetap teks bebas —
-                  tabel ini hanya daftar nilai unik.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Penerbit */}
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <h3 className="text-sm font-medium flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
-                    Penerbit
-                    {publishers && publishers.length > 0 && (
-                      <Badge variant="secondary">{publishers.length}</Badge>
-                    )}
-                  </h3>
-                  <Button
-                    onClick={() => {
-                      setPublisherName("");
-                      setPublisherOpen(true);
-                    }}
-                    size="sm"
-                    variant="outline"
-                    className="gap-1"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    Tambah
-                  </Button>
-                </div>
-                {!publishers || publishers.length === 0 ? (
-                  <p className="text-xs text-muted-foreground py-3 text-center bg-muted/30 rounded-lg">
-                    Belum ada penerbit. Daftar akan terisi otomatis dari data buku saat dibuka.
-                  </p>
-                ) : (
-                  <div className="space-y-1.5 max-h-64 overflow-y-auto scrollbar-thin pr-1">
-                    {publishers.map((p) => (
-                      <div
-                        key={p.id}
-                        className="flex items-center gap-2 rounded-lg border bg-card px-3 py-1.5 hover:shadow-sm transition-shadow"
-                      >
-                        <span className="flex-1 text-sm text-foreground truncate">{p.name}</span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setDeletePublisherId(p.id)}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10 h-7 w-7 p-0"
-                          aria-label="Hapus penerbit"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Pengarang */}
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <h3 className="text-sm font-medium flex items-center gap-2">
-                    <PenTool className="h-4 w-4 text-muted-foreground" />
-                    Pengarang
-                    {authors && authors.length > 0 && (
-                      <Badge variant="secondary">{authors.length}</Badge>
-                    )}
-                  </h3>
-                  <Button
-                    onClick={() => {
-                      setAuthorName("");
-                      setAuthorOpen(true);
-                    }}
-                    size="sm"
-                    variant="outline"
-                    className="gap-1"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    Tambah
-                  </Button>
-                </div>
-                {!authors || authors.length === 0 ? (
-                  <p className="text-xs text-muted-foreground py-3 text-center bg-muted/30 rounded-lg">
-                    Belum ada pengarang. Daftar akan terisi otomatis dari data buku saat dibuka.
-                  </p>
-                ) : (
-                  <div className="space-y-1.5 max-h-64 overflow-y-auto scrollbar-thin pr-1">
-                    {authors.map((a) => (
-                      <div
-                        key={a.id}
-                        className="flex items-center gap-2 rounded-lg border bg-card px-3 py-1.5 hover:shadow-sm transition-shadow"
-                      >
-                        <span className="flex-1 text-sm text-foreground truncate">{a.name}</span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setDeleteAuthorId(a.id)}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10 h-7 w-7 p-0"
-                          aria-label="Hapus pengarang"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-4 italic">
-              Catatan: menghapus dari master tidak menghapus data di buku. Daftar ini
-              otomatis terisi dari nilai unik yang ada di data buku saat halaman dibuka.
-            </p>
-          </Card>
-
-          {/* SECTION 7: Backup Database */}
-          <Card className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-                <Database className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-foreground">Backup & Pemulihan</h2>
-                <p className="text-xs text-muted-foreground">
-                  Unduh snapshot database SQLite untuk cadangan atau migrasi.
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Download className="h-4 w-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">
-                    Unduh Backup Database
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    File <code className="text-[11px] bg-background px-1 py-0.5 rounded">.db</code> berisi
-                    seluruh data perpustakaan (anggota, buku, peminjaman, dst.).
-                    Nama file menyertakan tanggal unduhan. Bisa dibuka dengan
-                    tool SQLite (DB Browser, sqlite3 CLI, dll).
-                  </p>
-                </div>
-                <Button
-                  onClick={handleDownloadBackup}
-                  disabled={downloadingBackup}
-                  className="gap-2 shrink-0"
-                >
-                  {downloadingBackup ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Download className="h-4 w-4" />
-                  )}
-                  {downloadingBackup ? "Mengunduh..." : "Unduh Backup"}
-                </Button>
-              </div>
-            </div>
-
-            <p className="text-xs text-muted-foreground mt-3">
-              Disarankan mengunduh backup secara berkala (mis. mingguan) dan
-              menyimpannya di tempat terpisah. Backup otomatis harian dengan
-              rotasi 7 hari tersedia via cron job (konfigurasi admin server).
-            </p>
-          </Card>
-        </>
-      )}
-
-      {/* Dialog: Tambah Kategori */}
-      <Dialog
-        open={catOpen}
-        onOpenChange={(o) => {
-          setCatOpen(o);
-          if (!o) setCatForm(EMPTY_ENTRY);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Tambah Kategori</DialogTitle>
-            <DialogDescription>
-              Klasifikasi baru untuk koleksi buku. Field bertanda * wajib diisi.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={saveCategory} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="cat-name">Nama Kategori *</Label>
-              <Input
-                id="cat-name"
-                required
-                value={catForm.name}
-                onChange={(e) =>
-                  setCatForm((prev) => ({ ...prev, name: e.target.value }))
-                }
-                placeholder="Mis. Fiksi Remaja"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="cat-code">Kode *</Label>
-              <Input
-                id="cat-code"
-                required
-                value={catForm.code}
-                onChange={(e) =>
-                  setCatForm((prev) => ({ ...prev, code: e.target.value }))
-                }
-                placeholder="Mis. FIK-01"
-                className="font-mono"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="cat-desc">Deskripsi</Label>
-              <Textarea
-                id="cat-desc"
-                value={catForm.description}
-                onChange={(e) =>
-                  setCatForm((prev) => ({ ...prev, description: e.target.value }))
-                }
-                placeholder="Kategori untuk buku fiksi remaja..."
-                rows={3}
-              />
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setCatOpen(false);
-                  setCatForm(EMPTY_ENTRY);
-                }}
-                disabled={savingCat}
-              >
-                Batal
-              </Button>
-              <Button type="submit" disabled={savingCat} className="gap-2">
-                {savingCat && <Loader2 className="h-4 w-4 animate-spin" />}
-                {savingCat ? "Menyimpan..." : "Tambah Kategori"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog: Tambah Rak */}
-      <Dialog
-        open={locOpen}
-        onOpenChange={(o) => {
-          setLocOpen(o);
-          if (!o) setLocForm(EMPTY_ENTRY);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Tambah Rak / Lokasi</DialogTitle>
-            <DialogDescription>
-              Rak fisik untuk penempatan koleksi. Field bertanda * wajib diisi.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={saveLocation} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="loc-name">Nama Rak *</Label>
-              <Input
-                id="loc-name"
-                required
-                value={locForm.name}
-                onChange={(e) =>
-                  setLocForm((prev) => ({ ...prev, name: e.target.value }))
-                }
-                placeholder="Mis. Rak A - Fiksi"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="loc-code">Kode *</Label>
-              <Input
-                id="loc-code"
-                required
-                value={locForm.code}
-                onChange={(e) =>
-                  setLocForm((prev) => ({ ...prev, code: e.target.value }))
-                }
-                placeholder="Mis. A-01"
-                className="font-mono"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="loc-desc">Deskripsi</Label>
-              <Textarea
-                id="loc-desc"
-                value={locForm.description}
-                onChange={(e) =>
-                  setLocForm((prev) => ({ ...prev, description: e.target.value }))
-                }
-                placeholder="Rak dekat pintu masuk, baris atas..."
-                rows={3}
-              />
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setLocOpen(false);
-                  setLocForm(EMPTY_ENTRY);
-                }}
-                disabled={savingLoc}
-              >
-                Batal
-              </Button>
-              <Button type="submit" disabled={savingLoc} className="gap-2">
-                {savingLoc && <Loader2 className="h-4 w-4 animate-spin" />}
-                {savingLoc ? "Menyimpan..." : "Tambah Rak"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog: Tambah Hari Libur */}
-      <Dialog
-        open={holidayOpen}
-        onOpenChange={(o) => {
-          setHolidayOpen(o);
-          if (!o) setHolidayForm({ date: "", description: "" });
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Tambah Hari Libur</DialogTitle>
-            <DialogDescription>
-              Tanggal libur perpustakaan. Peminjaman dengan jatuh tempo yang jatuh
-              di tanggal ini akan otomatis digeser ke hari kerja berikutnya.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={saveHoliday} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="holiday-date">Tanggal *</Label>
-              <Input
-                id="holiday-date"
-                type="date"
-                required
-                value={holidayForm.date}
-                onChange={(e) =>
-                  setHolidayForm((prev) => ({ ...prev, date: e.target.value }))
-                }
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="holiday-desc">Keterangan *</Label>
-              <Input
-                id="holiday-desc"
-                required
-                value={holidayForm.description}
-                onChange={(e) =>
-                  setHolidayForm((prev) => ({ ...prev, description: e.target.value }))
-                }
-                placeholder="Mis. Hari Raya, Libur Nasional, Libur Semester..."
-              />
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setHolidayOpen(false);
-                  setHolidayForm({ date: "", description: "" });
-                }}
-                disabled={savingHoliday}
-              >
-                Batal
-              </Button>
-              <Button type="submit" disabled={savingHoliday} className="gap-2">
-                {savingHoliday && <Loader2 className="h-4 w-4 animate-spin" />}
-                {savingHoliday ? "Menyimpan..." : "Tambah Hari Libur"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* AlertDialog: Konfirmasi Hapus Hari Libur */}
-      <AlertDialog
-        open={!!deleteHolidayId}
-        onOpenChange={(o) => {
-          if (!o) setDeleteHolidayId(null);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Hari Libur?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Hari libur akan dihapus dari daftar. Peminjaman yang sudah dibuat
-              sebelumnya TIDAK akan terpengaruh — due date mereka tetap seperti
-              yang sudah ditetapkan.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deletingHoliday}>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={deletingHoliday}
-              onClick={(e) => {
-                e.preventDefault();
-                deleteHoliday();
-              }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
-            >
-              {deletingHoliday && <Loader2 className="h-4 w-4 animate-spin" />}
-              {deletingHoliday ? "Menghapus..." : "Hapus"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Dialog: Tambah Penerbit */}
-      <Dialog
-        open={publisherOpen}
-        onOpenChange={(o) => {
-          setPublisherOpen(o);
-          if (!o) setPublisherName("");
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Tambah Penerbit</DialogTitle>
-            <DialogDescription>
-              Tambah penerbit ke daftar master untuk autocomplete di form buku.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={savePublisher} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="publisher-name">Nama Penerbit *</Label>
-              <Input
-                id="publisher-name"
-                required
-                value={publisherName}
-                onChange={(e) => setPublisherName(e.target.value)}
-                placeholder="Mis. Bentang Pustaka"
-                autoFocus
-              />
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setPublisherOpen(false);
-                  setPublisherName("");
-                }}
-                disabled={savingPublisher}
-              >
-                Batal
-              </Button>
-              <Button type="submit" disabled={savingPublisher} className="gap-2">
-                {savingPublisher && <Loader2 className="h-4 w-4 animate-spin" />}
-                {savingPublisher ? "Menyimpan..." : "Tambah"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* AlertDialog: Konfirmasi Hapus Penerbit */}
-      <AlertDialog
-        open={!!deletePublisherId}
-        onOpenChange={(o) => { if (!o) setDeletePublisherId(null); }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Penerbit dari Master?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Penerbit akan dihapus dari daftar master autocomplete. Data penerbit
-              di buku yang sudah ada TIDAK akan terpengaruh.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deletingPublisher}>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={deletingPublisher}
-              onClick={(e) => { e.preventDefault(); deletePublisher(); }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
-            >
-              {deletingPublisher && <Loader2 className="h-4 w-4 animate-spin" />}
-              {deletingPublisher ? "Menghapus..." : "Hapus"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Dialog: Tambah Pengarang */}
-      <Dialog
-        open={authorOpen}
-        onOpenChange={(o) => {
-          setAuthorOpen(o);
-          if (!o) setAuthorName("");
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Tambah Pengarang</DialogTitle>
-            <DialogDescription>
-              Tambah pengarang ke daftar master untuk autocomplete di form buku.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={saveAuthor} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="author-name">Nama Pengarang *</Label>
-              <Input
-                id="author-name"
-                required
-                value={authorName}
-                onChange={(e) => setAuthorName(e.target.value)}
-                placeholder="Mis. Andrea Hirata"
-                autoFocus
-              />
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setAuthorOpen(false);
-                  setAuthorName("");
-                }}
-                disabled={savingAuthor}
-              >
-                Batal
-              </Button>
-              <Button type="submit" disabled={savingAuthor} className="gap-2">
-                {savingAuthor && <Loader2 className="h-4 w-4 animate-spin" />}
-                {savingAuthor ? "Menyimpan..." : "Tambah"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* AlertDialog: Konfirmasi Hapus Pengarang */}
-      <AlertDialog
-        open={!!deleteAuthorId}
-        onOpenChange={(o) => { if (!o) setDeleteAuthorId(null); }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Pengarang dari Master?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Pengarang akan dihapus dari daftar master autocomplete. Data pengarang
-              di buku yang sudah ada TIDAK akan terpengaruh.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deletingAuthor}>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={deletingAuthor}
-              onClick={(e) => { e.preventDefault(); deleteAuthor(); }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
-            >
-              {deletingAuthor && <Loader2 className="h-4 w-4 animate-spin" />}
-              {deletingAuthor ? "Menghapus..." : "Hapus"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Dialog: Setup 2FA */}
-      <Dialog
-        open={show2FADialog}
-        onOpenChange={(o) => {
-          if (!o) {
-            setShow2FADialog(false);
-            setTwoFASetup(null);
-            setTwoFAConfirmCode("");
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-primary" />
-              Setup Two-Factor Authentication
-            </DialogTitle>
-            <DialogDescription>
-              Scan QR code dengan Google Authenticator / Authy, lalu masukkan kode 6 digit.
-            </DialogDescription>
-          </DialogHeader>
-
-          {twoFASetup && (
-            <div className="space-y-4">
-              {/* Step 1: QR */}
-              <div className="text-center">
-                <p className="text-sm font-medium mb-3">1. Scan QR Code</p>
-                <div className="inline-block p-4 bg-white rounded-lg border">
-                  <QRCode value={twoFASetup.otpAuthUri} size={180} level="M" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Atau masukkan secret secara manual:
-                </p>
-                <div className="mt-2 flex items-center gap-2 justify-center">
-                  <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
-                    {twoFASetup.secret}
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => copyToClipboard(twoFASetup.secret, "secret")}
-                    className="h-7 w-7 p-0"
-                  >
-                    {copied === "secret" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Step 2: Backup codes */}
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-                <p className="text-sm font-medium text-amber-900 mb-2 flex items-center gap-1.5">
-                  <AlertTriangle className="h-4 w-4" />
-                  2. Simpan Backup Codes
-                </p>
-                <p className="text-xs text-amber-800 mb-2">
-                  Jika kehilangan HP, gunakan salah satu kode ini untuk login. Setiap kode hanya bisa dipakai sekali.
-                </p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {twoFASetup.backupCodes.map((code) => (
-                    <code
-                      key={code}
-                      className="text-xs bg-white border border-amber-200 px-2 py-1 rounded font-mono text-center"
-                    >
-                      {code}
-                    </code>
-                  ))}
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => copyToClipboard(twoFASetup.backupCodes.join("\n"), "backup")}
-                  className="mt-2 w-full gap-2"
-                >
-                  {copied === "backup" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                  Salin Semua Backup Codes
-                </Button>
-              </div>
-
-              {/* Step 3: Verify */}
-              <div>
-                <p className="text-sm font-medium mb-2">3. Verifikasi Kode</p>
-                <div className="space-y-2">
-                  <Label htmlFor="2fa-confirm">Kode 6 digit dari Authenticator</Label>
-                  <Input
-                    id="2fa-confirm"
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    value={twoFAConfirmCode}
-                    onChange={(e) => setTwoFAConfirmCode(e.target.value.replace(/\D/g, ""))}
-                    placeholder="123456"
-                    className="text-center text-lg font-mono tracking-widest"
-                    autoFocus
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setShow2FADialog(false);
-                setTwoFASetup(null);
-                setTwoFAConfirmCode("");
-              }}
-              disabled={savingTwoFA}
-            >
-              Batal
-            </Button>
-            <Button onClick={confirmTwoFASetup} disabled={savingTwoFA || twoFAConfirmCode.length !== 6} className="gap-2">
-              {savingTwoFA ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
-              Aktifkan 2FA
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog: Disable 2FA */}
-      <Dialog
-        open={showDisable2FADialog}
-        onOpenChange={(o) => {
-          if (!o) {
-            setShowDisable2FADialog(false);
-            setDisablePassword("");
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" />
-              Nonaktifkan 2FA?
-            </DialogTitle>
-            <DialogDescription>
-              Masukkan password Anda untuk konfirmasi. 2FA akan dinonaktifkan untuk akun ini.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-2">
-            <Label htmlFor="disable-password">Password</Label>
-            <Input
-              id="disable-password"
-              type="password"
-              value={disablePassword}
-              onChange={(e) => setDisablePassword(e.target.value)}
-              placeholder="Password Anda"
-              autoComplete="current-password"
-            />
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowDisable2FADialog(false);
-                setDisablePassword("");
-              }}
-              disabled={savingTwoFA}
-            >
-              Batal
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={disableTwoFA}
-              disabled={savingTwoFA || !disablePassword}
-              className="gap-2"
-            >
-              {savingTwoFA ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Nonaktifkan
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+         

@@ -29,6 +29,7 @@ import {
   Key,
   Sparkles,
   Shield,
+  Tag,
 } from "lucide-react";
 import { Logo } from "@/components/app/logo";
 import { cn } from "@/lib/utils";
@@ -61,6 +62,7 @@ const LIBRARIAN_NAV: NavItem[] = [
   { key: "book-transfer", label: "Pemindahan Rak", icon: ArrowRightLeft },
   { key: "reports", label: "Laporan", icon: FileBarChart },
   { key: "batch-cards", label: "Cetak Kartu Massal", icon: Printer },
+  { key: "barcode-labels", label: "Cetak Label Barcode", icon: Tag },
   { key: "stocktaking", label: "Stock Opname", icon: ClipboardList },
   { key: "api-keys", label: "API Keys", icon: Key },
   { key: "settings", label: "Pengaturan", icon: Settings },

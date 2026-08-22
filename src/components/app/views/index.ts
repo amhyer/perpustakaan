@@ -158,3 +158,21 @@ export const MySessionsView = dynamic(
   () => import("./my-sessions-view").then((m) => m.MySessionsView),
   { loading: () => loadingComponent, ssr: false }
 );
+
+// E-book reader (Tahap 24)
+export const EBookReaderView = dynamic(
+  () => import("./ebook-reader-view").then((m) => m.EBookReaderView),
+  { loading: () => loadingComponent, ssr: false }
+);
+
+// Barcode labels (Tahap 25)
+export const BarcodeLabelsView = dynamic(
+  () => import("./barcode-labels-view").then((m) => m.BarcodeLabelsView),
+  { loading: () => loadingComponent, ssr: false }
+);
+
+// Customizable dashboard (Tahap 26)
+export const CustomizableDashboardView = dynamic(
+  () => import("./customizable-dashboard-view").then((m) => m.CustomizableDashboardView),
+  { loading: () => loadingComponent, ssr: false }
+);
