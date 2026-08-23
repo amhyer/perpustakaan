@@ -38,7 +38,7 @@ import {
   RefreshCw,
   Check,
 } from "lucide-react";
-import { Button } from "@/components/ui/button/button";
+import { Button } from "@/components/ui/form/button";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/hooks/use-locale";
 import { useAppStore } from "@/store/use-app-store";
