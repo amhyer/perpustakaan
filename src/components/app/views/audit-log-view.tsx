@@ -12,6 +12,8 @@ import {
   Settings,
   AlertTriangle,
   Loader2,
+  Download,
+  FileSpreadsheet,
 } from "lucide-react";
 import {
   Card,
@@ -125,6 +127,38 @@ export function AuditLogView() {
   const [entityFilter, setEntityFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams({ type: "audit" });
+      if (dateFrom) params.set("from", dateFrom);
+      if (dateTo) params.set("to", dateTo);
+      const res = await fetch(`/api/export?${params.toString()}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Export gagal" }));
+        alert(`Export gagal: ${err.error || res.statusText}`);
+        return;
+      }
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition") || "";
+      const filenameMatch = disposition.match(/filename="?([^";]+)"?/);
+      const filename = filenameMatch?.[1] || `audit-log-${new Date().toISOString().split("T")[0]}.csv`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert(`Export error: ${err.message}`);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   if (user?.role !== "LIBRARIAN") {
     return (
@@ -248,6 +282,23 @@ export function AuditLogView() {
                 Reset
               </Button>
             )}
+            <div className="ml-auto flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9"
+                onClick={handleExport}
+                disabled={exporting}
+                title="Export jejak audit ke CSV"
+              >
+                {exporting ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                Export CSV
+              </Button>
+            </div>
           </div>
           <Tabs value={tab} onValueChange={(v) => { setTab(v); setActionFilter(""); setPage(1); }}>
             <TabsList>

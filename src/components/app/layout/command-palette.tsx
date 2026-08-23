@@ -279,7 +279,8 @@ export function CommandPalette() {
         { id: "notification-log", label: "Log Notifikasi", group: "Komunikasi", icon: Sparkles, action: () => setView("notification-log") },
         { id: "assets", label: "Aset", group: "Sistem", icon: Sparkles, action: () => setView("assets") },
         { id: "settings", label: "Pengaturan", group: "Sistem", icon: SettingsIcon, action: () => setView("settings") },
-        { id: "audit-log", label: "Jejak Audit", group: "Sistem", icon: Sparkles, action: () => setView("audit-log") }
+        { id: "audit-log", label: "Jejak Audit", group: "Sistem", icon: Sparkles, action: () => setView("audit-log") },
+        { id: "data-export", label: "Export Data", group: "Sistem", icon: Sparkles, action: () => setView("data-export"), keywords: ["csv", "download", "unduh"] }
       );
     } else {
       items.push(

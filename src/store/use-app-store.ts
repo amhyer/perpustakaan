@@ -34,6 +34,7 @@ export type ViewKey =
   | "audit-log"
   | "book-transfer"
   | "kiosk"
+  | "data-export"
   // Reward System
   | "rewards-catalog"
   | "my-redemptions"

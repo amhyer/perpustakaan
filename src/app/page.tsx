@@ -33,6 +33,7 @@ import {
   ReservationsQueueView as _ReservationsQueueViewAlias,
   NotificationLogView,
   AuditLogView,
+  DataExportView,
   BookTransferView,
   MyDashboardView,
   MyLoansView,
@@ -174,6 +175,8 @@ export default function Page() {
         return <RFIDDashboardView />;
       case "blockchain-explorer":
         return <BlockchainExplorerView />;
+      case "data-export":
+        return <DataExportView />;
       default:
         return <DashboardView />;
     }

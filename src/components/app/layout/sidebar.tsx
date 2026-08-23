@@ -66,6 +66,7 @@ import {
   Star,
   Clock,
   X,
+  Download,
 } from "lucide-react";
 import { Logo } from "@/components/app/logo";
 import { Input } from "@/components/ui/form/input";
@@ -365,6 +366,12 @@ const NAV_GROUPS: NavGroup[] = [
         label: "Jejak Audit",
         icon: ScrollText,
         keywords: ["audit", "log", "riwayat aktivitas"],
+      },
+      {
+        key: "data-export",
+        label: "Export Data",
+        icon: Download,
+        keywords: ["export", "csv", "download", "unduh"],
       },
     ],
   },
