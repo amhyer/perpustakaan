@@ -439,6 +439,7 @@ model BookTransfer {
 model TwoFactorSecret {
   id          String   @id @default(cuid())
   userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   secret      String   // TOTP secret (base32)
   enabled     Boolean  @default(false)
   backupCodes String?  // JSON array of hashed backup codes
@@ -450,6 +451,7 @@ model TwoFactorSecret {
 model PasswordResetToken {
   id        String   @id @default(cuid())
   userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   token     String   @unique // hashed token
   expiresAt DateTime
   usedAt    DateTime?
@@ -464,6 +466,7 @@ model PasswordResetToken {
 model ActiveSession {
   id         String   @id @default(cuid())
   userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   token      String   @unique // hashed session token
   userAgent  String?
   ip         String?
