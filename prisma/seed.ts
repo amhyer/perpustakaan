@@ -9,6 +9,10 @@ async function main() {
   console.log("🌱 Memulai seeding data Perpustakaan Jendela Ilmu...");
 
   // Bersihkan data lama
+  await db.pointTransaction.deleteMany();
+  await db.rewardRedemption.deleteMany();
+  await db.reward.deleteMany();
+  await db.pointRule.deleteMany();
   await db.notification.deleteMany();
   await db.announcement.deleteMany();
   await db.bookProposal.deleteMany();
@@ -384,9 +388,195 @@ async function main() {
   await dueNotif(siswa3.user.id, "Reservasi Diterima", `Reservasi buku "Laskar Pelangi" sedang dalam antrean.`, "INFO");
   await dueNotif(guru1.user.id, "Pekan Literasi", "Jangan lewatkan Pekan Literasi bulan ini!", "ANNOUNCEMENT");
 
+  // =========================================================================
+  // REWARD SYSTEM — Poin & Hadiah
+  // =========================================================================
+
+  // ===== Point Rules (Konfigurasi Aturan Poin) =====
+  console.log("   - Seeding point rules...");
+  const pointRules = [
+    // Untuk Siswa
+    { code: "LOAN_RETURNED", name: "Selesai Baca Buku", description: "Poin untuk setiap buku yang selesai dibaca", points: 10, role: "STUDENT", maxPerMonth: 30, minLoanDays: 2, minBookPages: 50 },
+    { code: "ON_TIME_RETURN", name: "Tepat Waktu", description: "Bonus karena mengembalikan tepat waktu", points: 5, role: "STUDENT", maxPerMonth: 30 },
+    { code: "EARLY_RETURN", name: "Lebih Awal", description: "Bonus karena mengembalikan 3+ hari lebih awal", points: 10, role: "STUDENT", maxPerMonth: 15 },
+    { code: "REVIEW_WRITTEN", name: "Tulis Review", description: "Bonus untuk review minimal 50 kata", points: 10, role: "STUDENT", maxPerMonth: 5 },
+    { code: "RATING_5STAR", name: "Rating 5 Bintang", description: "Bonus untuk rating 5 bintang", points: 3, role: "STUDENT", maxPerMonth: 15 },
+    { code: "STREAK_7", name: "Streak 7 Hari", description: "Membaca 7 hari berturut-turut", points: 25, role: "STUDENT", cooldownHours: 168 },
+    { code: "STREAK_30", name: "Streak 30 Hari", description: "Membaca 30 hari berturut-turut", points: 100, role: "STUDENT", cooldownHours: 720 },
+    { code: "BADGE_UNLOCK", name: "Unlock Badge", description: "Bonus setiap unlock badge baru", points: 20, role: "STUDENT", maxPerMonth: 10 },
+    { code: "YEARLY_GOAL", name: "Capai Target Tahunan", description: "Bonus saat mencapai target baca tahunan", points: 200, role: "STUDENT", maxPerMonth: 1 },
+    // Untuk Guru
+    { code: "LOAN_RETURNED", name: "Selesai Baca Buku (Guru)", description: "Poin untuk setiap buku yang selesai dibaca", points: 15, role: "TEACHER", maxPerMonth: 20, minLoanDays: 2, minBookPages: 50 },
+    { code: "READING_LIST_CREATE", name: "Buat Reading List", description: "Guru membuat reading list untuk kelas", points: 30, role: "TEACHER", maxPerMonth: 4, cooldownHours: 168 },
+    { code: "GURU_REVIEW", name: "Review dari Perspektif Guru", description: "Review buku dengan nilai edukatif", points: 20, role: "TEACHER", maxPerMonth: 4 },
+  ];
+
+  for (const r of pointRules) {
+    await db.pointRule.create({ data: r });
+  }
+
+  // ===== Rewards (Katalog Hadiah) =====
+  console.log("   - Seeding rewards...");
+  const rewards = [
+    // Level Pemula (50-200 poin) — Siswa
+    { name: "Bookmark Custom Perpustakaan", description: "Bookmark berkualitas dengan desain eksklusif perpustakaan kami. Tersedia dalam 5 warna.", category: "STATIONERY", pointCost: 50, minRole: "STUDENT", stock: 100, requiresApproval: false, isFeatured: true, sortOrder: 1 },
+    { name: "Pulpen Branded Sekolah", description: "Pulsah hitam dengan logo Jendela Ilmu. Nyaman di tangan untuk mencatat.", category: "STATIONERY", pointCost: 100, minRole: "STUDENT", stock: 80, requiresApproval: false, isFeatured: true, sortOrder: 2 },
+    { name: "Notebook Kecil Eksklusif", description: "Buku catatan A6 dengan sampul bermotif jendela perpustakaan. 80 halaman.", category: "STATIONERY", pointCost: 150, minRole: "STUDENT", stock: 50, requiresApproval: false, isFeatured: true, sortOrder: 3 },
+    { name: "Set Spidol Warna-Warni", description: "Paket 6 spidol warna cerah untuk mencatat dengan penuh warna.", category: "STATIONERY", pointCost: 200, minRole: "STUDENT", stock: 30, requiresApproval: false, isFeatured: true, sortOrder: 4 },
+    // Level Menengah (200-500 poin) — Siswa
+    { name: "Buku Pilihan 1 Eksemplar", description: "Pilih 1 buku dari daftar rekomendasi pustakawan (novel/buku pelajaran). Poin dipotong saat buku dipilih.", category: "BOOK", pointCost: 300, minRole: "STUDENT", stock: 15, requiresApproval: true, isFeatured: true, sortOrder: 5, maxPerMember: 2 },
+    { name: "Bookmark Logam Eksklusif", description: "Bookmark dari stainless steel dengan ukiran logo perpustakaan. Tahan lama dan elegan.", category: "STATIONERY", pointCost: 350, minRole: "STUDENT", stock: 20, requiresApproval: false, sortOrder: 6 },
+    { name: "Voucher Kopi Sekolah Rp 25.000", description: "Voucher untuk kopi/snack di kantin sekolah. Berlaku 30 hari sejak klaim.", category: "VOUCHER", pointCost: 400, minRole: "STUDENT", stock: 25, requiresApproval: true, sortOrder: 7, cooldownDays: 14 },
+    { name: "Topi Sekolah Eksklusif", description: "Topi dengan bordir logo perpustakaan. Warna navy, adjustable size.", category: "GIFT_CARD", pointCost: 450, minRole: "STUDENT", stock: 12, requiresApproval: true, sortOrder: 8 },
+    // Level Lanjut (500-1000 poin) — Siswa
+    { name: "Voucher Buku Gramedia Rp 50.000", description: "Voucher belanja di Gramedia. Bisa untuk beli buku baru.", category: "VOUCHER", pointCost: 600, minRole: "STUDENT", stock: 8, requiresApproval: true, sortOrder: 9, maxPerMember: 1, cooldownDays: 60 },
+    { name: "Sertifikat 'Pembaca Teladan'", description: "Sertifikat digital & fisik untuk Siswa dengan poin tertinggi bulanan.", category: "CERTIFICATE", pointCost: 700, minRole: "STUDENT", stock: null, requiresApproval: true, sortOrder: 10 },
+    { name: "Paket 3 Buku Pilihan", description: "Pilih 3 buku berbeda dari katalog perpustakaan.", category: "BOOK", pointCost: 800, minRole: "STUDENT", stock: 6, requiresApproval: true, sortOrder: 11, maxPerMember: 1 },
+    { name: "Mystery Box Perpustakaan", description: "Kotak misteri berisi merchandise &文具随机.惊喜等你来开!", category: "CUSTOM", pointCost: 1000, minRole: "STUDENT", stock: 5, requiresApproval: true, sortOrder: 12, maxPerMember: 1 },
+    // Level Prestisius (1000+ poin) — Siswa
+    { name: "Buku Edisi Khusus/Koleksi", description: "Buku langka atau edisi pertama dari koleksi pilihan pustakawan.", category: "BOOK", pointCost: 1500, minRole: "STUDENT", stock: 3, requiresApproval: true, sortOrder: 13, maxPerMember: 1, cooldownDays: 180 },
+    { name: "Plakat 'Top Reader' Tahunan", description: "Plakat kayu dengan ukiran nama Anda sebagai Top Reader tahun ini.", category: "CERTIFICATE", pointCost: 2000, minRole: "STUDENT", stock: 3, requiresApproval: true, sortOrder: 14, maxPerMember: 1 },
+    // Hadiah Guru
+    { name: "Voucher Kopi Guru Rp 30.000", description: "Voucher untuk kopi premium di kantin guru.", category: "VOUCHER", pointCost: 400, minRole: "TEACHER", stock: null, requiresApproval: false, isFeatured: true, sortOrder: 20 },
+    { name: "Akses Prioritas Ruang Diskusi", description: "Prioritas booking ruang diskusi selama 1 bulan.", category: "PRIVILEGE", pointCost: 500, minRole: "TEACHER", stock: null, requiresApproval: false, sortOrder: 21, cooldownDays: 30 },
+    { name: "Sertifikat 'Guru Inspiratif'", description: "Sertifikat digital yang bisa dicetak & dipajang.", category: "CERTIFICATE", pointCost: 1000, minRole: "TEACHER", stock: null, requiresApproval: true, sortOrder: 22, maxPerMember: 1 },
+    { name: "Buku Referensi Baru", description: "Pilih 1 buku referensi terbaru untuk koleksi pribadi.", category: "BOOK", pointCost: 800, minRole: "TEACHER", stock: 10, requiresApproval: true, sortOrder: 23, maxPerMember: 2 },
+  ];
+
+  for (const r of rewards) {
+    await db.reward.create({
+      data: {
+        ...r,
+        createdById: lib.user.id,
+      },
+    });
+  }
+
+  // ===== Sample Point Transactions (Demo State) =====
+  // Beri poin awal ke siswa1 (Andini) yang sudah return 1 buku
+  console.log("   - Seeding sample point transactions...");
+
+  // Andini: 1 buku returned (Atomic Habits) → LOAN_RETURNED +10, ON_TIME_RETURN +5 = 15 poin
+  const andiniLoan = await db.loan.findFirst({
+    where: { memberId: siswa1.member.id, status: "RETURNED" },
+    orderBy: { returnDate: "asc" },
+  });
+  if (andiniLoan) {
+    await db.pointTransaction.create({
+      data: {
+        memberId: siswa1.member.id,
+        type: "EARN",
+        source: "LOAN_RETURNED",
+        sourceId: andiniLoan.id,
+        pointsConfigId: (await db.pointRule.findFirst({ where: { code: "LOAN_RETURNED", role: "STUDENT" } }))?.id,
+        amount: 10,
+        balanceAfter: 10,
+        description: "Selesai baca 'Atomic Habits'",
+      },
+    });
+    await db.pointTransaction.create({
+      data: {
+        memberId: siswa1.member.id,
+        type: "EARN",
+        source: "ON_TIME_RETURN",
+        sourceId: andiniLoan.id,
+        pointsConfigId: (await db.pointRule.findFirst({ where: { code: "ON_TIME_RETURN", role: "STUDENT" } }))?.id,
+        amount: 5,
+        balanceAfter: 15,
+        description: "Tepat waktu!",
+      },
+    });
+  }
+
+  // Siswa4 (Dimas): 1 returned (A Brief History of Time) → 10 poin
+  const dimasLoan = await db.loan.findFirst({
+    where: { memberId: siswa4.member.id, status: "RETURNED" },
+    orderBy: { returnDate: "asc" },
+  });
+  if (dimasLoan) {
+    await db.pointTransaction.create({
+      data: {
+        memberId: siswa4.member.id,
+        type: "EARN",
+        source: "LOAN_RETURNED",
+        sourceId: dimasLoan.id,
+        amount: 10,
+        balanceAfter: 10,
+        description: "Selesai baca 'A Brief History of Time'",
+      },
+    });
+  }
+
+  // Guru1 (Budi): belum ada returned loan (semua aktif)
+
+  // ===== Sample Reward Redemption (Demo) =====
+  console.log("   - Seeding sample redemptions...");
+
+  // Andini klaim 1 bookmark (sudah disetujui & delivered) sebagai demo
+  const bookmarkReward = await db.reward.findFirst({
+    where: { name: "Bookmark Custom Perpustakaan" },
+  });
+  if (bookmarkReward && andiniLoan) {
+    // Refund poin untuk demo
+    const currentBalance = 15;
+    const newBalance = currentBalance - 50; // -50 untuk bookmark
+
+    // Create transaction (REDEMEM)
+    const redemption = await db.rewardRedemption.create({
+      data: {
+        memberId: siswa1.member.id,
+        rewardId: bookmarkReward.id,
+        rewardName: bookmarkReward.name,
+        rewardCategory: bookmarkReward.category,
+        pointsSpent: 50,
+        status: "DELIVERED",
+        approvedById: lib.user.id,
+        approvedAt: daysAgo(2),
+        deliveredAt: daysAgo(1),
+        deliveredById: lib.user.id,
+        memberNote: "Warna biru dongker kalau ada",
+        staffNote: "Diberikan saat Andini ke perpus",
+      },
+    });
+
+    // Kurangi stok
+    await db.reward.update({
+      where: { id: bookmarkReward.id },
+      data: { stockClaimed: 1 },
+    });
+
+    // Log transaksi poin
+    await db.pointTransaction.create({
+      data: {
+        memberId: siswa1.member.id,
+        type: "REDEEM",
+        rewardId: bookmarkReward.id,
+        redemptionId: redemption.id,
+        amount: 50,
+        balanceAfter: -35, // Saldo jadi minus (sebelum refund kita adjust)
+        description: `Tukar "${bookmarkReward.name}"`,
+      },
+    });
+
+    // Kasih adjustment supaya saldo konsisten
+    await db.pointTransaction.create({
+      data: {
+        memberId: siswa1.member.id,
+        type: "ADJUST_UP",
+        amount: 35,
+        balanceAfter: 0,
+        description: "Penyesuaian saldo demo (hackathon seed)",
+        awardedById: lib.user.id,
+      },
+    });
+  }
+
   console.log("✅ Seeding selesai!");
   console.log(`   - ${books.length} buku dengan eksemplar`);
   console.log("   - 7 anggota (1 pustakawan, 2 guru, 4 siswa)");
+  console.log("   - 11 point rules (9 untuk siswa, 3 untuk guru)");
+  console.log("   - 18 hadiah (15 siswa, 4 guru)");
+  console.log("   - Sample transactions: Andini 0 poin (sudah tukar bookmark), Dimas 10 poin");
   console.log("   - Akun demo:");
   console.log("     Pustakawan: pustakawan@jendelailmu.sch.id / password123");
   console.log("     Guru: budi@jendelailmu.sch.id / password123");

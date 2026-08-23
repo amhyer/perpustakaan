@@ -32,6 +32,11 @@ model User {
   twoFactor     TwoFactorSecret?
   passwordResetTokens PasswordResetToken[]
   activeSessions     ActiveSession[]
+  // Reward System relations
+  pointTransactionsAwarded PointTransaction[] @relation("PointAdjuster")
+  rewardsCreated           Reward[]            @relation("RewardCreator")
+  redemptionsApproved      RewardRedemption[]  @relation("RewardApprover")
+  redemptionsDelivered     RewardRedemption[]  @relation("RewardDeliverer")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -78,6 +83,9 @@ model Member {
   roomBookings RoomBooking[]
   visitors     Visitor[]
   assetLoans   AssetLoan[]
+  // Reward System relations
+  pointTransactions PointTransaction[]
+  redemptions       RewardRedemption[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -650,4 +658,189 @@ model ErrorLog {
   @@index([userId])
   @@index([createdAt])
   @@index([resolved])
+}
+
+// =========================================================================
+// REWARD SYSTEM — Sistem Poin & Hadiah untuk Siswa/Guru
+// =========================================================================
+
+/// Aturan poin yang bisa dikonfigurasi pustakawan.
+/// Setiap event (loan returned, review, badge earned) memicu rule ini.
+model PointRule {
+  id          String   @id @default(cuid())
+
+  // Identifikasi rule
+  code        String   @unique // LOAN_RETURNED, STREAK_7, REVIEW_5STAR, dll
+  name        String
+  description String?
+
+  // Konfigurasi poin
+  points      Int      // 10 poin per trigger
+  role        String   @default("STUDENT") // STUDENT | TEACHER | BOTH
+
+  // Pembatasan
+  isActive    Boolean  @default(true)
+  maxPerDay   Int?     // null = unlimited
+  maxPerMonth Int?     // null = unlimited
+  cooldownHours Int?   // null = no cooldown
+
+  // Periode aktif (untuk event khusus, misal "Marathon Juni")
+  validFrom   DateTime?
+  validUntil  DateTime?
+
+  // Anti-cheat: minimal durasi baca & halaman
+  minLoanDays    Int?  // null = no min, mis. 2 (tidak dapat poin kalau pinjam <2 hari)
+  minBookPages   Int?  // null = no min, mis. 50 (buku tipis tidak dapat poin)
+  requireReview  Boolean @default(false) // Harus tulis review untuk dapat poin
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  transactions PointTransaction[]
+
+  @@index([code, isActive])
+  @@index([role, isActive])
+}
+
+/// Buku besar (ledger) semua transaksi poin.
+/// Setiap perubahan poin (masuk/keluar) di-log untuk audit & transparansi.
+model PointTransaction {
+  id          String   @id @default(cuid())
+
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  // Tipe transaksi
+  type        String   // EARN | REDEEM | ADJUST_UP | ADJUST_DOWN | EXPIRE
+
+  // Sumber (untuk EARN)
+  source      String?  // LOAN_RETURNED | STREAK | REVIEW | RATING | BADGE | MANUAL | EARLY_RETURN | ON_TIME_RETURN
+  sourceId    String?  // ID dari Loan/Review/Badge (opsional)
+
+  // Rule config yang trigger
+  pointsConfigId String?
+  pointsConfig   PointRule? @relation(fields: [pointsConfigId], references: [id])
+
+  // Nominal
+  amount      Int      // +50 (earn) atau -200 (redeem). Selalu positif.
+  balanceAfter Int     // snapshot saldo setelah transaksi (running balance)
+
+  // Untuk REDEEM — link ke Reward & Redemption
+  rewardId    String?
+  reward      Reward?  @relation(fields: [rewardId], references: [id])
+  redemptionId String?
+  redemption  RewardRedemption? @relation(fields: [redemptionId], references: [id])
+
+  // Metadata
+  description String?  // "Selesai baca 'Laskar Pelangi'"
+
+  // Untuk MANUAL: pustakawan yang kasih
+  awardedById String?
+  awardedBy   User?    @relation("PointAdjuster", fields: [awardedById], references: [id])
+
+  // Untuk EXPIRE: tanggal poin tsb jadi invalid
+  expiresAt   DateTime?
+
+  createdAt   DateTime @default(now())
+
+  @@index([memberId, createdAt])
+  @@index([type, createdAt])
+  @@index([source, sourceId])
+  @@index([redemptionId])
+  @@index([expiresAt])
+}
+
+/// Katalog hadiah yang dikelola pustakawan.
+/// Siswa/guru klaim dari sini, pustakawan approve & serahkan.
+model Reward {
+  id          String   @id @default(cuid())
+
+  // Info dasar
+  name        String
+  description String?
+  imageUrl    String?  // Foto hadiah (upload atau URL)
+  category    String   // BOOK | STATIONERY | VOUCHER | GIFT_CARD | PRIVILEGE | CERTIFICATE | CUSTOM
+
+  // Biaya & syarat
+  pointCost   Int      // 200 poin
+  minRole     String   @default("STUDENT") // STUDENT | TEACHER (siapa yang boleh)
+
+  // Stok
+  stock       Int?     // null = unlimited
+  stockClaimed Int     @default(0)
+
+  // Aturan klaim
+  requiresApproval Boolean @default(false) // Hadiah mahal perlu approval pustakawan
+  maxPerMember     Int?    // null = unlimited, atau max klaim per siswa
+  cooldownDays     Int?    // null = no cooldown, atau min jarak antar klaim
+
+  // Tampilan
+  isActive    Boolean  @default(true)
+  isFeatured  Boolean  @default(false) // Tampil di "Highlighted"
+  sortOrder   Int      @default(0)     // Urutan tampil (asc)
+
+  // Audit
+  createdById String
+  createdBy   User     @relation("RewardCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  redemptions RewardRedemption[]
+  transactions PointTransaction[]
+
+  @@index([isActive, isFeatured])
+  @@index([isActive, sortOrder])
+  @@index([category])
+  @@index([minRole, isActive])
+}
+
+/// Histori klaim hadiah oleh member.
+/// Flow: PENDING → APPROVED → DELIVERED (atau CANCELLED/REJECTED).
+model RewardRedemption {
+  id          String   @id @default(cuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id])
+  rewardId    String
+  reward      Reward   @relation(fields: [rewardId], references: [id])
+
+  // Snapshot (untuk audit, kalau hadiah diedit/hapus history tetap valid)
+  rewardName  String
+  rewardCategory String
+  pointsSpent Int
+
+  // Status flow
+  status      String   @default("PENDING")
+  // PENDING → APPROVED → DELIVERED (happy path)
+  // PENDING → REJECTED (pustakawan tolak, poin di-refund)
+  // PENDING | APPROVED → CANCELLED (siswa batalkan sebelum disetujui)
+
+  // Approval
+  approvedById String?
+  approvedBy   User?    @relation("RewardApprover", fields: [approvedById], references: [id])
+  approvedAt  DateTime?
+  rejectionReason String?
+
+  // Pengambilan
+  pickupCode  String   @unique @default(cuid()) // Kode untuk scan saat ambil
+  deliveredAt DateTime?
+  deliveredById String?
+  deliveredBy   User?    @relation("RewardDeliverer", fields: [deliveredById], references: [id])
+  deliveryNotes String?
+
+  // Catatan
+  memberNote  String?  // Catatan dari siswa saat klaim (misal ukuran, warna)
+  staffNote   String?  // Catatan internal pustakawan
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  transactions PointTransaction[]
+
+  @@index([memberId, status])
+  @@index([memberId, createdAt])
+  @@index([status, createdAt])
+  @@index([rewardId])
+  @@index([pickupCode])
+  @@index([approvedById])
 }
