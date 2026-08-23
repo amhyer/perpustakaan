@@ -30,8 +30,12 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files (but keep .env.example for documentation)
+.env
+.env.local
+.env.development
+.env.production
+!.env.example
 
 # vercel
 .vercel
@@ -60,5 +64,6 @@ slims9_bulian-9.8.0/
 /public/uploads/
 *.csv
 *.docx
-*.err.github/workflows/
-**/.github/workflows/
+*.err
+# .github/workflows/ is ignored, but allow .github/workflows/ci.yml
+# (the actual workflows directory is committed, only backups are ignored)
