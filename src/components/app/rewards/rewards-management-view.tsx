@@ -2,20 +2,22 @@
 
 /**
  * RewardsManagementView — Dashboard pustakawan untuk manage reward system.
- * Tabs: Approval Queue | Katalog | Analytics
+ * Tabs: Approval Queue | Katalog | Scan & Deliver | Analytics
  */
 
 import { useEffect, useState } from "react";
-import { Inbox, Package, BarChart3, Check, X, AlertTriangle, Search } from "lucide-react";
+import { Inbox, Package, BarChart3, ScanLine, Plus, Edit, Trash2, RotateCcw } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { Card, CardContent } from "@/components/ui/layout/card";
 import { Button } from "@/components/ui/form/button";
-import { Textarea } from "@/components/ui/form/textarea";
 import { Input } from "@/components/ui/form/input";
+import { Textarea } from "@/components/ui/form/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { RewardForm } from "./reward-form";
+import { AdminRedeemView } from "./admin-redeem-view";
 
-type Tab = "queue" | "catalog" | "analytics";
+type Tab = "queue" | "catalog" | "redeem" | "analytics";
 
 interface PendingRedemption {
   id: string;
@@ -62,10 +64,11 @@ export function RewardsManagementView() {
         <p className="text-sm text-slate-500 mt-1">Kelola klaim, katalog, dan analytics</p>
       </div>
 
-      <div className="flex items-center gap-1 border-b border-slate-200">
+      <div className="flex items-center gap-1 border-b border-slate-200 overflow-x-auto">
         {[
           { key: "queue" as const, label: "Approval Queue", icon: Inbox },
-          { key: "catalog" as const, label: "Katalog Hadiah", icon: Package },
+          { key: "catalog" as const, label: "Katalog", icon: Package },
+          { key: "redeem" as const, label: "Scan & Deliver", icon: ScanLine },
           { key: "analytics" as const, label: "Analytics", icon: BarChart3 },
         ].map((t) => {
           const Icon = t.icon;
@@ -74,7 +77,7 @@ export function RewardsManagementView() {
               key={t.key}
               onClick={() => setTab(t.key)}
               className={cn(
-                "px-4 py-2.5 text-sm flex items-center gap-1.5 transition-colors",
+                "px-4 py-2.5 text-sm flex items-center gap-1.5 transition-colors whitespace-nowrap",
                 tab === t.key
                   ? "border-b-2 border-blue-600 text-blue-600 font-semibold"
                   : "text-slate-600 hover:text-slate-900"
@@ -89,6 +92,7 @@ export function RewardsManagementView() {
 
       {tab === "queue" && <ApprovalQueueTab />}
       {tab === "catalog" && <CatalogAdminTab />}
+      {tab === "redeem" && <AdminRedeemView />}
       {tab === "analytics" && <AnalyticsTab />}
     </div>
   );
@@ -180,37 +184,75 @@ function ApprovalQueueTab() {
   const handleBulkApprove = async () => {
     if (selected.size === 0) return;
     setActionLoading(true);
-    try {
-      for (const id of selected) {
+    let success = 0;
+    let failed = 0;
+    for (const id of selected) {
+      try {
         await api.post(`/api/redemptions/admin/${id}/approve`, {});
+        success++;
+      } catch {
+        failed++;
       }
-      toast.success(`${selected.size} klaim disetujui`);
-      setSelected(new Set());
-      await load();
-    } catch (err) {
-      toast.error("Sebagian gagal diproses");
-    } finally {
-      setActionLoading(false);
     }
+    if (success > 0) toast.success(`${success} klaim disetujui`);
+    if (failed > 0) toast.error(`${failed} gagal`);
+    setSelected(new Set());
+    await load();
+    setActionLoading(false);
+  };
+
+  const handleBulkReject = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`Tolak ${selected.size} klaim sekaligus? Poin akan di-refund ke masing-masing siswa.`)) {
+      return;
+    }
+    const reason = prompt("Alasan penolakan untuk semua:");
+    if (!reason || reason.trim().length < 3) {
+      toast.error("Alasan minimal 3 karakter");
+      return;
+    }
+    setActionLoading(true);
+    let success = 0;
+    for (const id of selected) {
+      try {
+        await api.post(`/api/redemptions/admin/${id}/reject`, { reason });
+        success++;
+      } catch {
+        // continue
+      }
+    }
+    toast.success(`${success} klaim ditolak & poin di-refund`);
+    setSelected(new Set());
+    await load();
+    setActionLoading(false);
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h3 className="font-semibold text-lg">Antrian Klaim</h3>
-          <p className="text-sm text-slate-500">
-            {pendingCount} klaim menunggu persetujuan
-          </p>
+          <p className="text-sm text-slate-500">{pendingCount} klaim menunggu</p>
         </div>
         <div className="flex items-center gap-2">
           <Button onClick={load} variant="outline" size="sm">
             ↻ Refresh
           </Button>
           {selected.size > 0 && (
-            <Button onClick={handleBulkApprove} size="sm" disabled={actionLoading}>
-              ✓ Setujui {selected.size} Item
-            </Button>
+            <>
+              <Button onClick={handleBulkApprove} size="sm" disabled={actionLoading}>
+                ✓ Setujui {selected.size}
+              </Button>
+              <Button
+                onClick={handleBulkReject}
+                size="sm"
+                variant="outline"
+                className="text-red-600 border-red-300"
+                disabled={actionLoading}
+              >
+                ✗ Tolak {selected.size}
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -290,15 +332,14 @@ function ApprovalQueueTab() {
                             r.insufficientBalance ? "text-red-600" : "text-green-600"
                           )}
                         >
-                          {r.currentBalance} ⭐ → -{r.pointsSpent} ={" "}
-                          {r.currentBalance - r.pointsSpent}{" "}
+                          {r.currentBalance} → -{r.pointsSpent} = {r.currentBalance - r.pointsSpent}{" "}
                           {r.insufficientBalance ? "❌" : "✓"}
                         </div>
                       </div>
                       <div>
-                        <div className="text-slate-500">Stok Tersisa</div>
-                        <div className="font-medium text-slate-900">
-                          {r.stockRemaining === null ? "Unlimited" : `${r.stockRemaining} item`}
+                        <div className="text-slate-500">Stok</div>
+                        <div className="font-medium">
+                          {r.stockRemaining === null ? "Unlimited" : `${r.stockRemaining} tersisa`}
                         </div>
                       </div>
                     </div>
@@ -310,16 +351,10 @@ function ApprovalQueueTab() {
                     )}
 
                     {r.insufficientBalance && (
-                      <div className="mt-2 text-xs text-red-600 font-medium flex items-center gap-1.5">
-                        <AlertTriangle className="h-3 w-3" />
-                        Saldo tidak cukup! Wajib ditolak.
-                      </div>
+                      <div className="mt-2 text-xs text-red-600 font-medium">⚠️ Saldo tidak cukup! Wajib ditolak.</div>
                     )}
                     {r.cooldownWarning && !r.insufficientBalance && (
-                      <div className="mt-2 text-xs text-amber-600 flex items-center gap-1.5">
-                        <AlertTriangle className="h-3 w-3" />
-                        {r.cooldownWarning}
-                      </div>
+                      <div className="mt-2 text-xs text-amber-600">⚠️ {r.cooldownWarning}</div>
                     )}
                   </div>
                   <div className="flex flex-col gap-2 shrink-0">
@@ -329,8 +364,7 @@ function ApprovalQueueTab() {
                       size="sm"
                       className="bg-green-600 hover:bg-green-700"
                     >
-                      <Check className="h-3 w-3 mr-1" />
-                      Setujui
+                      ✓ Setujui
                     </Button>
                     <Button
                       onClick={() => {
@@ -340,10 +374,9 @@ function ApprovalQueueTab() {
                       disabled={actionLoading}
                       size="sm"
                       variant="outline"
-                      className="text-red-600 border-red-300 hover:bg-red-50"
+                      className="text-red-600 border-red-300"
                     >
-                      <X className="h-3 w-3 mr-1" />
-                      Tolak
+                      ✗ Tolak
                     </Button>
                   </div>
                 </div>
@@ -353,7 +386,6 @@ function ApprovalQueueTab() {
         </>
       )}
 
-      {/* Reject modal */}
       {rejectTarget && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <Card className="max-w-md w-full">
@@ -361,8 +393,7 @@ function ApprovalQueueTab() {
               <h3 className="font-bold text-lg mb-2">Tolak Klaim</h3>
               <p className="text-sm text-slate-600 mb-4">
                 Klaim <strong>{rejectTarget.rewardName}</strong> oleh{" "}
-                <strong>{rejectTarget.member.fullName}</strong> akan ditolak. Poin akan
-                dikembalikan otomatis.
+                <strong>{rejectTarget.member.fullName}</strong>. Poin akan dikembalikan otomatis.
               </p>
               <label className="text-sm font-medium block mb-1">
                 Alasan penolakan <span className="text-red-500">*</span>
@@ -375,11 +406,7 @@ function ApprovalQueueTab() {
                 maxLength={500}
               />
               <div className="flex gap-2 justify-end mt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setRejectTarget(null)}
-                  disabled={actionLoading}
-                >
+                <Button variant="outline" onClick={() => setRejectTarget(null)} disabled={actionLoading}>
                   Batal
                 </Button>
                 <Button
@@ -399,71 +426,177 @@ function ApprovalQueueTab() {
 }
 
 // =========================================================================
-// SUB-COMPONENT: Catalog Admin (simplified)
+// SUB-COMPONENT: Catalog Admin (CRUD lengkap)
 // =========================================================================
 function CatalogAdminTab() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const data = await api.get<{ items: any[] }>("/api/rewards?pageSize=60");
+      setItems(data.items);
+    } catch {
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    api
-      .get("/api/rewards?pageSize=60")
-      .then((d: any) => setItems(d.items || []))
-      .finally(() => setLoading(false));
+    load();
   }, []);
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Nonaktifkan hadiah "${name}"? History klaim siswa akan tetap tersimpan.`)) return;
+    try {
+      await api.delete(`/api/rewards/admin/${id}`);
+      toast.success("Hadiah dinonaktifkan");
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal");
+    }
+  };
+
+  const handleReactivate = async (id: string) => {
+    try {
+      await api.patch(`/api/rewards/admin/${id}`, { isActive: true });
+      toast.success("Hadiah diaktifkan kembali");
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal");
+    }
+  };
+
+  const filtered = items
+    .filter((i) => (showInactive ? true : i.isActive))
+    .filter((i) => !search || i.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <Input
-          placeholder="Cari hadiah..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
-        <Button disabled title="Coming soon">
-          + Tambah Hadiah
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-1">
+          <Input
+            placeholder="Cari hadiah..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="max-w-sm"
+          />
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showInactive}
+              onChange={(e) => setShowInactive(e.target.checked)}
+            />
+            Tampilkan non-aktif
+          </label>
+        </div>
+        <Button onClick={() => setCreating(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Tambah Hadiah
         </Button>
       </div>
-      <p className="text-xs text-slate-500">
-        Form tambah/edit hadiah lengkap akan diimplementasi di Sprint 2.
-        Untuk sekarang, gunakan katalog yang sudah ada di seed.
-      </p>
+
       {loading ? (
-        <div>Loading...</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="border rounded-lg p-3 animate-pulse">
+              <div className="h-16 bg-slate-100 rounded" />
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {items
-            .filter((i) => !search || i.name.toLowerCase().includes(search.toLowerCase()))
-            .map((r) => {
-              const emoji = CATEGORY_EMOJI[r.category] || "🎁";
-              return (
-                <div key={r.id} className="border rounded-lg p-3 flex items-center gap-3">
-                  <div className="text-3xl">{emoji}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm truncate">{r.name}</div>
-                    <div className="text-xs text-slate-500">
-                      ⭐ {r.pointCost} • Stok:{" "}
-                      {r.stock === null ? "∞" : `${(r.stock || 0) - r.stockClaimed}/${r.stock}`}
-                    </div>
+          {filtered.map((r) => {
+            const emoji = CATEGORY_EMOJI[r.category] || "🎁";
+            const remaining = r.stock === null ? null : (r.stock || 0) - r.stockClaimed;
+            const lowStock = r.stock !== null && remaining !== null && remaining <= 3;
+            return (
+              <div
+                key={r.id}
+                className={cn(
+                  "border rounded-lg p-3 flex items-center gap-3",
+                  !r.isActive && "opacity-60 bg-slate-50"
+                )}
+              >
+                <div className="text-3xl shrink-0">{emoji}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm truncate">{r.name}</div>
+                  <div className="text-xs text-slate-500 flex items-center gap-1 flex-wrap">
+                    <span>⭐ {r.pointCost}</span>
+                    {r.requiresApproval && (
+                      <span className="text-purple-600">• Approval</span>
+                    )}
+                    {r.stock !== null && (
+                      <span className={cn(lowStock && "text-amber-600 font-semibold")}>
+                        • Stok: {remaining}/{r.stock}
+                      </span>
+                    )}
                   </div>
-                  {!r.isActive && (
-                    <span className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded">
-                      Nonaktif
-                    </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  {!r.isActive ? (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleReactivate(r.id)}
+                      title="Aktifkan kembali"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => setEditing(r)}
+                        title="Edit"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleDelete(r.id, r.name)}
+                        title="Nonaktifkan"
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </>
                   )}
                 </div>
-              );
-            })}
+              </div>
+            );
+          })}
         </div>
+      )}
+
+      {/* Form modal */}
+      {(creating || editing) && (
+        <RewardForm
+          initial={editing}
+          onSuccess={() => {
+            setCreating(false);
+            setEditing(null);
+            load();
+          }}
+          onCancel={() => {
+            setCreating(false);
+            setEditing(null);
+          }}
+        />
       )}
     </div>
   );
 }
 
 // =========================================================================
-// SUB-COMPONENT: Analytics (simplified)
+// SUB-COMPONENT: Analytics
 // =========================================================================
 function AnalyticsTab() {
   const [data, setData] = useState<any>(null);
@@ -477,8 +610,8 @@ function AnalyticsTab() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div>Loading analytics...</div>;
-  if (!data) return <div>Gagal memuat analytics</div>;
+  if (loading) return <div className="text-center py-8">Loading analytics...</div>;
+  if (!data) return <div className="text-center py-8 text-red-500">Gagal memuat analytics</div>;
 
   return (
     <div className="space-y-4">
@@ -486,13 +619,13 @@ function AnalyticsTab() {
         <Card>
           <CardContent className="p-4">
             <div className="text-xs text-slate-500 mb-1">💰 Poin Beredar</div>
-            <div className="text-2xl font-bold">{data.kpis.totalCirculation}</div>
+            <div className="text-2xl font-bold">{data.kpis.totalCirculation.toLocaleString()}</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <div className="text-xs text-slate-500 mb-1">📈 Poin Masuk Bulan Ini</div>
-            <div className="text-2xl font-bold">{data.kpis.monthEarn}</div>
+            <div className="text-2xl font-bold">{data.kpis.monthEarn.toLocaleString()}</div>
           </CardContent>
         </Card>
         <Card>
@@ -519,12 +652,13 @@ function AnalyticsTab() {
                 className={cn(
                   "flex items-center gap-3 p-2 rounded-lg",
                   entry.rank === 1 && "bg-gradient-to-r from-amber-50 to-yellow-50",
-                  entry.rank > 1 && "bg-slate-50"
+                  entry.rank === 2 && "bg-slate-50",
+                  entry.rank === 3 && "bg-orange-50"
                 )}
               >
                 <div
                   className={cn(
-                    "w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center",
+                    "w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center shrink-0",
                     entry.rank === 1 && "bg-amber-400",
                     entry.rank === 2 && "bg-slate-400",
                     entry.rank === 3 && "bg-orange-400",
@@ -539,12 +673,43 @@ function AnalyticsTab() {
                     {entry.member.classGrade || entry.member.category}
                   </div>
                 </div>
-                <div className="font-bold text-amber-700">{entry.balance} ⭐</div>
+                <div className="font-bold text-amber-700 shrink-0">
+                  {entry.balance.toLocaleString()} ⭐
+                </div>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
+
+      {data.topRewards?.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h4 className="font-semibold mb-3">🔥 Hadiah Terlaris</h4>
+            <div className="space-y-3">
+              {data.topRewards.map((r: any, idx: number) => {
+                const max = data.topRewards[0].claimCount;
+                return (
+                  <div key={r.id}>
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span className="font-medium">
+                        {CATEGORY_EMOJI[r.category] || "🎁"} {r.name}
+                      </span>
+                      <span className="text-slate-500">{r.claimCount} klaim</span>
+                    </div>
+                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-500 rounded-full transition-all"
+                        style={{ width: `${(r.claimCount / max) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {data.lowStock.length > 0 && (
         <Card className="border-amber-300 bg-amber-50/30">
@@ -553,7 +718,9 @@ function AnalyticsTab() {
             <div className="space-y-1.5 text-sm">
               {data.lowStock.map((r: any) => (
                 <div key={r.id} className="flex items-center justify-between">
-                  <span>{CATEGORY_EMOJI[r.category] || "🎁"} {r.name}</span>
+                  <span>
+                    {CATEGORY_EMOJI[r.category] || "🎁"} {r.name}
+                  </span>
                   <span className="text-amber-700 font-semibold">
                     {r.remaining} / {r.stock} tersisa
                   </span>

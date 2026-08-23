@@ -203,3 +203,23 @@ export const PointWidget = dynamic(
   () => import("../rewards/point-widget").then((m) => m.PointWidget),
   { loading: () => loadingComponent, ssr: false }
 );
+
+export const PickupCode = dynamic(
+  () => import("../rewards/pickup-code").then((m) => m.PickupCode),
+  { loading: () => loadingComponent, ssr: false }
+);
+
+export const RewardCard = dynamic(
+  () => import("../rewards/reward-card").then((m) => m.RewardCard),
+  { loading: () => loadingComponent, ssr: false }
+);
+
+export const RewardForm = dynamic(
+  () => import("../rewards/reward-form").then((m) => m.RewardForm),
+  { loading: () => loadingComponent, ssr: false }
+);
+
+export const AdminRedeemView = dynamic(
+  () => import("../rewards/admin-redeem-view").then((m) => m.AdminRedeemView),
+  { loading: () => loadingComponent, ssr: false }
+);

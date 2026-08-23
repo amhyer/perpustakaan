@@ -6,12 +6,13 @@
  */
 
 import { useEffect, useState } from "react";
-import { Clock, Check, X, Package, Copy, MapPin, AlertCircle } from "lucide-react";
+import { Clock, Check, X, Package, MapPin, AlertCircle, ScanLine } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { Card, CardContent } from "@/components/ui/layout/card";
 import { Button } from "@/components/ui/form/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PickupCode } from "./pickup-code";
 
 interface RedemptionItem {
   id: string;
@@ -86,11 +87,6 @@ export function MyRedemptionsView() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
-
-  const copyPickupCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    toast.success("Kode disalin!");
-  };
 
   const formatDate = (iso: string) => {
     return new Date(iso).toLocaleDateString("id-ID", {
@@ -216,18 +212,16 @@ export function MyRedemptionsView() {
 
                     {/* Pickup code for APPROVED */}
                     {r.status === "APPROVED" && (
-                      <div className="mt-3 flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-green-600" />
-                        <span className="text-xs text-green-700">
-                          Tunjukkan kode ini ke pustakawan:
-                        </span>
-                        <button
-                          onClick={() => copyPickupCode(r.pickupCode)}
-                          className="bg-white border-2 border-dashed border-green-500 px-3 py-1 rounded-md font-mono text-sm font-bold text-green-700 hover:bg-green-50 flex items-center gap-1"
-                        >
-                          {r.pickupCode}
-                          <Copy className="h-3 w-3" />
-                        </button>
+                      <div className="mt-3 space-y-2">
+                        <div className="flex items-center gap-2 text-green-700">
+                          <ScanLine className="h-4 w-4" />
+                          <span className="text-xs font-medium">
+                            Scan QR atau tunjukkan kode ke pustakawan:
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <PickupCode code={r.pickupCode} variant="full" />
+                        </div>
                       </div>
                     )}
 
