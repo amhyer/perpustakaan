@@ -157,16 +157,27 @@ export const useAppStore = create<AppStore>((set) => ({
 
   view: { key: "dashboard", params: {}, dashboardVariant: "student" },
   setView: (key, params = {}) => {
-    set((state) => ({
-      view: {
-        key,
-        params,
-        // Pertahankan variant yang sudah ada di store, kecuali params override
-        dashboardVariant:
-          (params.variant as "student" | "teacher" | undefined) ??
-          state.view.dashboardVariant,
-      },
-    }));
+    set((state) => {
+      // Auto-track this view as recent (Sprint G2)
+      // Skip tracking untuk view "default" atau special keys
+      const skipTracking = ["kiosk"];
+      if (typeof window !== "undefined" && !skipTracking.includes(key)) {
+        // Defer to allow state update
+        queueMicrotask(() => {
+          state.trackRecent({ key, params });
+        });
+      }
+      return {
+        view: {
+          key,
+          params,
+          // Pertahankan variant yang sudah ada di store, kecuali params override
+          dashboardVariant:
+            (params.variant as "student" | "teacher" | undefined) ??
+            state.view.dashboardVariant,
+        },
+      };
+    });
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }

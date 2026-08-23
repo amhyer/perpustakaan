@@ -21,3 +21,8 @@ export { ExecutiveAlertCard } from "./executive-alert-card";
 
 // Performance optimization (Sprint 4)
 export { LazyChart } from "./lazy-chart";
+
+// Sprint G2 — Role-specific widgets
+export { LibrarianActivityWidget } from "./librarian-activity-widget";
+export { StudentQuickActionsWidget } from "./student-quick-actions-widget";
+export { TeacherInsightsWidget } from "./teacher-insights-widget";
