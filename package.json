@@ -98,7 +98,7 @@
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.6.0",
     "tailwindcss-animate": "^1.0.7",
-    "uuid": "^11.1.0",
+    "uuid": "^14.0.2",
     "vaul": "^1.1.2",
     "web-vitals": "^4.2.4",
     "ws": "^8.21.3",
