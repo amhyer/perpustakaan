@@ -31,3 +31,6 @@ export { TeacherInsightsWidget } from "./teacher-insights-widget";
 export { ReadingLevelWidget } from "./reading-level-widget";
 export { StreakCalendarWidget } from "./streak-calendar-widget";
 export { ClassLeaderboardWidget } from "./class-leaderboard-widget";
+
+// Sprint U — Unified showcase
+export { AchievementShowcaseWidget } from "./achievement-showcase-widget";
