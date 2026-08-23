@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireLibrarian } from "@/lib/auth";
+import { getSmartLeaderboard } from "@/lib/leaderboard-cache";
 
 /**
  * GET /api/rewards/analytics — Analytics dashboard untuk pustakawan.
  *
  * Returns:
  * - kpis: total poin beredar, poin masuk bulan ini, total klaim, stok alert
- * - leaderboard: top 10 members by balance
+ * - leaderboard: top 10 members by balance (cached 5 menit)
  * - topRewards: hadiah paling laris
  * - dailyTrend: klaim per hari 30 hari terakhir
  * - lowStock: hadiah dengan stok hampir habis
+ *
+ * Performance: leaderboard pakai cached snapshot (5 min TTL).
  */
 export async function GET() {
   const { error } = await requireLibrarian();
@@ -40,34 +43,19 @@ export async function GET() {
     where: { createdAt: { gte: monthStart } },
   });
 
-  // === Leaderboard ===
-  const leaderboard = await db.pointTransaction.findMany({
-    orderBy: { createdAt: "desc" },
-    distinct: ["memberId"],
-    take: 10,
-    select: {
-      memberId: true,
-      balanceAfter: true,
-      member: {
-        select: {
-          id: true,
-          fullName: true,
-          memberNumber: true,
-          category: true,
-          classGrade: true,
-          user: { select: { email: true } },
-        },
-      },
+  // === Leaderboard (cached!) ===
+  const snapshot = await getSmartLeaderboard();
+  const sortedLeaderboard = snapshot.entries.slice(0, 10).map((entry) => ({
+    rank: entry.rank,
+    member: {
+      id: entry.member.id,
+      fullName: entry.member.fullName,
+      memberNumber: entry.member.memberNumber,
+      category: entry.member.category,
+      classGrade: entry.member.classGrade,
     },
-  });
-  // Sort by balance desc
-  const sortedLeaderboard = leaderboard
-    .sort((a, b) => b.balanceAfter - a.balanceAfter)
-    .map((entry, idx) => ({
-      rank: idx + 1,
-      member: entry.member,
-      balance: entry.balanceAfter,
-    }));
+    balance: entry.balance,
+  }));
 
   // === Top Rewards ===
   const topRewardsRaw = await db.rewardRedemption.groupBy({

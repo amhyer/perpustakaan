@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireLibrarian } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { eventBus, EVENTS } from "@/lib/event-bus";
 import { logger } from "@/lib/logger";
 import { notify } from "@/lib/notification-service";
 
@@ -89,6 +90,14 @@ export async function POST(
     redemptionId: id,
     deliveredBy: user!.id,
   });
+
+  // Publish real-time event
+  if (member?.userId) {
+    eventBus.publish(member.userId, EVENTS.REDEMPTION_DELIVERED, {
+      redemptionId: id,
+      rewardName: result.redemption.rewardName,
+    });
+  }
 
   return NextResponse.json({
     success: true,

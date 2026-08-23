@@ -5,6 +5,7 @@ import { logAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
 import { notify } from "@/lib/notification-service";
 import { getBalance } from "@/lib/points-engine";
+import { eventBus, EVENTS } from "@/lib/event-bus";
 
 /**
  * POST /api/redemptions/admin/[id]/approve — Setujui klaim.
@@ -90,6 +91,13 @@ export async function POST(
   logger.info("Redemption approved", {
     redemptionId: id,
     approvedBy: user!.id,
+  });
+
+  // Publish real-time event supaya student dashboard auto-refresh
+  eventBus.publish(result.redemption.member.user.id, EVENTS.REDEMPTION_APPROVED, {
+    redemptionId: id,
+    rewardName: result.redemption.rewardName,
+    pickupCode: result.redemption.pickupCode,
   });
 
   return NextResponse.json({
