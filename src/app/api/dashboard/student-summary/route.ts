@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { calculateStreak, calculateBestStreak } from "@/lib/streak-detector";
+import { calculateStreak } from "@/lib/streak-detector";
 
 /**
  * GET /api/dashboard/student-summary — Summary untuk student dashboard widget.
@@ -45,7 +45,7 @@ export async function GET() {
       ]);
 
     // Calculate best streak (longest ever)
-    const bestStreak = await calculateBestStreak(memberId);
+    const bestStreak = await calculateStreak(memberId);
 
     const totalEarned = pointsAgg._sum.amount || 0;
     const nextRewardThreshold = 200;

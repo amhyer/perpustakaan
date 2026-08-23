@@ -24,9 +24,14 @@
  */
 
 import { createServer, IncomingMessage } from "http";
-import { WebSocketServer, WebSocket, RawData } from "ws";
 import { parse as parseUrl } from "url";
 import { logger } from "@/lib/logger";
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const wsModule = require("ws");
+const WebSocketServer = wsModule.WebSocketServer;
+const WebSocket = wsModule.WebSocket;
+type RawData = Buffer | ArrayBuffer | Buffer[];
 
 // ===== Types =====
 

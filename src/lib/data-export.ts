@@ -125,11 +125,9 @@ export async function exportBooks(
   const books = await db.book.findMany({
     where,
     include: {
-      authors: { include: { author: true } },
-      publisher: true,
       category: true,
       location: true,
-      bookItems: {
+      items: {
         select: { status: true },
       },
     },
@@ -137,10 +135,10 @@ export async function exportBooks(
   });
 
   const rows: BookExportRow[] = books.map((b) => {
-    const items = b.bookItems;
+    const items = b.items;
     const total = items.length;
     const tersedia = items.filter((i) => i.status === "AVAILABLE").length;
-    const dipinjam = items.filter((i) => i.status === "LOANED").length;
+    const dipinjam = items.filter((i) => i.status === "BORROWED").length;
     const rusak = items.filter(
       (i) => i.status === "DAMAGED" || i.status === "LOST"
     ).length;
@@ -148,17 +146,17 @@ export async function exportBooks(
     return {
       id: b.id,
       judul: b.title,
-      pengarang: b.authors.map((ba) => ba.author.name).join("; "),
-      penerbit: b.publisher?.name ?? "",
+      pengarang: b.author,
+      penerbit: b.publisher ?? "",
       isbn: b.isbn ?? "",
-      tahun: b.publicationYear ?? null,
+      tahun: b.year ?? null,
       kategori: b.category?.name ?? "",
       rak: b.location?.name ?? "",
       totalEksemplar: total,
       tersedia,
       dipinjam,
       rusak,
-      status: b.status,
+      status: "ACTIVE",
     };
   });
 
@@ -223,7 +221,6 @@ export async function exportMembers(
     include: {
       user: { select: { email: true, role: true, createdAt: true } },
       _count: { select: { loans: true } },
-      gamificationProfile: { select: { points: true } },
     },
     orderBy: { fullName: "asc" },
   });
@@ -250,11 +247,11 @@ export async function exportMembers(
       email,
       telepon,
       role: m.user?.role ?? "",
-      tipe: m.memberType,
+      tipe: m.category,
       status: m.status,
-      tglDaftar: fmtDate(m.user?.createdAt ?? null),
+      tglDaftar: fmtDate(m.joinDate),
       totalPeminjaman: m._count.loans,
-      poin: m.gamificationProfile?.points ?? 0,
+      poin: 0,
     };
   });
 
@@ -318,10 +315,10 @@ export async function exportLoans(
   const where: Record<string, any> = {};
   if (status !== "ALL") {
     if (status === "OVERDUE") {
-      where.status = "ACTIVE";
+      where.status = "LOANED";
       where.dueDate = { lt: new Date() };
     } else if (status === "ACTIVE") {
-      where.status = "ACTIVE";
+      where.status = "LOANED";
     } else if (status === "RETURNED") {
       where.status = "RETURNED";
     } else if (status === "LOST") {
@@ -346,13 +343,13 @@ export async function exportLoans(
     id: l.id,
     anggota: l.member?.fullName ?? "Unknown",
     buku: l.bookItem?.book?.title ?? "Unknown",
-    eksemplar: l.bookItem?.barcode ?? "",
+    eksemplar: l.bookItem?.itemCode ?? "",
     tglPinjam: fmtDate(l.loanDate),
     jatuhTempo: fmtDate(l.dueDate),
     tglKembali: fmtDate(l.returnDate),
     status: l.status,
     denda: l.fineAmount ?? 0,
-    perpanjangan: l.renewalCount ?? 0,
+    perpanjangan: l.renewedCount ?? 0,
   }));
 
   const content = generateCSV(
@@ -406,37 +403,33 @@ export async function exportFines(
 ): Promise<ExportResult> {
   const where: Record<string, any> = {};
   if (onlyUnpaid) {
-    where.paidAt = null;
-    where.status = { in: ["PENDING", "UNPAID"] };
+    where.finePaid = 0;
+    where.fineAmount = { gt: 0 };
   }
   Object.assign(where, applyDateRange(range, "createdAt"));
 
-  const fines = await db.fine.findMany({
+  const loans = await db.loan.findMany({
     where,
     include: {
-      loan: {
-        include: {
-          member: { select: { fullName: true } },
-          bookItem: { include: { book: { select: { title: true } } } },
-        },
-      },
+      member: { select: { fullName: true } },
+      bookItem: { include: { book: { select: { title: true } } } },
     },
     orderBy: { createdAt: "desc" },
   });
 
-  const rows: FineExportRow[] = fines.map((f) => {
-    const amount = f.amount ?? 0;
-    const paid = f.paidAmount ?? 0;
+  const rows: FineExportRow[] = loans.map((f) => {
+    const amount = f.fineAmount ?? 0;
+    const paid = f.finePaid ?? 0;
     return {
       id: f.id,
-      anggota: f.loan?.member?.fullName ?? "Unknown",
-      buku: f.loan?.bookItem?.book?.title ?? "Unknown",
+      anggota: f.member?.fullName ?? "Unknown",
+      buku: f.bookItem?.book?.title ?? "Unknown",
       jumlah: amount,
       dibayar: paid,
       sisa: Math.max(0, amount - paid),
       status: f.status,
       tgl: fmtDate(f.createdAt),
-      alasan: f.reason ?? "",
+      alasan: f.notes ?? "",
     };
   });
 
@@ -554,10 +547,10 @@ export async function exportAuditLog(
     tanggal: fmtDate(l.createdAt),
     user: l.user?.email ?? l.userId ?? "system",
     aksi: l.action,
-    resource: l.resource,
-    resourceId: l.resourceId ?? "",
-    detail: typeof l.changes === "string" ? l.changes : JSON.stringify(l.changes ?? {}),
-    ip: l.ipAddress ?? "",
+    resource: l.entityType,
+    resourceId: l.entityId ?? "",
+    detail: l.detail ?? "",
+    ip: "",
   }));
 
   const content = generateCSV(

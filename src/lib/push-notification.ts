@@ -64,6 +64,7 @@ export async function sendPushToSubscription(
   try {
     // Dynamic import untuk avoid loading web-push kalau tidak dipakai
     // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // @ts-ignore - web-push module not installed
     const webpush = await import("web-push").catch(() => null);
     if (!webpush) {
       logger.warn("web-push not installed, skipping push");
@@ -121,7 +122,7 @@ export async function sendPushBulk(
  */
 export async function requestPushPermission(): Promise<PushSubscription | null> {
   if (typeof window === "undefined") return null;
-  if (!("serviceWorker" in navigator) || !"PushManager" in window) {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
     return null;
   }
 

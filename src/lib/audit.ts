@@ -27,6 +27,21 @@ export const AUDIT_ACTIONS = {
   BATCH_CHECKOUT: "Peminjaman Massal",
   BATCH_RETURN: "Pengembalian Massal",
   BOOK_TRANSFER: "Pemindahan Rak",
+  BULK_RETURN_LOANS: "Pengembalian Massal",
+  BULK_SEND_NOTIFICATIONS: "Notifikasi Massal",
+  BULK_APPROVE_RESERVATIONS: "Persetujuan Reservasi Massal",
+  EXPORT_DATA: "Ekspor Data",
+  DAPODIK_SYNC: "Sinkronisasi Dapodik",
+  REWARD_CREATE: "Buat Hadiah",
+  REWARD_UPDATE: "Update Hadiah",
+  REWARD_DEACTIVATE: "Nonaktifkan Hadiah",
+  REWARD_CLAIM: "Klaim Hadiah",
+  REWARD_APPROVE: "Setujui Klaim Hadiah",
+  REWARD_REJECT: "Tolak Klaim Hadiah",
+  REWARD_DELIVER: "Kirim Hadiah",
+  SEMESTER_ARCHIVE: "Arsip Semester",
+  POINTS_ADJUST_UP: "Penyesuaian Poin Naik",
+  POINTS_ADJUST_DOWN: "Penyesuaian Poin Turun",
 } as const;
 
 export type AuditAction = keyof typeof AUDIT_ACTIONS;

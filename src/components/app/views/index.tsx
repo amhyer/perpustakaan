@@ -98,6 +98,10 @@ export const AuditLogView = dynamic(
   () => import("./audit-log-view").then((m) => m.AuditLogView),
   { loading: () => loadingComponent, ssr: false }
 );
+export const DataExportView = dynamic(
+  () => import("./data-export-view").then((m) => m.DataExportView),
+  { loading: () => loadingComponent, ssr: false }
+);
 export const BookTransferView = dynamic(
   () => import("./book-transfer-view").then((m) => m.BookTransferView),
   { loading: () => loadingComponent, ssr: false }

@@ -26,7 +26,7 @@ export async function GET(req: Request) {
   try {
     const result = await runDueNotifications();
     logger.info("Cron: notification digest run", result);
-    return NextResponse.json({ success: true, ...result });
+    return NextResponse.json({ ...result, success: true });
   } catch (err) {
     logger.error("Cron: notification digest failed", { error: String(err) });
     return NextResponse.json({ error: "Digest failed" }, { status: 500 });

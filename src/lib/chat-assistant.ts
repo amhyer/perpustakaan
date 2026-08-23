@@ -42,6 +42,7 @@ export type ChatIntent =
   | "escalation"
   | "greeting"
   | "thanks"
+  | "faq"
   | "general";
 
 export interface ChatConfig {
@@ -118,6 +119,7 @@ const INTENT_KEYWORDS: Record<ChatIntent, string[]> = {
     "terima kasih", "makasih", "thanks", "thank you", "tq",
     "berterima kasih", "syukron",
   ],
+  faq: [],
   general: [],
 };
 
@@ -161,6 +163,7 @@ interface FAQMatch {
   answer: string;
   category: string;
   hitCount: number;
+  variations?: string | null;
 }
 
 /**
@@ -525,6 +528,7 @@ async function callMock(
   const responses: Record<ChatIntent, string> = {
     greeting: "Halo! 👋 Saya Jendela, asisten perpustakaan. Ada yang bisa saya bantu hari ini?",
     thanks: "Sama-sama! 😊 Senang bisa membantu. Kalau ada pertanyaan lain, jangan sungkan ya!",
+    faq: "Ini adalah jawaban dari FAQ kami.",
     book_search: `Tentu, saya bisa bantu cari buku! 📚 Bisa kasih tahu lebih detail:\n- Judul atau pengarang?\n- Kategori (fiksi/non-fiksi/sains)?\n- Untuk tingkat kelas berapa?`,
     loan_status: `Untuk cek status pinjaman kamu, kamu bisa buka menu **Pinjaman Saya** di sidebar. Di sana terlihat:\n- Buku yang sedang dipinjam\n- Tanggal jatuh tempo\n- Denda (jika ada)\n\nAtau sebutkan judul buku yang kamu maksud, saya bantu cek.`,
     points_info: `💰 **Info Poin**\n- Cek saldo: buka menu **Hadiah** di sidebar\n- Poin didapat dari: baca buku, review, streak harian\n- Bisa ditukar dengan hadiah di katalog\n\nMau cek detail atau cara dapat poin lebih banyak?`,
@@ -615,7 +619,7 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
         select: { id: true, userId: true },
       });
       if (!conv || conv.userId !== input.userId) {
-        conversationId = null; // create new
+        conversationId = undefined; // create new
       }
     }
 
@@ -645,7 +649,7 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
   try {
     const saved = await db.chatMessage.create({
       data: {
-        conversationId,
+        conversationId: conversationId!,
         role: "user",
         content: input.message,
         intent,
@@ -667,7 +671,7 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
     try {
       const saved = await db.chatMessage.create({
         data: {
-          conversationId,
+          conversationId: conversationId!,
           role: "assistant",
           content: assistantMsg,
           intent: "faq",
@@ -679,7 +683,7 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
       });
       assistantMsgId = saved.id;
       await db.chatConversation.update({
-        where: { id: conversationId },
+        where: { id: conversationId! },
         data: {
           messageCount: { increment: 2 },
           updatedAt: new Date(),
@@ -690,7 +694,7 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
     }
 
     return {
-      conversationId,
+      conversationId: conversationId!,
       userMessageId,
       assistantMessage: assistantMsg,
       intent: "faq",
@@ -758,7 +762,7 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
   try {
     await db.chatMessage.create({
       data: {
-        conversationId,
+        conversationId: conversationId!,
         role: "assistant",
         content: response.content,
         intent,
@@ -770,7 +774,7 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
       },
     });
     await db.chatConversation.update({
-      where: { id: conversationId },
+      where: { id: conversationId! },
       data: {
         messageCount: { increment: 2 },
         totalTokens: { increment: response.tokens },
@@ -789,7 +793,7 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
   if (shouldEscalate) {
     try {
       await db.chatConversation.update({
-        where: { id: conversationId },
+        where: { id: conversationId! },
         data: { escalated: true, escalatedAt: new Date() },
       });
     } catch {
@@ -798,7 +802,7 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
   }
 
   return {
-    conversationId,
+    conversationId: conversationId!,
     userMessageId,
     assistantMessage: response.content,
     intent,

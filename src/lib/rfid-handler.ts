@@ -632,8 +632,7 @@ async function processEvent(input: ProcessEventInput): Promise<RFIDResponse> {
     }
 
     // Compute due date
-    const rule = getLoanRule(card.member.category);
-    const dueDate = computeDueDateWithHolidays(new Date(), rule.loanDays);
+    const { dueDate } = await computeDueDateWithHolidays(new Date(), card.member.category);
 
     // Create loan
     const loan = await db.loan.create({
@@ -653,13 +652,13 @@ async function processEvent(input: ProcessEventInput): Promise<RFIDResponse> {
     });
 
     // Audit
-    await logAudit({
-      userId: null,
-      action: "RFID_CHECKOUT",
-      entityType: "Loan",
-      entityId: loan.id,
-      detail: `RFID auto-checkout: ${card.member.fullName} → ${book.title} (${reader.code})`,
-    });
+    await logAudit(
+      card.memberId,
+      "LOAN_CREATE",
+      "Loan",
+      loan.id,
+      `RFID auto-checkout: ${card.member.fullName} → ${book.title} (${reader.code})`,
+    );
 
     // Update book tag last scanned
     await db.bookItemTag.update({
@@ -898,7 +897,6 @@ export async function getEventLog(limit = 50, filters?: {
             member: { select: { fullName: true, memberNumber: true } },
           },
         },
-        bookItem: { include: { book: { select: { title: true } } } },
       },
     });
 
@@ -909,7 +907,7 @@ export async function getEventLog(limit = 50, filters?: {
       status: e.status,
       memberName: e.card?.member?.fullName,
       memberNumber: e.card?.member?.memberNumber,
-      bookTitle: e.bookItem?.book?.title,
+      bookTitle: undefined,
       message: e.message || undefined,
       scannedAt: e.scannedAt.toISOString(),
       readerCode: e.reader.code,

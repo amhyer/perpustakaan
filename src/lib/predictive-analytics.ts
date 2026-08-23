@@ -330,9 +330,9 @@ export async function detectAnomalies(
 export async function predictStockOut(): Promise<StockPrediction[]> {
   // Get semua buku dengan stock tracking
   const books = await db.book.findMany({
-    where: { items: { some: { stock: { not: null } } } },
+    where: { items: { some: {} } },
     include: {
-      items: { select: { status: true, stock: true } },
+      items: { select: { status: true } },
     },
     take: 200,
   });

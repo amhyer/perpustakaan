@@ -554,7 +554,7 @@ export function ChatAssistant({ position = "bottom-right", autoOpen = false }: C
       )}
       role="dialog"
       aria-label={t.title}
-      dir={locale === "ar" ? "rtl" : "ltr"}
+      dir={(locale as string) === "ar" ? "rtl" : "ltr"}
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-primary text-primary-foreground rounded-t-2xl">
@@ -606,6 +606,7 @@ export function ChatAssistant({ position = "bottom-right", autoOpen = false }: C
           }}
           onNew={startNewChat}
           t={t}
+          locale={locale}
         />
       ) : (
         <>
@@ -826,10 +827,12 @@ function HistoryPanel({
   onSelect,
   onNew,
   t,
+  locale,
 }: {
   onSelect: (id: string) => void;
   onNew: () => void;
   t: typeof STRINGS.id;
+  locale: string;
 }) {
   const [conversations, setConversations] = useState<
     { id: string; title: string; messageCount: number; updatedAt: string }[]

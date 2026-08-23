@@ -55,18 +55,18 @@ export async function POST(req: Request) {
   });
 
   // Audit log
-  await logAudit({
-    userId: user!.id,
-    action: "BULK_RETURN_LOANS",
-    resource: "Loan",
-    resourceId: "bulk",
-    changes: {
+  await logAudit(
+    user!.id,
+    "BULK_RETURN_LOANS",
+    "Loan",
+    "bulk",
+    JSON.stringify({
       total: result.total,
       successful: result.successful,
       failed: result.failed,
       reason,
-    },
-  });
+    })
+  );
 
   logger.info("Bulk loan return API", {
     userId: user!.id,

@@ -131,13 +131,14 @@ export function validateEnv(opts: { strict?: boolean; force?: boolean } = {}): {
           }
         }
       } else if (rule.type === "secret") {
-        // Don't warn for empty optional secrets
         continue;
       } else {
         warnings.push(`⚠️  ${rule.key} is not set (${rule.description})`);
         continue;
       }
     }
+
+    if (!value) continue;
 
     // Type validation
     if (rule.type === "number" && isNaN(Number(value))) {

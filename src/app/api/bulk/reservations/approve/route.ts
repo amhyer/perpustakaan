@@ -49,23 +49,23 @@ export async function POST(req: Request) {
     );
   }
 
-  const result = await bulkApproveReservations(reservationIds, {
+  const result = await bulkApproveReservations(reservationIds, true, {
     userId: user!.id,
     reason: reason || "Bulk approval",
   });
 
-  await logAudit({
-    userId: user!.id,
-    action: "BULK_APPROVE_RESERVATIONS",
-    resource: "Reservation",
-    resourceId: "bulk",
-    changes: {
+  await logAudit(
+    user!.id,
+    "BULK_APPROVE_RESERVATIONS",
+    "Reservation",
+    "bulk",
+    JSON.stringify({
       total: result.total,
       successful: result.successful,
       failed: result.failed,
       reason,
-    },
-  });
+    })
+  );
 
   logger.info("Bulk reservation approval API", {
     userId: user!.id,

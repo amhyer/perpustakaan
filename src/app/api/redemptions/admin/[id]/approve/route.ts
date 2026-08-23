@@ -53,6 +53,10 @@ export async function POST(
         approvedAt: new Date(),
         staffNote: notes,
       },
+      include: {
+        member: { include: { user: { select: { id: true, email: true } } } },
+        reward: true,
+      },
     });
 
     return { success: true, redemption: updated } as const;

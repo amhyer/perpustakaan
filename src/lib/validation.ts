@@ -99,7 +99,7 @@ export function length(len: number, message?: string): ValidationRule {
  */
 export function range(min: number, max: number, message?: string): ValidationRule<number> {
   return (value) => {
-    if (value === null || value === undefined || value === "") return null;
+    if (value === null || value === undefined) return null;
     const num = Number(value);
     if (isNaN(num)) return message || "Harus berupa angka";
     if (num < min || num > max) {
@@ -114,7 +114,7 @@ export function range(min: number, max: number, message?: string): ValidationRul
  */
 export function min(min: number, message?: string): ValidationRule<number> {
   return (value) => {
-    if (value === null || value === undefined || value === "") return null;
+    if (value === null || value === undefined) return null;
     const num = Number(value);
     if (isNaN(num)) return message || "Harus berupa angka";
     return num >= min ? null : message || `Minimal ${min}`;
@@ -126,7 +126,7 @@ export function min(min: number, message?: string): ValidationRule<number> {
  */
 export function max(max: number, message?: string): ValidationRule<number> {
   return (value) => {
-    if (value === null || value === undefined || value === "") return null;
+    if (value === null || value === undefined) return null;
     const num = Number(value);
     if (isNaN(num)) return message || "Harus berupa angka";
     return num <= max ? null : message || `Maksimal ${max}`;

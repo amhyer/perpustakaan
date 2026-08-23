@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ComponentType } from "react";
 import { motion, Reorder } from "framer-motion";
 import {
   Plus,
@@ -318,7 +318,7 @@ export function CustomizableDashboardView() {
             >
               <WidgetRenderer
                 widget={widget}
-                stats={stats}
+                stats={stats ?? null}
                 editMode={editMode}
                 onToggleVisibility={() => toggleVisibility(widget.id)}
                 onRemove={() => removeWidget(widget.id)}
@@ -337,12 +337,10 @@ export function CustomizableDashboardView() {
           icon={BarChart3}
           title="Dashboard Kosong"
           description="Tambahkan widget untuk mulai melihat data"
-          action={
-            <Button onClick={() => setEditMode(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Tambah Widget
-            </Button>
-          }
+          action={{
+            label: "Tambah Widget",
+            onClick: () => setEditMode(true),
+          }}
         />
       )}
     </div>
@@ -467,9 +465,11 @@ function WidgetContent({ type, stats, size, onSelectBook, onSelectMember }: Widg
       <div className={isLarge ? "" : "-mx-6 -mb-6"}>
         <LazyChart
           importFn={() =>
-            import("@/components/app/dashboard/widgets/trend-area-chart").then((m) => ({
-              default: m.TrendAreaChart,
-            }))
+            import("@/components/app/dashboard/widgets/trend-area-chart").then(
+              (m): { default: ComponentType<unknown> } => ({
+                default: m.TrendAreaChart as ComponentType<unknown>,
+              })
+            )
           }
           componentProps={{
             data: trend,

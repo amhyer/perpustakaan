@@ -94,18 +94,18 @@ export async function POST(req: Request) {
     }
   );
 
-  await logAudit({
-    userId: user!.id,
-    action: "BULK_SEND_NOTIFICATIONS",
-    resource: "Notification",
-    resourceId: "bulk",
-    changes: {
+  await logAudit(
+    user!.id,
+    "BULK_SEND_NOTIFICATIONS",
+    "Notification",
+    "bulk",
+    JSON.stringify({
       recipientCount: result.total,
       successful: result.successful,
       failed: result.failed,
       title: notification.title,
-    },
-  });
+    })
+  );
 
   logger.info("Bulk notification API", {
     userId: user!.id,

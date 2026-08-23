@@ -16,7 +16,7 @@
  */
 
 import { NextResponse, type NextRequest } from "next/server";
-import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { rateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 
 // ===== Config =====
@@ -208,23 +208,23 @@ export async function middleware(req: NextRequest) {
         pathname,
         ip,
         limit: matchedLimit.limit,
-        resetIn: result.resetIn,
+        resetIn: result.retryAfter,
       });
 
       return new NextResponse(
         JSON.stringify({
           error: "Terlalu banyak permintaan. Coba lagi nanti.",
           code: "RATE_LIMIT",
-          resetInSeconds: result.resetIn,
+          resetInSeconds: result.retryAfter,
         }),
         {
           status: 429,
           headers: {
             "Content-Type": "application/json",
-            "Retry-After": String(result.resetIn),
+            "Retry-After": String(result.retryAfter),
             "X-RateLimit-Limit": String(matchedLimit.limit),
             "X-RateLimit-Remaining": "0",
-            "X-RateLimit-Reset": String(result.resetIn),
+            "X-RateLimit-Reset": String(result.retryAfter),
           },
         }
       );
@@ -234,7 +234,7 @@ export async function middleware(req: NextRequest) {
     const response = NextResponse.next();
     response.headers.set("X-RateLimit-Limit", String(matchedLimit.limit));
     response.headers.set("X-RateLimit-Remaining", String(result.remaining));
-    response.headers.set("X-RateLimit-Reset", String(result.resetIn));
+    response.headers.set("X-RateLimit-Reset", String(result.retryAfter));
 
     // Add security headers
     addSecurityHeaders(response);

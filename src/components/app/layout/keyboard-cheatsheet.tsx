@@ -55,17 +55,16 @@ import { useLocale } from "@/hooks/use-locale";
 // ===== Types =====
 
 interface Shortcut {
-  keys: string[]; // e.g. ["⌘", "K"] or ["↑", "↓"]
-  description: { id: "id" | "en" | "ar"; text: string }[];
+  keys: string[];
+  description: { id: string; en: string; ar: string }[];
   category: "navigation" | "actions" | "forms" | "chat" | "advanced";
   icon: React.ElementType;
-  /** If true, use Ctrl on Windows/Linux instead of Cmd */
   ctrlOnWin?: boolean;
 }
 
 interface ShortcutGroup {
   id: string;
-  label: { id: "id" | "en" | "ar"; text: string }[];
+  label: { id: string; en: string; ar: string };
   icon: React.ElementType;
   shortcuts: Shortcut[];
 }
@@ -114,6 +113,8 @@ const I18N = {
     viewBlockchain: { id: "Buka blockchain audit", en: "Open blockchain audit", ar: "فتح تدقيق البلوكتشين" },
     filter: { id: "Filter daftar", en: "Filter list", ar: "تصفية القائمة" },
     preview: { id: "Preview/preview file", en: "Preview file", ar: "معاينة الملف" },
+    nextField: { id: "Field berikutnya", en: "Next field", ar: "الحقل التالي" },
+    prevField: { id: "Field sebelumnya", en: "Previous field", ar: "الحقل السابق" },
   },
 };
 
@@ -226,13 +227,13 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     shortcuts: [
       {
         keys: ["Tab"],
-        description: [{ id: "id", text: "Field berikutnya" }, { id: "en", text: "Next field" }, { id: "ar", text: "الحقل التالي" }],
+        description: [I18N.shortcuts.nextField],
         category: "forms",
         icon: ArrowRight,
       },
       {
         keys: ["⇧", "Tab"],
-        description: [{ id: "id", text: "Field sebelumnya" }, { id: "en", text: "Previous field" }, { id: "ar", text: "الحقل السابق" }],
+        description: [I18N.shortcuts.prevField],
         category: "forms",
         icon: ArrowRight,
       },
@@ -311,14 +312,13 @@ export function KeyboardCheatsheet() {
     return SHORTCUT_GROUPS.map((g) => ({
       ...g,
       shortcuts: g.shortcuts.filter((s) =>
-        s.description.some((d) => d.text.toLowerCase().includes(q)) ||
+        s.description.some((d) => (d[locale as keyof typeof d] || "").toLowerCase().includes(q)) ||
         s.keys.join("").toLowerCase().includes(q)
       ),
     })).filter((g) => g.shortcuts.length > 0);
-  }, [search]);
+  }, [search, locale]);
 
-  // Localized text
-  const t = (key: { id: "id" | "en" | "ar"; text: string }) =>
+  const t = (key: { id: string; en: string; ar: string }) =>
     key[locale as "id" | "en" | "ar"] || key.id;
 
   // Replace ⌘ with Ctrl on Windows

@@ -381,7 +381,7 @@ export async function sealBlock(options: {
     });
 
     // Invalidate cache
-    cache.delete("blockchain:stats");
+    cache.invalidate("blockchain:stats");
 
     logger.info("Block sealed", {
       index: newIndex,
@@ -522,10 +522,16 @@ export async function verifyAuditEvent(auditLogId: string): Promise<{
   try {
     const record = await db.auditLogBlockchain.findUnique({
       where: { auditLogId },
-      include: { block: true },
     });
     if (!record) {
       return { valid: false, reason: "Audit log not in any block" };
+    }
+
+    const block = await db.auditBlock.findUnique({
+      where: { id: record.blockId },
+    });
+    if (!block) {
+      return { valid: false, reason: "Block not found" };
     }
 
     // Find leaf index
@@ -542,11 +548,11 @@ export async function verifyAuditEvent(auditLogId: string): Promise<{
     const leaves = allInBlock.map((r) => r.leafHash);
     const { root } = buildMerkleTree(leaves);
 
-    if (root !== record.block.merkleRoot) {
+    if (root !== block.merkleRoot) {
       return {
         valid: false,
-        blockIndex: record.block.index,
-        blockHash: record.block.hash,
+        blockIndex: block.index,
+        blockHash: block.hash,
         reason: "Merkle root mismatch (data tampered!)",
       };
     }
@@ -557,8 +563,8 @@ export async function verifyAuditEvent(auditLogId: string): Promise<{
 
     return {
       valid: proofValid,
-      blockIndex: record.block.index,
-      blockHash: record.block.hash,
+      blockIndex: block.index,
+      blockHash: block.hash,
       reason: proofValid ? undefined : "Merkle proof verification failed",
     };
   } catch (err) {

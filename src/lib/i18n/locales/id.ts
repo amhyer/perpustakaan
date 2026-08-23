@@ -129,7 +129,17 @@ export const id = {
     saturday: "Sabtu",
     sunday: "Minggu",
   },
-} as const;
+};
 
-export type IdLocale = typeof id;
+export type IdLocale = {
+  common: Record<string, string>;
+  roles: Record<string, string>;
+  dashboard: Record<string, string>;
+  books: Record<string, string>;
+  members: Record<string, string>;
+  loans: Record<string, string>;
+  errors: Record<string, string>;
+  months: Record<string, string>;
+  days: Record<string, string>;
+};
 export type TranslationKey = keyof IdLocale;

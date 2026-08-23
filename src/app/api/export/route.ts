@@ -75,20 +75,20 @@ export async function GET(req: Request) {
     const result = await exportData({ type, from, to, anonymize, status });
 
     // Audit log
-    await logAudit({
-      userId: user!.id,
-      action: "EXPORT_DATA",
-      resource: type,
-      resourceId: "export",
-      changes: {
+    await logAudit(
+      user!.id,
+      "EXPORT_DATA",
+      type,
+      "export",
+      JSON.stringify({
         type,
         from,
         to,
         anonymize,
         status,
         rowCount: result.rowCount,
-      },
-    });
+      })
+    );
 
     logger.info("Data export API", {
       userId: user!.id,

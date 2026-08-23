@@ -568,7 +568,12 @@ export function Sidebar() {
   };
 
   const toggleGroup = (id: string) => {
-    persistOpenGroups({ ...openGroups, [id]: !openGroups[id] });
+    const next: Record<string, boolean> = {};
+    for (const key of Object.keys(openGroups)) {
+      next[key] = false;
+    }
+    next[id] = !openGroups[id];
+    persistOpenGroups(next);
   };
 
   function goToHome() {
@@ -839,9 +844,8 @@ export function Sidebar() {
                   {/* Group header */}
                   <button
                     onClick={() => toggleGroup(group.id)}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-sidebar-foreground/60 hover:text-sidebar-foreground transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-[12px] font-bold uppercase tracking-wider text-sidebar-foreground/60 hover:text-sidebar-foreground transition-colors"
                   >
-                    <GroupIcon className="h-3 w-3" />
                     <span className="flex-1 text-left">{group.label}</span>
                     {group.badge !== undefined && group.badge > 0 && (
                       <Badge variant="destructive" className="h-4 min-w-4 px-1 text-[9px]">
