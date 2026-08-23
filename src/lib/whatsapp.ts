@@ -337,4 +337,76 @@ Cek saldo: ${process.env.NEXTAUTH_URL || "http://localhost:3001"}/rewards
 
 — Perpustakaan Jendela Ilmu`;
   },
+
+  // =========================================================================
+  // PERIODIC DIGEST TEMPLATES
+  // =========================================================================
+
+  weeklyDigestStudent({ name, weekPoints, booksRead, balance }: {
+    name: string;
+    weekPoints: number;
+    booksRead: number;
+    balance: number;
+  }) {
+    return `📊 *Ringkasan Mingguan - Perpustakaan Jendela Ilmu*
+
+Halo *${name}*,
+
+Bagaimana minggu ini? Yuk kita intip:
+
+📚 Buku selesai: *${booksRead}*
+⭐ Poin masuk: *+${weekPoints}*
+💰 Saldo total: *${balance}*
+
+${weekPoints >= 50 ? "🔥 Hebat! Kamu pembaca aktif minggu ini." : weekPoints > 0 ? "💪 Terus tingkatkan, yuk!" : "📖 Yuk mulai baca buku minggu depan!"}
+
+Cek katalog hadiah:
+${process.env.NEXTAUTH_URL || "http://localhost:3001"}/rewards
+
+— Perpustakaan Jendela Ilmu`;
+  },
+
+  monthlyTopReader({ name, rank, points, booksRead }: {
+    name: string;
+    rank: number;
+    points: number;
+    booksRead: number;
+  }) {
+    const medal = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : "🏆";
+    return `${medal} *Top Reader Bulan Ini!*
+
+Selamat *${name}*!
+
+Anda排名第 *${rank}* pembaca terbaik bulan ini:
+
+⭐ Poin: *${points}*
+📚 Buku selesai: *${booksRead}*
+
+Terus baca, terus menginspirasi! 📖
+
+${process.env.NEXTAUTH_URL || "http://localhost:3001"}/rewards
+
+— Perpustakaan Jendela Ilmu`;
+  },
+
+  weeklyDigestTeacher({ name, classGrade, studentLoans }: {
+    name: string;
+    classGrade: string | null;
+    studentLoans: number;
+  }) {
+    return `📚 *Recap Mingguan untuk Guru*
+
+Halo *${name}*,
+
+Minggu ini, perpustakaan mencatat:
+
+📖 *${studentLoans}* buku dipinjam dari ${classGrade || "kelas Anda"}.
+
+Terus dorong siswa untuk gemar membaca! 💪
+
+Cek aktivitas siswa:
+${process.env.NEXTAUTH_URL || "http://localhost:3001"}/reports
+
+— Perpustakaan Jendela Ilmu`;
+  },
 };

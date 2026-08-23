@@ -11,6 +11,8 @@ async function main() {
   // Bersihkan data lama
   await db.pointTransaction.deleteMany();
   await db.rewardRedemption.deleteMany();
+  await db.semesterArchive.deleteMany();
+  await db.notificationSchedule.deleteMany();
   await db.reward.deleteMany();
   await db.pointRule.deleteMany();
   await db.notification.deleteMany();
@@ -570,6 +572,26 @@ async function main() {
       },
     });
   }
+
+  // ===== Notification Schedules (default) =====
+  console.log("   - Seeding notification schedules...");
+  const existingSchedules = await db.notificationSchedule.findMany();
+  if (existingSchedules.length === 0) {
+    await db.notificationSchedule.createMany({
+      data: [
+        { name: "Weekly Student Digest", type: "WEEKLY", channel: "BOTH", targetRole: "STUDENT", dayOfWeek: 0, hour: 18, templateKey: "weeklyDigestStudent" },
+        { name: "Monthly Top Reader", type: "MONTHLY", channel: "BOTH", targetRole: "STUDENT", dayOfMonth: 1, hour: 9, templateKey: "monthlyTopReader" },
+        { name: "Weekly Teacher Recap", type: "WEEKLY", channel: "EMAIL", targetRole: "TEACHER", dayOfWeek: 5, hour: 16, templateKey: "weeklyDigestTeacher" },
+      ],
+    });
+  }
+
+  // ===== Settings (reward config) =====
+  await db.setting.upsert({
+    where: { key: "leaderboard_reset_mode" },
+    update: {},
+    create: { key: "leaderboard_reset_mode", value: "ARCHIVE" },
+  });
 
   console.log("✅ Seeding selesai!");
   console.log(`   - ${books.length} buku dengan eksemplar`);

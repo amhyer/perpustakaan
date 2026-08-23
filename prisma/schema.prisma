@@ -844,3 +844,79 @@ model RewardRedemption {
   @@index([pickupCode])
   @@index([approvedById])
 }
+
+/// =========================================================================
+/// SEMESTER ARCHIVE — Snapshot leaderboard per periode akademik
+/// =========================================================================
+///
+/// Setiap akhir semester (Ganjil ~Januari, Genap ~Juli), sistem akan
+/// snapshot top 100 members dengan saldo poin mereka. Ini jadi:
+/// - "Top Reader of the Semester" — historical record
+/// - Reset saldo untuk semester baru (opsional, configurable)
+/// - Bukti prestasi untuk rapor / sertifikat
+///
+/// Reset policy (configurable via Setting table):
+/// - "leaderboard_reset_mode" = "ARCHIVE" (default) — saldo tetap, archive dibuat
+/// - "leaderboard_reset_mode" = "RESET" — saldo di-reset ke 0 setelah archive
+/// - "leaderboard_reset_mode" = "CARRYOVER" — saldo tetap, no archive (legacy)
+model SemesterArchive {
+  id            String   @id @default(cuid())
+
+  // Identifikasi periode
+  periodName    String   // "Ganjil 2025/2026" atau "Genap 2025/2026"
+  periodType    String   // "ODD" (Ganjil) | "EVEN" (Genap) | "CUSTOM"
+  startDate     DateTime
+  endDate       DateTime
+
+  // Hasil ranking (snapshot, immutable)
+  // Format JSON: [{ rank, memberId, memberName, memberNumber, totalPoints, booksRead }]
+  rankings      String   // JSON array
+
+  // Metadata
+  totalMembers  Int      // Berapa member yang ikut ranking
+  totalPoints   Int      // Total poin beredar di periode ini
+  archivedAt    DateTime @default(now())
+  archivedBy    String   // "auto-cron" | "manual:<userId>"
+
+  // Audit
+  createdAt     DateTime @default(now())
+
+  @@index([periodType, startDate])
+  @@index([archivedAt])
+  @@unique([periodName, periodType])
+}
+
+/// =========================================================================
+/// NOTIFICATION SCHEDULE — Notifikasi berkala (digest) yang dijadwalkan
+/// =========================================================================
+///
+/// Untuk mengirim digest mingguan / bulanan ke siswa via WhatsApp/email.
+/// Disimpan sebagai record supaya bisa di-track statusnya.
+model NotificationSchedule {
+  id            String   @id @default(cuid())
+
+  // Schedule metadata
+  name          String   // "Weekly Digest", "Monthly Summary", dll
+  type          String   // "WEEKLY" | "MONTHLY" | "CUSTOM"
+  channel       String   // "EMAIL" | "WHATSAPP" | "BOTH"
+  targetRole    String   // "STUDENT" | "TEACHER" | "ALL"
+
+  // Schedule
+  dayOfWeek     Int?     // 0-6 (Sunday-Saturday) for WEEKLY
+  dayOfMonth    Int?     // 1-31 for MONTHLY
+  hour          Int      @default(8)  // 0-23
+
+  // Template
+  templateKey   String   // Key di whatsappTemplates / emailTemplates
+  enabled       Boolean  @default(true)
+
+  // Last run
+  lastRunAt     DateTime?
+  lastRunStatus String?  // "success" | "partial" | "failed"
+  lastRunCount  Int?     // Berapa orang dikirimi
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([enabled, type])
+}
