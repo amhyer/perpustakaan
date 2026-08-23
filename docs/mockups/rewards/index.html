@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reward System - UI Mockup - Perpustakaan Jendela Ilmu</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .gradient-bg { background: linear-gradient(135deg, #1e3a5f 0%, #2d5a3d 100%); }
+    .card-hover { transition: all 0.2s ease; }
+    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+    .tab-active { border-bottom: 3px solid #1e3a5f; color: #1e3a5f; font-weight: 600; }
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-approved { background: #d1fae5; color: #065f46; }
+    .status-delivered { background: #dbeafe; color: #1e40af; }
+    .status-rejected { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="h-9 w-9 rounded-lg gradient-bg flex items-center justify-center text-white font-bold">JI</div>
+        <div>
+          <div class="text-base font-bold tracking-tight text-slate-900">Jendela Ilmu</div>
+          <div class="text-xs text-slate-500">Mockup: Sistem Poin & Hadiah</div>
+        </div>
+      </div>
+      <nav class="flex items-center gap-1 text-sm">
+        <a href="#widget" class="px-3 py-1.5 hover:bg-slate-100 rounded">Widget</a>
+        <a href="#catalog" class="px-3 py-1.5 hover:bg-slate-100 rounded">Katalog</a>
+        <a href="#history" class="px-3 py-1.5 hover:bg-slate-100 rounded">Riwayat</a>
+        <a href="#admin" class="px-3 py-1.5 hover:bg-slate-100 rounded">Admin</a>
+        <a href="#approval" class="px-3 py-1.5 hover:bg-slate-100 rounded">Approval</a>
+        <a href="#analytics" class="px-3 py-1.5 hover:bg-slate-100 rounded">Analytics</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-6 py-8 space-y-16">
+
+    <!-- INTRO -->
+    <section class="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-2xl p-8">
+      <h1 class="text-3xl font-bold text-slate-900 mb-3">🏆 Sistem Poin & Hadiah — UI Mockup</h1>
+      <p class="text-slate-700 mb-4">5 komponen UI utama untuk sistem reward Perpustakaan Jendela Ilmu. Klik navigasi di atas untuk lompat ke view.</p>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+        <div class="bg-white rounded-lg p-3 border border-slate-200">
+          <div class="font-semibold text-slate-900">1. Widget Poin</div>
+          <div class="text-xs text-slate-500">Dashboard siswa</div>
+        </div>
+        <div class="bg-white rounded-lg p-3 border border-slate-200">
+          <div class="font-semibold text-slate-900">2. Katalog Hadiah</div>
+          <div class="text-xs text-slate-500">Siswa/Guru</div>
+        </div>
+        <div class="bg-white rounded-lg p-3 border border-slate-200">
+          <div class="font-semibold text-slate-900">3. Riwayat Klaim</div>
+          <div class="text-xs text-slate-500">Siswa/Guru</div>
+        </div>
+        <div class="bg-white rounded-lg p-3 border border-slate-200">
+          <div class="font-semibold text-slate-900">4. Approval Queue</div>
+          <div class="text-xs text-slate-500">Pustakawan</div>
+        </div>
+        <div class="bg-white rounded-lg p-3 border border-slate-200">
+          <div class="font-semibold text-slate-900">5. Analytics</div>
+          <div class="text-xs text-slate-500">Pustakawan</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- 1. WIDGET POIN SAYA -->
+    <!-- ============================================================== -->
+    <section id="widget">
+      <div class="mb-4">
+        <div class="text-xs font-semibold text-blue-600 uppercase tracking-wider">View 1/5</div>
+        <h2 class="text-2xl font-bold text-slate-900">Widget "Poin Saya" — Dashboard Siswa</h2>
+        <p class="text-slate-600 text-sm mt-1">Widget ringkas yang selalu tampil di dashboard siswa. Update real-time. Bisa diklik untuk buka halaman detail.</p>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Compact view -->
+          <div>
+            <div class="text-xs font-semibold text-slate-500 uppercase mb-2">Compact (sidebar)</div>
+            <div class="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                  <div class="text-2xl">⭐</div>
+                  <div>
+                    <div class="text-xs text-slate-600">Poin Saya</div>
+                    <div class="text-2xl font-bold text-slate-900">245</div>
+                  </div>
+                </div>
+                <button class="text-xs bg-white border border-amber-300 px-2.5 py-1 rounded-md text-amber-700 font-medium hover:bg-amber-50">Tukar</button>
+              </div>
+              <div class="h-1.5 bg-amber-200 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full" style="width: 25%"></div>
+              </div>
+              <div class="text-xs text-slate-500 mt-1.5">Target: 1.000 poin → Voucher Gramedia</div>
+            </div>
+          </div>
+
+          <!-- Expanded view -->
+          <div>
+            <div class="text-xs font-semibold text-slate-500 uppercase mb-2">Expanded (full)</div>
+            <div class="bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 border border-amber-200 rounded-xl p-5">
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <div class="flex items-center gap-2 mb-1">
+                    <div class="text-3xl">⭐</div>
+                    <div>
+                      <div class="text-xs text-slate-600">Poin Saya</div>
+                      <div class="text-3xl font-bold text-slate-900">245</div>
+                    </div>
+                  </div>
+                </div>
+                <button class="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:shadow-lg">Tukar Poin →</button>
+              </div>
+
+              <!-- Progress bar -->
+              <div class="mb-4">
+                <div class="flex items-center justify-between text-xs text-slate-600 mb-1.5">
+                  <span>Menuju Voucher Gramedia Rp 50.000</span>
+                  <span class="font-semibold">245 / 600</span>
+                </div>
+                <div class="h-2 bg-amber-200 rounded-full overflow-hidden">
+                  <div class="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full transition-all" style="width: 41%"></div>
+                </div>
+              </div>
+
+              <!-- Stats row -->
+              <div class="grid grid-cols-3 gap-2 text-center">
+                <div class="bg-white/60 rounded-lg p-2">
+                  <div class="text-lg font-bold text-slate-900">24</div>
+                  <div class="text-xs text-slate-600">Buku tahun ini</div>
+                </div>
+                <div class="bg-white/60 rounded-lg p-2">
+                  <div class="text-lg font-bold text-orange-600">🔥 5</div>
+                  <div class="text-xs text-slate-600">Streak hari</div>
+                </div>
+                <div class="bg-white/60 rounded-lg p-2">
+                  <div class="text-lg font-bold text-slate-900">8</div>
+                  <div class="text-xs text-slate-600">Badge</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- 2. KATALOG HADIAH -->
+    <!-- ============================================================== -->
+    <section id="catalog">
+      <div class="mb-4">
+        <div class="text-xs font-semibold text-blue-600 uppercase tracking-wider">View 2/5</div>
+        <h2 class="text-2xl font-bold text-slate-900">Katalog Hadiah — Untuk Siswa/Guru</h2>
+        <p class="text-slate-600 text-sm mt-1">Browse hadiah yang bisa diklaim. Filter by kategori, range poin, ketersediaan. Klik kartu → modal detail → klaim.</p>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-6">
+        <!-- Page header -->
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h3 class="text-xl font-bold">🎁 Katalog Hadiah</h3>
+            <p class="text-sm text-slate-500">Tukar poinmu dengan hadiah menarik</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="text-sm bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-lg font-semibold">
+              ⭐ Poin Anda: <span class="text-amber-900">245</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="flex flex-wrap items-center gap-2 mb-5 pb-5 border-b border-slate-200">
+          <span class="text-sm text-slate-500 mr-1">Kategori:</span>
+          <button class="text-xs px-3 py-1.5 rounded-full bg-blue-600 text-white font-medium">Semua</button>
+          <button class="text-xs px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200">📖 Buku</button>
+          <button class="text-xs px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200">✏️ Stationery</button>
+          <button class="text-xs px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200">🎟️ Voucher</button>
+          <button class="text-xs px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200">🎓 Certificate</button>
+          <div class="ml-auto flex items-center gap-2">
+            <select class="text-xs border border-slate-200 rounded-md px-2 py-1.5">
+              <option>Urut: Popular</option>
+              <option>Poin: Rendah → Tinggi</option>
+              <option>Poin: Tinggi → Rendah</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Featured banner -->
+        <div class="mb-6 p-4 bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 rounded-xl flex items-center gap-4">
+          <div class="text-4xl">🌟</div>
+          <div class="flex-1">
+            <div class="font-semibold text-slate-900">Promo Akhir Bulan!</div>
+            <div class="text-sm text-slate-600">Double poin untuk semua buku sampai 30 Juni. Buruan baca!</div>
+          </div>
+          <button class="text-xs bg-white border border-purple-300 px-3 py-1.5 rounded-md text-purple-700 font-medium">Lihat Detail</button>
+        </div>
+
+        <!-- Grid hadiah -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Card 1 — Bisa diklaim -->
+          <div class="card-hover border border-slate-200 rounded-xl overflow-hidden bg-white relative">
+            <div class="absolute top-2 left-2 bg-amber-400 text-amber-900 text-xs font-bold px-2 py-0.5 rounded-full z-10">⭐ 50</div>
+            <div class="aspect-square bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center text-6xl">🔖</div>
+            <div class="p-3">
+              <div class="text-xs text-slate-500">Stationery</div>
+              <div class="font-semibold text-sm text-slate-900 line-clamp-1">Bookmark Custom</div>
+              <div class="text-xs text-slate-500 mt-1">Stok: 99</div>
+              <button class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2 rounded-md">Klaim →</button>
+            </div>
+          </div>
+
+          <!-- Card 2 — Bisa diklaim -->
+          <div class="card-hover border border-slate-200 rounded-xl overflow-hidden bg-white relative">
+            <div class="absolute top-2 left-2 bg-amber-400 text-amber-900 text-xs font-bold px-2 py-0.5 rounded-full z-10">⭐ 150</div>
+            <div class="aspect-square bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center text-6xl">📓</div>
+            <div class="p-3">
+              <div class="text-xs text-slate-500">Stationery</div>
+              <div class="font-semibold text-sm text-slate-900 line-clamp-1">Notebook Eksklusif</div>
+              <div class="text-xs text-slate-500 mt-1">Stok: 50</div>
+              <button class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2 rounded-md">Klaim →</button>
+            </div>
+          </div>
+
+          <!-- Card 3 — Bisa diklaim -->
+          <div class="card-hover border border-slate-200 rounded-xl overflow-hidden bg-white relative">
+            <div class="absolute top-2 left-2 bg-amber-400 text-amber-900 text-xs font-bold px-2 py-0.5 rounded-full z-10">⭐ 300</div>
+            <div class="absolute top-2 right-2 bg-purple-100 text-purple-700 text-xs font-semibold px-2 py-0.5 rounded-full z-10">📚 Buku</div>
+            <div class="aspect-square bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center text-6xl">📚</div>
+            <div class="p-3">
+              <div class="text-xs text-slate-500">Buku</div>
+              <div class="font-semibold text-sm text-slate-900 line-clamp-1">Buku Pilihan 1 Eks</div>
+              <div class="text-xs text-slate-500 mt-1">Stok: 15 • Perlu approval</div>
+              <button class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2 rounded-md">Klaim →</button>
+            </div>
+          </div>
+
+          <!-- Card 4 — Poin kurang (locked) -->
+          <div class="card-hover border border-slate-200 rounded-xl overflow-hidden bg-slate-50 relative opacity-60">
+            <div class="absolute top-2 left-2 bg-amber-400 text-amber-900 text-xs font-bold px-2 py-0.5 rounded-full z-10">⭐ 600</div>
+            <div class="absolute inset-0 flex items-center justify-center z-10">
+              <div class="bg-slate-900/80 text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                <span>🔒</span><span>Kurang 355 poin</span>
+              </div>
+            </div>
+            <div class="aspect-square bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center text-6xl">🎟️</div>
+            <div class="p-3">
+              <div class="text-xs text-slate-500">Voucher</div>
+              <div class="font-semibold text-sm text-slate-900 line-clamp-1">Gramedia Rp 50.000</div>
+              <div class="text-xs text-slate-500 mt-1">Stok: 8</div>
+              <button disabled class="mt-2 w-full bg-slate-300 text-slate-500 text-xs font-semibold py-2 rounded-md cursor-not-allowed">Poin Kurang</button>
+            </div>
+          </div>
+
+          <!-- Card 5 — Bisa diklaim -->
+          <div class="card-hover border border-slate-200 rounded-xl overflow-hidden bg-white relative">
+            <div class="absolute top-2 left-2 bg-amber-400 text-amber-900 text-xs font-bold px-2 py-0.5 rounded-full z-10">⭐ 200</div>
+            <div class="aspect-square bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center text-6xl">🖍️</div>
+            <div class="p-3">
+              <div class="text-xs text-slate-500">Stationery</div>
+              <div class="font-semibold text-sm text-slate-900 line-clamp-1">Set Spidol Warna</div>
+              <div class="text-xs text-slate-500 mt-1">Stok: 30</div>
+              <button class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2 rounded-md">Klaim →</button>
+            </div>
+          </div>
+
+          <!-- Card 6 — Featured -->
+          <div class="card-hover border-2 border-amber-400 rounded-xl overflow-hidden bg-white relative">
+            <div class="absolute top-2 left-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full z-10 flex items-center gap-1">⭐ 700</div>
+            <div class="absolute top-2 right-2 bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full z-10">🏆 Featured</div>
+            <div class="aspect-square bg-gradient-to-br from-yellow-100 to-amber-100 flex items-center justify-center text-6xl">🎓</div>
+            <div class="p-3">
+              <div class="text-xs text-slate-500">Certificate</div>
+              <div class="font-semibold text-sm text-slate-900 line-clamp-1">Sertifikat Pembaca Teladan</div>
+              <div class="text-xs text-slate-500 mt-1">Stok: Unlimited</div>
+              <button class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2 rounded-md">Klaim →</button>
+            </div>
+          </div>
+
+          <!-- Card 7 — Habis -->
+          <div class="card-hover border border-slate-200 rounded-xl overflow-hidden bg-slate-100 relative opacity-50">
+            <div class="absolute top-2 left-2 bg-amber-400 text-amber-900 text-xs font-bold px-2 py-0.5 rounded-full z-10">⭐ 800</div>
+            <div class="absolute inset-0 flex items-center justify-center z-10">
+              <div class="bg-red-600 text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                <span>❌</span><span>Stok Habis</span>
+              </div>
+            </div>
+            <div class="aspect-square bg-gradient-to-br from-cyan-100 to-blue-100 flex items-center justify-center text-6xl">📦</div>
+            <div class="p-3">
+              <div class="text-xs text-slate-500">Buku</div>
+              <div class="font-semibold text-sm text-slate-900 line-clamp-1">Paket 3 Buku</div>
+              <div class="text-xs text-slate-500 mt-1">Stok: 0</div>
+              <button class="mt-2 w-full bg-blue-100 text-blue-700 text-xs font-semibold py-2 rounded-md">🔔 Beritahu Saya</button>
+            </div>
+          </div>
+
+          <!-- Card 8 — Bisa diklaim -->
+          <div class="card-hover border border-slate-200 rounded-xl overflow-hidden bg-white relative">
+            <div class="absolute top-2 left-2 bg-amber-400 text-amber-900 text-xs font-bold px-2 py-0.5 rounded-full z-10">⭐ 1000</div>
+            <div class="absolute top-2 right-2 bg-pink-100 text-pink-700 text-xs font-semibold px-2 py-0.5 rounded-full z-10">🎁 Mystery</div>
+            <div class="aspect-square bg-gradient-to-br from-pink-100 to-rose-100 flex items-center justify-center text-6xl">🎁</div>
+            <div class="p-3">
+              <div class="text-xs text-slate-500">Custom</div>
+              <div class="font-semibold text-sm text-slate-900 line-clamp-1">Mystery Box</div>
+              <div class="text-xs text-slate-500 mt-1">Stok: 5 • Max 1/org</div>
+              <button class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2 rounded-md">Klaim →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- 3. RIWAYAT KLAIM SAYA -->
+    <!-- ============================================================== -->
+    <section id="history">
+      <div class="mb-4">
+        <div class="text-xs font-semibold text-blue-600 uppercase tracking-wider">View 3/5</div>
+        <h2 class="text-2xl font-bold text-slate-900">Riwayat Klaim — Untuk Siswa/Guru</h2>
+        <p class="text-slate-600 text-sm mt-1">Lihat status klaim hadiah. Timeline: Pending → Disetujui → Diambil. Tampilkan kode ambil saat sudah disetujui.</p>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-6">
+        <div class="flex items-center justify-between mb-5">
+          <div>
+            <h3 class="text-xl font-bold">📋 Klaim Hadiah Saya</h3>
+            <p class="text-sm text-slate-500">Pantau status klaim hadiahmu</p>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex items-center gap-1 border-b border-slate-200 mb-5">
+          <button class="tab-active px-4 py-2.5 text-sm">Semua (4)</button>
+          <button class="px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-1.5">
+            Pending <span class="bg-amber-100 text-amber-700 text-xs px-1.5 py-0.5 rounded-full">1</span>
+          </button>
+          <button class="px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-1.5">
+            Disetujui <span class="bg-green-100 text-green-700 text-xs px-1.5 py-0.5 rounded-full">2</span>
+          </button>
+          <button class="px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50">Selesai</button>
+          <button class="px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50">Ditolak</button>
+        </div>
+
+        <!-- Item 1 — PENDING -->
+        <div class="border border-slate-200 rounded-xl p-4 mb-3">
+          <div class="flex items-center gap-4">
+            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center text-3xl shrink-0">🎟️</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <div class="font-semibold text-slate-900">Voucher Kopi Sekolah Rp 25.000</div>
+                <span class="status-pending text-xs px-2 py-0.5 rounded-full font-medium">⏳ PENDING</span>
+              </div>
+              <div class="text-xs text-slate-500">400 poin • Diajukan 23 Agu 2026 09:15</div>
+              <div class="text-xs text-slate-500 italic mt-1">Catatan: "Boleh saya ambil besok siang?"</div>
+            </div>
+            <div class="flex flex-col gap-2">
+              <button class="text-xs text-slate-600 hover:text-red-600">Batalkan</button>
+            </div>
+          </div>
+          <!-- Timeline -->
+          <div class="mt-3 pt-3 border-t border-slate-100 flex items-center gap-3 text-xs">
+            <div class="flex items-center gap-1.5 text-amber-600">
+              <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+              <span>Diajukan</span>
+            </div>
+            <div class="flex-1 h-px bg-slate-200"></div>
+            <div class="flex items-center gap-1.5 text-slate-400">
+              <div class="w-2 h-2 rounded-full bg-slate-200"></div>
+              <span>Disetujui pustakawan</span>
+            </div>
+            <div class="flex-1 h-px bg-slate-200"></div>
+            <div class="flex items-center gap-1.5 text-slate-400">
+              <div class="w-2 h-2 rounded-full bg-slate-200"></div>
+              <span>Diambil</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Item 2 — APPROVED (siap diambil) -->
+        <div class="border-2 border-green-300 bg-green-50/30 rounded-xl p-4 mb-3">
+          <div class="flex items-center gap-4">
+            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center text-3xl shrink-0">🔖</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <div class="font-semibold text-slate-900">Bookmark Custom Perpustakaan</div>
+                <span class="status-approved text-xs px-2 py-0.5 rounded-full font-medium">✅ DISETUJUI</span>
+              </div>
+              <div class="text-xs text-slate-500">50 poin • Disetujui 22 Agu 2026 14:30</div>
+            </div>
+            <div class="text-right">
+              <div class="text-xs text-slate-500 mb-1">Kode Ambil:</div>
+              <div class="bg-white border-2 border-dashed border-green-500 px-3 py-1.5 rounded-md font-mono text-sm font-bold text-green-700">RWD-A8F2K</div>
+            </div>
+          </div>
+          <div class="mt-3 pt-3 border-t border-green-200 flex items-center gap-2 text-xs text-green-700">
+            <span>📍</span>
+            <span>Silakan datang ke perpustakaan dan tunjukkan kode di atas ke pustakawan.</span>
+          </div>
+        </div>
+
+        <!-- Item 3 — DELIVERED -->
+        <div class="border border-slate-200 rounded-xl p-4 mb-3 bg-slate-50/50">
+          <div class="flex items-center gap-4">
+            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center text-3xl shrink-0 opacity-60">🔖</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <div class="font-semibold text-slate-700">Bookmark Custom Perpustakaan</div>
+                <span class="status-delivered text-xs px-2 py-0.5 rounded-full font-medium">✓ SELESAI</span>
+              </div>
+              <div class="text-xs text-slate-500">50 poin • Diambil 15 Agu 2026 10:00</div>
+              <div class="text-xs text-slate-500 italic">"Diberikan oleh Ibu Dewi"</div>
+            </div>
+            <div class="text-right">
+              <button class="text-xs text-blue-600 hover:underline">Lihat Detail</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Item 4 — REJECTED -->
+        <div class="border border-red-200 rounded-xl p-4 bg-red-50/30">
+          <div class="flex items-center gap-4">
+            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center text-3xl shrink-0 opacity-50">🎟️</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <div class="font-semibold text-slate-900 line-through opacity-60">Voucher Buku Gramedia Rp 50.000</div>
+                <span class="status-rejected text-xs px-2 py-0.5 rounded-full font-medium">✗ DITOLAK</span>
+              </div>
+              <div class="text-xs text-slate-500">600 poin • Ditolak 20 Agu 2026</div>
+              <div class="text-xs text-red-600 italic mt-1">Alasan: "Stok voucher sementara kosong, coba lagi bulan depan."</div>
+            </div>
+            <div class="text-right">
+              <div class="text-xs text-green-600 font-medium">↩ Poin di-refund: 600</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- 4. APPROVAL QUEUE — Dashboard Pustakawan -->
+    <!-- ============================================================== -->
+    <section id="approval">
+      <div class="mb-4">
+        <div class="text-xs font-semibold text-blue-600 uppercase tracking-wider">View 4/5</div>
+        <h2 class="text-2xl font-bold text-slate-900">Approval Queue — Dashboard Pustakawan</h2>
+        <p class="text-slate-600 text-sm mt-1">Antrian klaim yang perlu persetujuan. Approve/reject dengan satu klik. Bulk actions untuk efisiensi.</p>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-6">
+        <div class="flex items-center justify-between mb-5">
+          <div>
+            <h3 class="text-xl font-bold">⚡ Persetujuan Klaim Hadiah</h3>
+            <p class="text-sm text-slate-500">3 klaim menunggu persetujuan Anda</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="text-sm bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-md font-medium">↻ Refresh</button>
+            <button class="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md font-medium">✓ Setujui Semua (3)</button>
+          </div>
+        </div>
+
+        <!-- Bulk actions bar -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex items-center gap-3">
+          <input type="checkbox" checked class="rounded">
+          <div class="text-sm text-blue-900"><strong>3 item dipilih</strong> — Total poin: 950</div>
+          <div class="ml-auto flex gap-2">
+            <button class="text-xs bg-white border border-blue-300 text-blue-700 px-2.5 py-1 rounded">Setujui</button>
+            <button class="text-xs bg-white border border-red-300 text-red-700 px-2.5 py-1 rounded">Tolak</button>
+          </div>
+        </div>
+
+        <!-- Item 1 — PENDING approval -->
+        <div class="border-2 border-amber-300 bg-amber-50/30 rounded-xl p-4 mb-3">
+          <div class="flex items-start gap-3">
+            <input type="checkbox" checked class="mt-1 rounded">
+            <div class="w-14 h-14 rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center text-2xl shrink-0">🎟️</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <div class="font-semibold text-slate-900">Voucher Kopi Sekolah Rp 25.000</div>
+                <span class="text-xs text-amber-600 font-medium">⏳ 5 menit lalu</span>
+              </div>
+              <div class="grid grid-cols-3 gap-4 text-xs mt-2">
+                <div>
+                  <div class="text-slate-500">Pemohon</div>
+                  <div class="font-medium">Andini Putri (SIS-2024-001)</div>
+                </div>
+                <div>
+                  <div class="text-slate-500">Saldo Poin</div>
+                  <div class="font-medium">245 ⭐ → -400 = -155 ❌</div>
+                </div>
+                <div>
+                  <div class="text-slate-500">Total Klaim</div>
+                  <div class="font-medium">Klaim ke-2 siswa ini</div>
+                </div>
+              </div>
+              <div class="mt-2 text-xs text-slate-600 bg-white/60 rounded-md p-2">💬 "Boleh saya ambil besok siang?"</div>
+              <div class="mt-2 text-xs text-red-600 font-medium flex items-center gap-1">
+                <span>⚠️</span>
+                <span>Saldo tidak cukup! Punya 245 poin, butuh 400.</span>
+              </div>
+            </div>
+            <div class="flex flex-col gap-2 shrink-0">
+              <button class="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md font-medium">✓ Setujui</button>
+              <button class="text-xs bg-white border border-red-300 text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-md font-medium">✗ Tolak</button>
+              <button class="text-xs text-slate-500 hover:text-slate-700">Lihat Profil</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Item 2 — OK -->
+        <div class="border border-slate-200 rounded-xl p-4 mb-3">
+          <div class="flex items-start gap-3">
+            <input type="checkbox" checked class="mt-1 rounded">
+            <div class="w-14 h-14 rounded-lg bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center text-2xl shrink-0">📓</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <div class="font-semibold text-slate-900">Notebook Eksklusif</div>
+                <span class="text-xs text-slate-500">⏳ 2 jam lalu</span>
+              </div>
+              <div class="grid grid-cols-3 gap-4 text-xs mt-2">
+                <div>
+                  <div class="text-slate-500">Pemohon</div>
+                  <div class="font-medium">Rafi Pratama (SIS-2024-002)</div>
+                </div>
+                <div>
+                  <div class="text-slate-500">Saldo Poin</div>
+                  <div class="font-medium text-green-600">520 ⭐ → -150 = 370 ✓</div>
+                </div>
+                <div>
+                  <div class="text-slate-500">Stok</div>
+                  <div class="font-medium text-green-600">50 tersedia</div>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-col gap-2 shrink-0">
+              <button class="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md font-medium">✓ Setujui</button>
+              <button class="text-xs bg-white border border-red-300 text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-md font-medium">✗ Tolak</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Item 3 — Cooldown violation -->
+        <div class="border border-slate-200 rounded-xl p-4 mb-3">
+          <div class="flex items-start gap-3">
+            <input type="checkbox" class="mt-1 rounded">
+            <div class="w-14 h-14 rounded-lg bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center text-2xl shrink-0">🎟️</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <div class="font-semibold text-slate-900">Voucher Kopi Sekolah Rp 25.000</div>
+                <span class="text-xs text-slate-500">⏳ 4 jam lalu</span>
+              </div>
+              <div class="grid grid-cols-3 gap-4 text-xs mt-2">
+                <div>
+                  <div class="text-slate-500">Pemohon</div>
+                  <div class="font-medium">Nayla Zahra (SIS-2024-003)</div>
+                </div>
+                <div>
+                  <div class="text-slate-500">Saldo Poin</div>
+                  <div class="font-medium text-green-600">480 ⭐ → -400 = 80 ✓</div>
+                </div>
+                <div>
+                  <div class="text-slate-500">Riwayat Klaim</div>
+                  <div class="font-medium">Klaim voucher kopi 5 hari lalu</div>
+                </div>
+              </div>
+              <div class="mt-2 text-xs text-amber-600 bg-amber-50 rounded-md p-2 flex items-center gap-1.5">
+                <span>⚠️</span>
+                <span>Cooldown 14 hari belum terpenuhi (baru 5 hari). Tapi pustakawan bisa override.</span>
+              </div>
+            </div>
+            <div class="flex flex-col gap-2 shrink-0">
+              <button class="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md font-medium">✓ Setujui</button>
+              <button class="text-xs bg-white border border-red-300 text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-md font-medium">✗ Tolak</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- 5. ANALYTICS DASHBOARD — Pustakawan -->
+    <!-- ============================================================== -->
+    <section id="analytics">
+      <div class="mb-4">
+        <div class="text-xs font-semibold text-blue-600 uppercase tracking-wider">View 5/5</div>
+        <h2 class="text-2xl font-bold text-slate-900">Analytics Dashboard — Pustakawan</h2>
+        <p class="text-slate-600 text-sm mt-1">Statistik program reward, top claimer, hadiah terlaris. Untuk laporan ke kepala sekolah.</p>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-6">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h3 class="text-xl font-bold">📊 Analytics Reward System</h3>
+            <p class="text-sm text-slate-500">Periode: 1 - 23 Agustus 2026</p>
+          </div>
+          <div class="flex gap-2">
+            <select class="text-xs border border-slate-200 rounded-md px-2 py-1.5">
+              <option>Bulan ini</option>
+              <option>3 bulan terakhir</option>
+              <option>Semester ini</option>
+              <option>Tahun ini</option>
+            </select>
+            <button class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-md font-medium">📥 Export CSV</button>
+          </div>
+        </div>
+
+        <!-- KPI cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <div class="border border-slate-200 rounded-lg p-4">
+            <div class="text-xs text-slate-500 mb-1">💰 Poin Beredar</div>
+            <div class="text-2xl font-bold text-slate-900">4.275</div>
+            <div class="text-xs text-green-600 mt-1">↑ 12% dari bulan lalu</div>
+          </div>
+          <div class="border border-slate-200 rounded-lg p-4">
+            <div class="text-xs text-slate-500 mb-1">📈 Poin Masuk Bulan Ini</div>
+            <div class="text-2xl font-bold text-slate-900">1.840</div>
+            <div class="text-xs text-green-600 mt-1">↑ 8% dari bulan lalu</div>
+          </div>
+          <div class="border border-slate-200 rounded-lg p-4">
+            <div class="text-xs text-slate-500 mb-1">🎁 Total Klaim</div>
+            <div class="text-2xl font-bold text-slate-900">47</div>
+            <div class="text-xs text-slate-500 mt-1">23 siswa, 4 guru</div>
+          </div>
+          <div class="border border-amber-200 bg-amber-50/30 rounded-lg p-4">
+            <div class="text-xs text-amber-700 mb-1">⚠️ Stok Hampir Habis</div>
+            <div class="text-2xl font-bold text-amber-700">3</div>
+            <div class="text-xs text-amber-600 mt-1">Butuh restock segera</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <!-- Top 10 Leaderboard -->
+          <div class="border border-slate-200 rounded-xl p-4">
+            <h4 class="font-semibold text-slate-900 mb-3 flex items-center justify-between">
+              <span>🏆 Top 10 Reader Bulan Ini</span>
+              <button class="text-xs text-blue-600 hover:underline">Lihat semua</button>
+            </h4>
+            <div class="space-y-2">
+              <div class="flex items-center gap-3 p-2 rounded-lg bg-gradient-to-r from-amber-50 to-yellow-50">
+                <div class="w-6 h-6 rounded-full bg-amber-400 text-white text-xs font-bold flex items-center justify-center">1</div>
+                <div class="w-8 h-8 rounded-full bg-rose-200 flex items-center justify-center text-xs">A</div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-sm">Andini Putri Maharani</div>
+                  <div class="text-xs text-slate-500">IX-A • 24 buku</div>
+                </div>
+                <div class="font-bold text-amber-700">680 ⭐</div>
+              </div>
+              <div class="flex items-center gap-3 p-2 rounded-lg bg-slate-50">
+                <div class="w-6 h-6 rounded-full bg-slate-300 text-white text-xs font-bold flex items-center justify-center">2</div>
+                <div class="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center text-xs">R</div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-sm">Rafi Pratama</div>
+                  <div class="text-xs text-slate-500">VIII-B • 19 buku</div>
+                </div>
+                <div class="font-bold text-slate-700">520 ⭐</div>
+              </div>
+              <div class="flex items-center gap-3 p-2 rounded-lg bg-slate-50">
+                <div class="w-6 h-6 rounded-full bg-orange-300 text-white text-xs font-bold flex items-center justify-center">3</div>
+                <div class="w-8 h-8 rounded-full bg-violet-200 flex items-center justify-center text-xs">N</div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-sm">Nayla Zahra</div>
+                  <div class="text-xs text-slate-500">VII-C • 16 buku</div>
+                </div>
+                <div class="font-bold text-slate-700">480 ⭐</div>
+              </div>
+              <div class="flex items-center gap-3 p-2">
+                <div class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center">4</div>
+                <div class="w-8 h-8 rounded-full bg-emerald-200 flex items-center justify-center text-xs">D</div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-sm">Dimas Anggara</div>
+                  <div class="text-xs text-slate-500">IX-A • 14 buku</div>
+                </div>
+                <div class="font-bold text-slate-700">410 ⭐</div>
+              </div>
+              <div class="flex items-center gap-3 p-2">
+                <div class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center">5</div>
+                <div class="w-8 h-8 rounded-full bg-amber-200 flex items-center justify-center text-xs">B</div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-sm">Budi Santoso, S.Pd.</div>
+                  <div class="text-xs text-slate-500">Guru Matematika</div>
+                </div>
+                <div class="font-bold text-slate-700">340 ⭐</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hadiah terlaris -->
+          <div class="border border-slate-200 rounded-xl p-4">
+            <h4 class="font-semibold text-slate-900 mb-3">🔥 Hadiah Terlaris</h4>
+            <div class="space-y-3">
+              <div>
+                <div class="flex items-center justify-between text-sm mb-1">
+                  <span class="font-medium">🔖 Bookmark Custom</span>
+                  <span class="text-slate-500">15 klaim</span>
+                </div>
+                <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div class="h-full bg-blue-500 rounded-full" style="width: 75%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between text-sm mb-1">
+                  <span class="font-medium">✏️ Pulpen Branded</span>
+                  <span class="text-slate-500">10 klaim</span>
+                </div>
+                <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div class="h-full bg-blue-500 rounded-full" style="width: 50%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between text-sm mb-1">
+                  <span class="font-medium">📓 Notebook Eksklusif</span>
+                  <span class="text-slate-500">8 klaim</span>
+                </div>
+                <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div class="h-full bg-blue-500 rounded-full" style="width: 40%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between text-sm mb-1">
+                  <span class="font-medium">🖍️ Set Spidol Warna</span>
+                  <span class="text-slate-500">5 klaim</span>
+                </div>
+                <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div class="h-full bg-blue-500 rounded-full" style="width: 25%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between text-sm mb-1">
+                  <span class="font-medium">🎟️ Voucher Kopi</span>
+                  <span class="text-slate-500">4 klaim</span>
+                </div>
+                <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div class="h-full bg-blue-500 rounded-full" style="width: 20%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock alerts -->
+        <div class="border border-amber-300 bg-amber-50/30 rounded-xl p-4">
+          <h4 class="font-semibold text-amber-900 mb-2 flex items-center gap-2">
+            <span>⚠️</span>
+            <span>Stok Hampir Habis — Perlu Restock</span>
+          </h4>
+          <div class="space-y-1.5 text-sm">
+            <div class="flex items-center justify-between">
+              <span>📚 Buku Pilihan 1 Eksemplar</span>
+              <span class="text-amber-700 font-semibold">2 / 15 tersisa</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span>🎟️ Voucher Gramedia Rp 50.000</span>
+              <span class="text-amber-700 font-semibold">1 / 8 tersisa</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span>🎩 Topi Sekolah Eksklusif</span>
+              <span class="text-amber-700 font-semibold">2 / 12 tersisa</span>
+            </div>
+          </div>
+          <button class="mt-3 text-xs bg-white border border-amber-400 text-amber-700 px-3 py-1.5 rounded-md font-medium hover:bg-amber-50">+ Tambah Stok</button>
+        </div>
+
+        <!-- Chart placeholder -->
+        <div class="mt-6 border border-slate-200 rounded-xl p-4">
+          <h4 class="font-semibold text-slate-900 mb-3">📈 Trend Klaim Hadiah (30 hari terakhir)</h4>
+          <div class="h-32 flex items-end justify-around gap-1">
+            <div class="flex-1 bg-blue-200 rounded-t" style="height: 30%"></div>
+            <div class="flex-1 bg-blue-200 rounded-t" style="height: 45%"></div>
+            <div class="flex-1 bg-blue-200 rounded-t" style="height: 35%"></div>
+            <div class="flex-1 bg-blue-300 rounded-t" style="height: 60%"></div>
+            <div class="flex-1 bg-blue-300 rounded-t" style="height: 50%"></div>
+            <div class="flex-1 bg-blue-300 rounded-t" style="height: 65%"></div>
+            <div class="flex-1 bg-blue-400 rounded-t" style="height: 80%"></div>
+            <div class="flex-1 bg-blue-400 rounded-t" style="height: 75%"></div>
+            <div class="flex-1 bg-blue-400 rounded-t" style="height: 90%"></div>
+            <div class="flex-1 bg-blue-500 rounded-t" style="height: 100%"></div>
+            <div class="flex-1 bg-blue-500 rounded-t" style="height: 85%"></div>
+            <div class="flex-1 bg-blue-500 rounded-t" style="height: 70%"></div>
+            <div class="flex-1 bg-blue-300 rounded-t" style="height: 55%"></div>
+            <div class="flex-1 bg-blue-400 rounded-t" style="height: 95%"></div>
+            <div class="flex-1 bg-blue-500 rounded-t" style="height: 88%"></div>
+          </div>
+          <div class="flex justify-around text-xs text-slate-500 mt-2">
+            <span>9 Agu</span>
+            <span>15</span>
+            <span>21</span>
+            <span>27</span>
+            <span>2 Sep</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- FOOTER -->
+    <!-- ============================================================== -->
+    <footer class="border-t border-slate-200 pt-8 mt-12">
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
+        <h3 class="text-lg font-bold text-blue-900 mb-2">✅ Tahap A & B Selesai</h3>
+        <ul class="text-sm text-blue-800 space-y-1 mb-4">
+          <li>✓ Schema database 4 model baru (PointRule, PointTransaction, Reward, RewardRedemption)</li>
+          <li>✓ Migration SQL dengan 16 index optimasi</li>
+          <li>✓ Seed data: 12 point rules + 18 hadiah + sample transactions</li>
+          <li>✓ UI mockup untuk 5 view utama</li>
+        </ul>
+        <p class="text-sm text-blue-900 font-medium">
+          <strong>Next step (Sprint 1 Implementation):</strong> Mulai coding API + UI components yang sesungguhnya.
+        </p>
+      </div>
+    </footer>
+
+  </main>
+</body>
+</html>
