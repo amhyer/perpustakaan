@@ -1368,3 +1368,81 @@ model AuditLogBlockchain {
   @@index([blockId])
   @@index([auditLogId])
 }
+
+// ===== Reading Lists (Sosial Reading) - Tier 2 #6 =====
+model ReadingList {
+  id          String   @id @default(cuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  category    String   @default("CUSTOM") // THEMED | RECOMMENDED | GENRE | ACADEMIC | BEGINNER | ADVANCED | CUSTOM
+  visibility  String   @default("PUBLIC") // PUBLIC | PRIVATE | FOLLOWERS_ONLY
+
+  // Display
+  coverColor  String   @default("#3b82f6")
+  coverEmoji  String   @default("📚")
+  tags        String   @default("[]") // JSON array
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items       ReadingListItem[]
+  likes       ReadingListLike[]
+  follows     ReadingListFollow[]
+  comments    ReadingListComment[]
+
+  @@index([memberId])
+  @@index([visibility, category])
+  @@index([updatedAt])
+}
+
+model ReadingListItem {
+  id        String   @id @default(cuid())
+  listId    String
+  list      ReadingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  position  Int      @default(0)
+  addedAt   DateTime @default(now())
+
+  @@unique([listId, bookId])
+  @@index([listId, position])
+}
+
+model ReadingListLike {
+  id        String   @id @default(cuid())
+  listId    String
+  list      ReadingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([listId, memberId])
+  @@index([listId])
+}
+
+model ReadingListFollow {
+  id        String   @id @default(cuid())
+  listId    String
+  list      ReadingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([listId, memberId])
+  @@index([memberId])
+}
+
+model ReadingListComment {
+  id        String   @id @default(cuid())
+  listId    String
+  list      ReadingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  comment   String
+  createdAt DateTime @default(now())
+
+  @@index([listId, createdAt])
+}
