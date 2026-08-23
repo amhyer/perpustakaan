@@ -19,6 +19,7 @@ import { api } from "@/lib/api-client";
 import { ROLE_LABELS } from "@/lib/constants";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { PwaInstallButton } from "./pwa-install-button";
 
 export function Header() {
   const { user, setView, setSidebarOpen, view, setUser } = useAppStore();
@@ -120,6 +121,8 @@ export function Header() {
             </span>
           )}
         </Button>
+
+        <PwaInstallButton />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

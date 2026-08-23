@@ -21,12 +21,28 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/logo.svg", type: "image/svg+xml" },
-      { url: "/icons/icon-192.svg", sizes: "192x192", type: "image/svg+xml" },
-      { url: "/icons/icon-512.svg", sizes: "512x512", type: "image/svg+xml" },
+      { url: "/icons/icon-72.png", sizes: "72x72", type: "image/png" },
+      { url: "/icons/icon-96.png", sizes: "96x96", type: "image/png" },
+      { url: "/icons/icon-128.png", sizes: "128x128", type: "image/png" },
+      { url: "/icons/icon-144.png", sizes: "144x144", type: "image/png" },
+      { url: "/icons/icon-152.png", sizes: "152x152", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-384.png", sizes: "384x384", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/icons/icon-192.svg", sizes: "192x192" },
+      { url: "/icons/icon-152.png", sizes: "152x152", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "application-name": "Jendela Ilmu",
+    "apple-mobile-web-app-title": "Jendela Ilmu",
+    "msapplication-TileColor": "#1e3a5f",
+    "msapplication-config": "/browserconfig.xml",
   },
 };
 
@@ -40,9 +56,14 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#1e3a5f" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Jendela Ilmu" />
+        <meta name="application-name" content="Jendela Ilmu" />
+        <meta name="format-detection" content="telephone=no" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <link rel="apple-touch-startup-image" href="/icons/icon-512.png" />
       </head>
       <body className="antialiased bg-background text-foreground">
         <SkipLink />
