@@ -1540,3 +1540,53 @@ model ReadingSchedule {
 
   @@index([clubId, startDate])
 }
+
+// ===== Donations & Book Exchange (Tier 4 #16) =====
+model Donation {
+  id              String   @id @default(cuid())
+  type            String   // DONATION | EXCHANGE
+  title           String
+  author          String
+  isbn            String?
+  condition       String   // NEW | LIKE_NEW | GOOD | FAIR | POOR
+  description     String?
+  categoryId      String?
+  category        Category? @relation(fields: [categoryId], references: [id])
+  images          String   @default("[]") // JSON array of URLs
+
+  status          String   @default("PENDING") // PENDING | APPROVED | REJECTED | RECEIVED | CANCELLED
+  donorId         String
+  donor           Member   @relation(fields: [donorId], references: [id], onDelete: Cascade)
+
+  approvedById    String?
+  approvedBy      User?    @relation("DonationApprover", fields: [approvedById], references: [id])
+  rewardPoints    Int      @default(0)
+
+  rejectionReason String?
+  receivedAt      DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  offers          ExchangeOffer[]
+
+  @@index([type, status])
+  @@index([donorId, createdAt])
+}
+
+model ExchangeOffer {
+  id                String   @id @default(cuid())
+  listingId         String
+  listing           Donation @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  offererId         String
+  offerer           Member   @relation("Offerer", fields: [offererId], references: [id], onDelete: Cascade)
+
+  offererBookTitle  String
+  message           String
+  status            String   @default("PENDING") // PENDING | ACCEPTED | REJECTED | CANCELLED
+
+  createdAt         DateTime @default(now())
+
+  @@index([listingId, status])
+  @@index([offererId, createdAt])
+}
