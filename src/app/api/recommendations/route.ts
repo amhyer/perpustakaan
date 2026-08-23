@@ -1,73 +1,42 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { recommendBooks, getCollaborativeRecommendations, getSimilarBooks } from "@/lib/recommendations";
+import { requireAuth } from "@/lib/auth";
+import { getRecommendations, enrichRecommendations } from "@/lib/recommendation-engine";
 
 /**
- * GET /api/recommendations — AI-powered book recommendations.
+ * GET /api/recommendations — Personalized book recommendations untuk user.
  *
  * Query params:
- * - ?for=bookId — recommendations for specific book (collaborative)
- * - ?similar=bookId — similar books
- * - ?limit=N — number of recommendations (default 10)
- * - ?exclude=id1,id2 — exclude these book IDs
+ * - topN: berapa banyak (default 10, max 20)
+ * - refresh: 'true' untuk force recompute (default pakai cache)
  *
- * Untuk personalized recommendations, user harus login.
+ * Returns: array of { bookId, bookTitle, score, reason, ... }
  */
 export async function GET(req: Request) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { user, error } = await requireAuth();
+  if (error) return error;
+  if (!user?.member) {
+    return NextResponse.json({ error: "Hanya member yang bisa dapat rekomendasi" }, { status: 403 });
   }
 
-  const url = new URL(req.url);
-  const forBook = url.searchParams.get("for");
-  const similarBook = url.searchParams.get("similar");
-  const limit = parseInt(url.searchParams.get("limit") || "10");
-  const excludeParam = url.searchParams.get("exclude") || "";
-  const excludeBookIds = excludeParam ? excludeParam.split(",") : [];
+  const searchParams = new URL(req.url).searchParams;
+  const topN = Math.min(20, Math.max(1, parseInt(searchParams.get("topN") || "10")));
+  const forceRefresh = searchParams.get("refresh") === "true";
 
   try {
-    // Get member for personalization
-    const member = await db.member.findUnique({
-      where: { userId: session.userId },
+    let recs = await getRecommendations(user.member.id, {
+      topN,
+      forceRefresh,
     });
 
-    // "Because you read X" (collaborative)
-    if (forBook) {
-      const recs = await getCollaborativeRecommendations(forBook, limit);
-      return NextResponse.json({
-        type: "collaborative",
-        recommendations: recs,
-        for: forBook,
-      });
-    }
-
-    // Similar to X (content)
-    if (similarBook) {
-      const recs = await getSimilarBooks(similarBook, limit);
-      return NextResponse.json({
-        type: "similar",
-        recommendations: recs,
-        for: similarBook,
-      });
-    }
-
-    // Personalized for user
-    const recs = await recommendBooks({
-      userId: session.userId,
-      memberId: member?.id,
-      limit,
-      excludeBookIds,
-    });
+    // Enrich dengan detail buku (kalau cached, belum ada detail)
+    recs = await enrichRecommendations(recs);
 
     return NextResponse.json({
-      type: "personalized",
+      memberId: user.member.id,
       recommendations: recs,
-      user: session.email,
+      cached: !forceRefresh,
     });
   } catch (err) {
-    console.error("[recommendations] Error:", err);
-    return NextResponse.json({ error: "Gagal generate rekomendasi" }, { status: 500 });
+    return NextResponse.json({ error: "Gagal memuat rekomendasi" }, { status: 500 });
   }
 }

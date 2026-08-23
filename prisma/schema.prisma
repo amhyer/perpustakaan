@@ -37,6 +37,8 @@ model User {
   rewardsCreated           Reward[]            @relation("RewardCreator")
   redemptionsApproved      RewardRedemption[]  @relation("RewardApprover")
   redemptionsDelivered     RewardRedemption[]  @relation("RewardDeliverer")
+  // Push notification
+  pushSubscriptions        PushSubscription[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -86,6 +88,7 @@ model Member {
   // Reward System relations
   pointTransactions PointTransaction[]
   redemptions       RewardRedemption[]
+  recommendations   Recommendation[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -140,6 +143,7 @@ model Book {
   locationId  String?
   location    Location? @relation(fields: [locationId], references: [id])
   items       BookItem[]
+  recommendations Recommendation[]
   reservations Reservation[]
   wishlists   Wishlist[]
   attachments BookAttachment[]
@@ -884,6 +888,92 @@ model SemesterArchive {
   @@index([periodType, startDate])
   @@index([archivedAt])
   @@unique([periodName, periodType])
+}
+
+/// =========================================================================
+/// PUSH SUBSCRIPTION — Web Push API subscriptions
+/// =========================================================================
+///
+/// Setiap user yang opt-in untuk push notification punya record di sini.
+/// Saat ada event (loan overdue, klaim disetujui, dll), server kirim
+/// push via web-push library ke semua subscription yang match.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Subscription details (dari Push API)
+  endpoint  String   @unique
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  keys      String   // JSON string of p256dh + auth keys
+
+  // Device info
+  userAgent String?
+
+  // Status
+  isActive  Boolean  @default(true)
+  lastUsedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, isActive])
+  @@index([isActive])
+}
+
+/// =========================================================================
+/// EXPERIMENT ASSIGNMENT — A/B testing untuk reward catalog
+/// =========================================================================
+///
+/// Setiap user di-assign ke satu variant ("control" atau "treatment") untuk
+/// experiment tertentu. Berguna untuk testing catalog baru, copy, dll.
+model ExperimentAssignment {
+  id            String   @id @default(cuid())
+
+  // Identifikasi experiment
+  experimentKey String   // "reward_catalog_v2", "point_multiplier_oct"
+  variant       String   // "control" | "treatment_a" | "treatment_b"
+
+  // Subject
+  memberId      String?
+  userId        String?
+  classGrade    String?  // untuk cluster experiment by kelas
+
+  // Metadata
+  assignedAt    DateTime @default(now())
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  metadata      String?  // JSON additional data
+
+  @@unique([experimentKey, memberId])
+  @@index([experimentKey, variant])
+  @@index([memberId])
+}
+
+/// =========================================================================
+/// RECOMMENDATION — ML-based book recommendations
+/// =========================================================================
+///
+/// Cache rekomendasi per-member. Dihitung via collaborative filtering
+/// sederhana: "member A dan B sama-sama pinjam buku X, jadi B mungkin
+/// tertarik buku Y yang dipinjam A".
+///
+/// Re-compute setiap 6 jam via cron.
+model Recommendation {
+  id        String   @id @default(cuid())
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  // Recommendation result
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  score     Float    // 0-1, higher = more recommended
+  reason    String   // "Karena kamu sering pinjam fiksi", "Trending di kelasmu"
+
+  rank      Int      // 1-N, top N recommendations
+  generatedAt DateTime @default(now())
+
+  @@unique([memberId, bookId])
+  @@index([memberId, rank])
 }
 
 /// =========================================================================
