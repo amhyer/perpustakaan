@@ -1613,3 +1613,37 @@ model Certificate {
   @@index([memberId, type])
   @@index([issuedAt])
 }
+
+// ===== AR Book Discovery (Sprint T - Tier 4 #13) =====
+model CoverSignature {
+  id              String   @id @default(cuid())
+  bookId          String   @unique
+  book            Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  perceptualHash  String   // 16-char hex dHash
+  dominantColors  String   // JSON array of 5 hex colors
+  aspectRatio     Float    @default(0.66) // width/height
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([perceptualHash])
+}
+
+model ARTreasureHunt {
+  id            String   @id @default(cuid())
+  bookId        String
+  book          Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  name          String
+  description   String
+  hint          String
+  rewardPoints  Int      @default(50)
+  expiresAt     DateTime
+  foundBy       String   @default("[]") // JSON array of member IDs
+
+  createdAt     DateTime @default(now())
+
+  @@index([expiresAt])
+  @@index([bookId])
+}
