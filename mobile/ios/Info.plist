@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleDisplayName</key>
+    <string>Jendela Ilmu</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>0.1.0</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+
+    <!-- Camera (ISBN scanning) -->
+    <key>NSCameraUsageDescription</key>
+    <string>Aplikasi butuh akses kamera untuk scan barcode ISBN buku</string>
+
+    <!-- Photo library (for profile pic upload) -->
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Aplikasi butuh akses galeri untuk upload foto profil</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Aplikasi butuh akses galeri untuk simpan foto</string>
+
+    <!-- Network usage (for API access) -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <false/>
+        <key>NSExceptionDomains</key>
+        <dict>
+            <key>localhost</key>
+            <dict>
+                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                <true/>
+            </dict>
+        </dict>
+    </dict>
+
+    <!-- Deep linking: jendela-ilmu:// -->
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLName</key>
+            <string>com.perpustakaan.jendelailmu</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>jendela-ilmu</string>
+            </array>
+        </dict>
+    </array>
+
+    <!-- Universal Links: https://perpustakaan.sekolah.sch.id -->
+    <key>applinks</key>
+    <dict>
+        <key>apps</key>
+        <array>
+            <dict>
+                <key>details</key>
+                <array>
+                    <dict>
+                        <key>appIDs</key>
+                        <array>
+                            <string>ABCDE12345.com.perpustakaan.jendelailmu</string>
+                        </array>
+                        <key>components</key>
+                        <array>
+                            <dict>
+                                <key>/</key>
+                                <string>/</string>
+                                <key>comment</key>
+                                <string>Match all paths</string>
+                            </dict>
+                        </array>
+                    </dict>
+                </array>
+            </dict>
+        </array>
+    </dict>
+
+    <!-- Supported orientations -->
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+
+    <!-- iPad support -->
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+
+    <!-- App name and metadata -->
+    <key>CFBundleName</key>
+    <string>Jendela Ilmu</string>
+</dict>
+</plist>
