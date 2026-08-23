@@ -1446,3 +1446,97 @@ model ReadingListComment {
 
   @@index([listId, createdAt])
 }
+
+// ===== Book Clubs (Sosial Reading) - Tier 2 #6 =====
+model BookClub {
+  id              String   @id @default(cuid())
+  name            String
+  description     String
+  coverEmoji      String   @default("📚")
+  coverColor      String   @default("#3b82f6")
+  visibility      String   @default("PUBLIC") // PUBLIC | PRIVATE | INVITE_ONLY
+  currentBookId   String?
+  currentBook     Book?    @relation(fields: [currentBookId], references: [id])
+
+  createdById     String
+  createdBy       Member   @relation("ClubCreator", fields: [createdById], references: [id])
+
+  tags            String   @default("[]") // JSON array
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  members         BookClubMember[]
+  discussions     BookClubDiscussion[]
+  schedules       ReadingSchedule[]
+
+  @@index([visibility, createdAt])
+  @@index([currentBookId])
+}
+
+model BookClubMember {
+  id           String   @id @default(cuid())
+  clubId       String
+  club         BookClub @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  memberId     String
+  member       Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  role         String   @default("MEMBER") // OWNER | MODERATOR | MEMBER
+  status       String   @default("ACTIVE") // ACTIVE | PENDING | BANNED
+  progress     Int      @default(0) // 0-100
+  joinedAt     DateTime @default(now())
+  lastActiveAt DateTime?
+
+  @@unique([clubId, memberId])
+  @@index([memberId, status])
+  @@index([clubId, role])
+}
+
+model BookClubDiscussion {
+  id          String   @id @default(cuid())
+  clubId      String
+  club        BookClub @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  content     String
+  parentId    String?
+  parent      BookClubDiscussion? @relation("Replies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies     BookClubDiscussion[] @relation("Replies")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  likes       BookClubDiscussionLike[]
+
+  @@index([clubId, createdAt])
+  @@index([parentId])
+}
+
+model BookClubDiscussionLike {
+  id            String   @id @default(cuid())
+  discussionId  String
+  discussion    BookClubDiscussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  memberId      String
+  member        Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+
+  @@unique([discussionId, memberId])
+}
+
+model ReadingSchedule {
+  id              String   @id @default(cuid())
+  clubId          String
+  club            BookClub @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  bookId          String
+  book            Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  startDate       DateTime
+  endDate         DateTime
+  chapterRange    String   // "Ch 1-5"
+  targetProgress  Int      // 0-100
+  description     String
+
+  createdAt       DateTime @default(now())
+
+  @@index([clubId, startDate])
+}
