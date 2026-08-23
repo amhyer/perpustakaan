@@ -8,6 +8,7 @@ import { OnboardingWizard } from "@/components/app/onboarding/onboarding-wizard"
 import { SseProvider } from "@/components/app/layout/sse-provider";
 import { ChatAssistant } from "@/components/app/chat/chat-assistant";
 import { CommandPalette } from "@/components/app/layout/command-palette";
+import { KeyboardCheatsheet } from "@/components/app/layout/keyboard-cheatsheet";
 import { useAppStore } from "@/store/use-app-store";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -18,6 +19,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <SseProvider />
       <ChatAssistant />
       <CommandPalette />
+      <KeyboardCheatsheet />
       <div className="min-h-screen flex bg-background">
         <Sidebar />
         <div className="flex-1 flex flex-col min-w-0">
