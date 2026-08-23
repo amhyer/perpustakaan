@@ -32,7 +32,6 @@ import {
   AlertTriangle,
   Sparkles,
 } from "lucide-react";
-import QRCode from "qrcode.react";
 
 import { Button } from "@/components/ui/form/button";
 import { Input } from "@/components/ui/form/input";
@@ -1363,4 +1362,12 @@ export function SettingsView() {
             )}
             {holidays && holidays.length > 0 && (
               <p className="text-xs text-muted-foreground mt-3 italic">
-         
+                Hari libur yang terdaftar akan otomatis meniadakan tanggal jatuh tempo.
+              </p>
+            )}
+          </Card>
+        </>
+      )}
+    </div>
+  );
+}

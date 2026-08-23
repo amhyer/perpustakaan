@@ -11,7 +11,7 @@ import {
   Filter,
   X,
   Settings as SettingsIcon,
-  QrCode,
+  QrCodeIcon,
   Download,
   Copy,
 } from "lucide-react";
@@ -30,7 +30,8 @@ import {
 } from "@/components/ui/form/select";
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 import { useFetch } from "@/hooks/use-fetch";
-import { Barcode, QrCode } from "@/components/app/shared/barcode";
+import { Barcode } from "@/components/app/shared/barcode";
+import { QrCode } from "@/components/app/shared/qr-code";
 import { useAppStore } from "@/store/use-app-store";
 
 interface BookItem {

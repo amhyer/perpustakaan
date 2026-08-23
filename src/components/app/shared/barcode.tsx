@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import JsBarcode from "jsbarcode";
-import QRCode from "qrcode.react";
 
 interface BarcodeProps {
   value: string;
@@ -27,6 +26,9 @@ interface BarcodeProps {
  * - ITF14 (numeric, 14 digits)
  *
  * Untuk ISBN/eksemplar sekolah → CODE128 lebih fleksibel.
+ *
+ * Note: QrCode component ada di file terpisah (./qr-code.tsx) untuk
+ * avoid duplicate export.
  */
 export function Barcode({
   value,
@@ -76,33 +78,4 @@ export function Barcode({
   }
 
   return <svg ref={svgRef} className={className} />;
-}
-
-interface QrCodeProps {
-  value: string;
-  size?: number;
-  level?: "L" | "M" | "Q" | "H";
-  bgColor?: string;
-  fgColor?: string;
-  includeMargin?: boolean;
-  className?: string;
-}
-
-/**
- * QR Code component.
- */
-export function QrCode({
-  value,
-  size = 128,
-  level = "M",
-  bgColor = "#ffffff",
-  fgColor = "#000000",
-  includeMargin = true,
-  className,
-}: QrCodeProps) {
-  return (
-    <div className={className}>
-      <QRCode value={value} size={size} level={level} bgColor={bgColor} fgColor={fgColor} includeMargin={includeMargin} />
-    </div>
-  );
 }
