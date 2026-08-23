@@ -233,3 +233,9 @@ export const RFIDDashboardView = dynamic(
   () => import("./iot-views").then((m) => m.RFIDDashboardView),
   { loading: () => loadingComponent, ssr: false }
 );
+
+// Blockchain Audit (Sprint F5)
+export const BlockchainExplorerView = dynamic(
+  () => import("./blockchain-view").then((m) => m.BlockchainExplorerView),
+  { loading: () => loadingComponent, ssr: false }
+);

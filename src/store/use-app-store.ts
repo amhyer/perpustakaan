@@ -41,6 +41,8 @@ export type ViewKey =
   // IoT RFID
   | "rfid-dashboard"
   | "rfid-simulator"
+  // Blockchain Audit
+  | "blockchain-explorer"
   // Member (teacher/student)
   | "my-dashboard"
   | "my-loans"
