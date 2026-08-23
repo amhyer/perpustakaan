@@ -182,3 +182,24 @@ export const ReportBuilderView = dynamic(
   () => import("./report-builder-view").then((m) => m.ReportBuilderView),
   { loading: () => loadingComponent, ssr: false }
 );
+
+// Reward System (Sprint 1)
+export const RewardsCatalogView = dynamic(
+  () => import("../rewards/rewards-view").then((m) => m.RewardsView),
+  { loading: () => loadingComponent, ssr: false }
+);
+
+export const MyRedemptionsView = dynamic(
+  () => import("../rewards/my-redemptions-view").then((m) => m.MyRedemptionsView),
+  { loading: () => loadingComponent, ssr: false }
+);
+
+export const RewardsManagementView = dynamic(
+  () => import("../rewards/rewards-management-view").then((m) => m.RewardsManagementView),
+  { loading: () => loadingComponent, ssr: false }
+);
+
+export const PointWidget = dynamic(
+  () => import("../rewards/point-widget").then((m) => m.PointWidget),
+  { loading: () => loadingComponent, ssr: false }
+);

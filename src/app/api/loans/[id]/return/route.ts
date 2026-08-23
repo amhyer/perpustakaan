@@ -5,6 +5,7 @@ import { calculateFine, DAMAGE_FINE_AMOUNT } from "@/lib/constants";
 import { getLoanRule } from "@/lib/loan-rules";
 import { logAudit } from "@/lib/audit";
 import { notify } from "@/lib/notification-service";
+import { onLoanReturned } from "@/lib/points-engine";
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { user, error } = await requireAuth();
@@ -149,5 +150,20 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     : `${loan.bookItem.book.title} oleh ${loan.member.fullName}`;
   await logAudit(user!.id, "LOAN_RETURN", "Loan", loan.id, detail);
 
-  return NextResponse.json({ loan: updated, fine, nextReservation });
+  // Hook: Award points for reading (jika tidak damaged/lost)
+  const isDamaged = returnCondition && returnCondition !== "BAIK";
+  const pointsResult = await onLoanReturned(loan.id, { damaged: !!isDamaged });
+
+  return NextResponse.json({
+    loan: updated,
+    fine,
+    nextReservation,
+    pointsAwarded: pointsResult.awarded > 0 ? {
+      total: pointsResult.awarded,
+      sources: pointsResult.sources,
+      message: pointsResult.awarded > 0
+        ? `Selamat! Anda mendapat +${pointsResult.awarded} poin.`
+        : undefined,
+    } : null,
+  });
 }

@@ -34,6 +34,10 @@ export type ViewKey =
   | "audit-log"
   | "book-transfer"
   | "kiosk"
+  // Reward System
+  | "rewards-catalog"
+  | "my-redemptions"
+  | "rewards-management"
   // Member (teacher/student)
   | "my-dashboard"
   | "my-loans"

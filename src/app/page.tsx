@@ -49,6 +49,9 @@ import {
   BarcodeLabelsView,
   ReportBuilderView,
   CustomizableDashboardView,
+  RewardsCatalogView,
+  MyRedemptionsView,
+  RewardsManagementView,
 } from "@/components/app/views";
 
 export default function Page() {
@@ -156,6 +159,12 @@ export default function Page() {
         return <BarcodeLabelsView />;
       case "customizable-dashboard":
         return <CustomizableDashboardView />;
+      case "rewards-catalog":
+        return <RewardsCatalogView />;
+      case "my-redemptions":
+        return <MyRedemptionsView />;
+      case "rewards-management":
+        return <RewardsManagementView />;
       default:
         return <DashboardView />;
     }
