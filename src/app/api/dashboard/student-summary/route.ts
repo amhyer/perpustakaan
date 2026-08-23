@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { calculateStreak, calculateBestStreak } from "@/lib/streak-detector";
 
 /**
  * GET /api/dashboard/student-summary — Summary untuk student dashboard widget.
@@ -15,7 +16,7 @@ export async function GET() {
     const threeDaysFromNow = new Date(today);
     threeDaysFromNow.setDate(today.getDate() + 3);
 
-    const [activeLoans, overdueLoans, dueSoonLoans, pointsAgg, recommendations] =
+    const [activeLoans, overdueLoans, dueSoonLoans, pointsAgg, recommendations, currentStreak] =
       await Promise.all([
         db.loan.count({
           where: { memberId, status: { in: ["LOANED", "OVERDUE"] } },
@@ -40,7 +41,11 @@ export async function GET() {
           take: 3,
           include: { book: { select: { title: true, author: true, coverColor: true } } },
         }),
+        calculateStreak(memberId),
       ]);
+
+    // Calculate best streak (longest ever)
+    const bestStreak = await calculateBestStreak(memberId);
 
     const totalEarned = pointsAgg._sum.amount || 0;
     const nextRewardThreshold = 200;
@@ -54,7 +59,7 @@ export async function GET() {
         nextRewardThreshold,
         progress,
       },
-      streak: { current: 7, best: 14 }, // TODO: real streak calculation
+      streak: { current: currentStreak, best: bestStreak },
       recommendations: recommendations.map((r) => ({
         id: r.bookId,
         title: r.book.title,
