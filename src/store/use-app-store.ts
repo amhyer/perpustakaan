@@ -34,6 +34,7 @@ export type ViewKey =
   | "audit-log"
   | "book-transfer"
   | "kiosk"
+  | "data-export"
   // Reward System
   | "rewards-catalog"
   | "my-redemptions"
@@ -103,6 +104,16 @@ interface ViewState {
   dashboardVariant: "student" | "teacher";
 }
 
+export interface RecentItem {
+  key: ViewKey;
+  params: Record<string, string>;
+  visitedAt: number; // timestamp
+  /** Display label (cached for fast list) */
+  label?: string;
+  /** Group label for section header */
+  group?: string;
+}
+
 interface AppStore {
   user: CurrentUser | null;
   setUser: (u: CurrentUser | null) => void;
@@ -117,6 +128,18 @@ interface AppStore {
   // refresh trigger for data refetch
   refreshKey: number;
   triggerRefresh: () => void;
+
+  // Sprint G2 — Recent items (auto-tracked)
+  recentItems: RecentItem[];
+  /** Add current view to recent items */
+  trackRecent: (item: Omit<RecentItem, "visitedAt">) => void;
+  /** Clear all recent items */
+  clearRecent: () => void;
+
+  // Sprint G2 — Command palette
+  commandPaletteOpen: boolean;
+  setCommandPaletteOpen: (open: boolean) => void;
+  toggleCommandPalette: () => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -135,16 +158,27 @@ export const useAppStore = create<AppStore>((set) => ({
 
   view: { key: "dashboard", params: {}, dashboardVariant: "student" },
   setView: (key, params = {}) => {
-    set((state) => ({
-      view: {
-        key,
-        params,
-        // Pertahankan variant yang sudah ada di store, kecuali params override
-        dashboardVariant:
-          (params.variant as "student" | "teacher" | undefined) ??
-          state.view.dashboardVariant,
-      },
-    }));
+    set((state) => {
+      // Auto-track this view as recent (Sprint G2)
+      // Skip tracking untuk view "default" atau special keys
+      const skipTracking = ["kiosk"];
+      if (typeof window !== "undefined" && !skipTracking.includes(key)) {
+        // Defer to allow state update
+        queueMicrotask(() => {
+          state.trackRecent({ key, params });
+        });
+      }
+      return {
+        view: {
+          key,
+          params,
+          // Pertahankan variant yang sudah ada di store, kecuali params override
+          dashboardVariant:
+            (params.variant as "student" | "teacher" | undefined) ??
+            state.view.dashboardVariant,
+        },
+      };
+    });
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -155,4 +189,58 @@ export const useAppStore = create<AppStore>((set) => ({
 
   refreshKey: 0,
   triggerRefresh: () => set((s) => ({ refreshKey: s.refreshKey + 1 })),
+
+  // Sprint G2 — Recent items (load from localStorage on init, save on update)
+  recentItems: (() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const stored = localStorage.getItem("ji-recent-items");
+      if (stored) {
+        const parsed = JSON.parse(stored) as RecentItem[];
+        // Only keep items from last 7 days
+        const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        return parsed.filter((item) => item.visitedAt > weekAgo);
+      }
+    } catch {
+      // ignore
+    }
+    return [];
+  })(),
+  trackRecent: (item) => {
+    set((state) => {
+      const MAX_RECENT = 8;
+      const now = Date.now();
+      // Remove duplicate (same key+params)
+      const filtered = state.recentItems.filter(
+        (r) => !(r.key === item.key && JSON.stringify(r.params) === JSON.stringify(item.params))
+      );
+      // Add new at front, cap to MAX_RECENT
+      const next = [{ ...item, visitedAt: now }, ...filtered].slice(0, MAX_RECENT);
+      // Persist to localStorage
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("ji-recent-items", JSON.stringify(next));
+        }
+      } catch {
+        // ignore
+      }
+      return { recentItems: next };
+    });
+  },
+  clearRecent: () => {
+    set({ recentItems: [] });
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("ji-recent-items");
+      }
+    } catch {
+      // ignore
+    }
+  },
+
+  // Sprint G2 — Command palette
+  commandPaletteOpen: false,
+  setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
+  toggleCommandPalette: () =>
+    set((s) => ({ commandPaletteOpen: !s.commandPaletteOpen })),
 }));

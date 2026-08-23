@@ -4,10 +4,11 @@
  * Sidebar — Redesigned dengan grouping, search, dan personalization.
  *
  * Sprint G1 — Sidebar UX Redesign (Phase A-C).
+ * Sprint G2 — Smart Search (Phase C) — Recent items integration.
  *
  * Improvements:
  * - 6 logical groups (instead of flat 24 items)
- * - Search/filter bar di atas
+ * - Search/filter bar di atas (Sprint G2: now shows recent items)
  * - "Aksi Cepat" section (favorites + recent)
  * - Role-based filtering
  * - Badge counts untuk pending items (notifications, claims, dll)
@@ -65,6 +66,7 @@ import {
   Star,
   Clock,
   X,
+  Download,
 } from "lucide-react";
 import { Logo } from "@/components/app/logo";
 import { Input } from "@/components/ui/form/input";
@@ -365,6 +367,12 @@ const NAV_GROUPS: NavGroup[] = [
         icon: ScrollText,
         keywords: ["audit", "log", "riwayat aktivitas"],
       },
+      {
+        key: "data-export",
+        label: "Export Data",
+        icon: Download,
+        keywords: ["export", "csv", "download", "unduh"],
+      },
     ],
   },
 ];
@@ -519,7 +527,14 @@ const MEMBER_NAV_GROUPS: NavGroup[] = [
 ];
 
 export function Sidebar() {
-  const { user, view, setView, sidebarOpen, setSidebarOpen } = useAppStore();
+  const {
+    user,
+    view,
+    setView,
+    sidebarOpen,
+    setSidebarOpen,
+    recentItems,
+  } = useAppStore();
   const isLibrarianRole = user?.role === "LIBRARIAN" || user?.role === "PUSTAKAWAN_JUNIOR";
   const [search, setSearch] = useState("");
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
@@ -609,6 +624,47 @@ export function Sidebar() {
       .filter((item) => item.favorite);
   }, [visibleGroups]);
 
+  // Recent items — find matching nav items from visible groups (Sprint G2 Phase C)
+  const recentNavItems = useMemo(() => {
+    if (!recentItems.length) return [];
+    const allItems = visibleGroups.flatMap((g) =>
+      g.items.map((item) => ({ ...item, groupLabel: g.label }))
+    );
+    const seen = new Set<string>();
+    const result: Array<{ key: ViewKey; params: Record<string, string>; label: string; groupLabel: string; icon: React.ElementType; visitedAt: number }> = [];
+    for (const r of recentItems) {
+      // Match by key (and try to find exact match in visible items)
+      const match = allItems.find((item) => item.key === r.key);
+      const dedupKey = `${r.key}-${JSON.stringify(r.params)}`;
+      if (match && !seen.has(dedupKey)) {
+        seen.add(dedupKey);
+        result.push({
+          key: match.key,
+          params: r.params,
+          label: r.label || match.label,
+          groupLabel: match.groupLabel,
+          icon: match.icon,
+          visitedAt: r.visitedAt,
+        });
+      }
+      if (result.length >= 5) break; // max 5 recent in sidebar
+    }
+    return result;
+  }, [recentItems, visibleGroups]);
+
+  // Format relative time
+  const formatRelativeTime = (timestamp: number): string => {
+    const diff = Date.now() - timestamp;
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return "baru";
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}j`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}h`;
+    return `${Math.floor(days / 7)}mgu`;
+  };
+
   const activeKey = view.key;
 
   return (
@@ -667,15 +723,22 @@ export function Sidebar() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari menu..."
-              className="h-8 pl-9 pr-8 text-xs bg-sidebar-accent/30 border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/50"
+              className="h-8 pl-9 pr-16 text-xs bg-sidebar-accent/30 border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/50"
+              onFocus={() => {
+                // Hint: pressing Cmd+K opens full command palette
+              }}
             />
-            {search && (
+            {search ? (
               <button
                 onClick={() => setSearch("")}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-sidebar-foreground/50 hover:text-sidebar-foreground"
               >
                 <X className="h-3 w-3" />
               </button>
+            ) : (
+              <kbd className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:inline-flex h-5 select-none items-center rounded border border-sidebar-border bg-sidebar-accent/30 px-1 font-mono text-[9px] text-sidebar-foreground/60">
+                ⌘K
+              </kbd>
             )}
           </div>
         </div>
@@ -711,6 +774,47 @@ export function Sidebar() {
                     >
                       <Icon className={cn("h-4 w-4 shrink-0", active ? "" : "text-sidebar-foreground/60")} />
                       <span className="truncate">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="my-2 mx-3 border-t border-sidebar-border/50" />
+            </div>
+          )}
+
+          {/* Recent items section (Sprint G2 Phase C) - shown when no search */}
+          {!search.trim() && recentNavItems.length > 0 && (
+            <div className="mb-3">
+              <div className="px-3 py-1.5 flex items-center gap-1.5">
+                <Clock className="h-3 w-3 text-sidebar-foreground/60" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/60">
+                  Terkini
+                </span>
+              </div>
+              <div className="space-y-0.5">
+                {recentNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = activeKey === item.key;
+                  return (
+                    <button
+                      key={`recent-${item.key}-${item.visitedAt}`}
+                      onClick={() => {
+                        setView(item.key, item.params);
+                        setSidebarOpen(false);
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-2.5 rounded-md px-3 py-1.5 text-[13px] font-medium transition-all group",
+                        active
+                          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                          : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      )}
+                      title={`${item.groupLabel} · ${formatRelativeTime(item.visitedAt)} lalu`}
+                    >
+                      <Icon className={cn("h-4 w-4 shrink-0", active ? "" : "text-sidebar-foreground/60")} />
+                      <span className="truncate flex-1 text-left">{item.label}</span>
+                      <span className="text-[10px] text-sidebar-foreground/50 shrink-0">
+                        {formatRelativeTime(item.visitedAt)}
+                      </span>
                     </button>
                   );
                 })}

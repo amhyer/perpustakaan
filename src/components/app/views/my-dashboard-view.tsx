@@ -38,6 +38,11 @@ import { StatCard } from "@/components/app/shared/stat-card";
 import { BookCover } from "@/components/app/shared/book-cover";
 import { BookCard, type BookWithDetails } from "@/components/app/shared/book-card";
 import { GamificationSection } from "@/components/app/shared/gamification-section";
+import {
+  ReadingLevelWidget,
+  StreakCalendarWidget,
+  ClassLeaderboardWidget,
+} from "@/components/app/dashboard/widgets";
 import { Spinner } from "@/components/app/shared/loading";
 
 import { useFetch } from "@/hooks/use-fetch";
@@ -657,6 +662,15 @@ export function MyDashboardView({ variant = "student" }: { variant?: "student" |
               </Card>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Sprint M — Reading Level, Streak Calendar, Class Leaderboard */}
+      {showGamification && user.member && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <ReadingLevelWidget />
+          <StreakCalendarWidget />
+          <ClassLeaderboardWidget />
         </div>
       )}
 
