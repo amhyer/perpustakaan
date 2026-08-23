@@ -1647,3 +1647,26 @@ model ARTreasureHunt {
   @@index([expiresAt])
   @@index([bookId])
 }
+
+// ===== Security Hardening (Sprint T - Tier 3 #11 lanjutan) =====
+model BruteForceState {
+  userId            String   @id
+  failedAttempts    Int      @default(0)
+  lastAttemptAt     DateTime
+  lockedUntil       DateTime?
+  progressiveDelayMs Int     @default(0)
+
+  @@index([lockedUntil])
+}
+
+model DeviceFingerprint {
+  id               String   @id @default(cuid())
+  userId           String
+  fingerprintHash  String
+  deviceName       String
+  lastUsedAt       DateTime @default(now())
+  createdAt        DateTime @default(now())
+
+  @@unique([userId, fingerprintHash])
+  @@index([userId, lastUsedAt])
+}
