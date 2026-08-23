@@ -4,12 +4,16 @@
  * Command Palette (Cmd+K) — Power user navigation.
  *
  * Sprint G2 - Power User Features.
+ * Sprint L-Phase 3 - Search history integration.
  *
  * Features:
  * - Open with Cmd+K (Mac) or Ctrl+K (Windows)
  * - Fuzzy search across ALL menu items, recent items, and actions
+ * - Search history tracking (per-user, persistent)
+ * - Search suggestions as you type
+ * - Clear individual searches or full history
  * - Keyboard navigation (↑↓ to move, Enter to select, Esc to close)
- * - Grouped results (Recent, Favorites, All Menus)
+ * - Grouped results (Recent, Recent Searches, All Menus)
  * - Highlighted matching text
  * - Action shortcuts (e.g. "logout", "switch theme")
  * - Visual icons + role badges
@@ -19,6 +23,7 @@
  * - Powered by useAppStore (state)
  * - Reuses NavItem metadata from sidebar
  * - Tracks recent items via store.trackRecent
+ * - Tracks search history via search-history library
  *
  * Untuk navigasi cepat tanpa pakai mouse — perfect untuk power user.
  */
@@ -38,6 +43,9 @@ import {
   Home,
   RefreshCw,
   Sparkles,
+  X,
+  History,
+  TrendingUp,
 } from "lucide-react";
 import {
   Dialog,
@@ -49,6 +57,14 @@ import { Badge } from "@/components/ui/data-display/badge";
 import { cn } from "@/lib/utils";
 import { useAppStore, type ViewKey, type RecentItem } from "@/store/use-app-store";
 import { useKeyboardShortcut } from "@/hooks/use-keyboard-shortcut";
+import {
+  getSearchHistory,
+  trackSearch,
+  clearSearchHistory,
+  deleteSearchEntry,
+  getSearchSuggestions,
+  type SearchEntry,
+} from "@/lib/search-history";
 
 // ===== Types =====
 
@@ -117,10 +133,20 @@ export function CommandPalette() {
 
   const [query, setQuery] = useState("");
   const [selectedIdx, setSelectedIdx] = useState(0);
+  const [searchHistory, setSearchHistory] = useState<SearchEntry[]>([]);
+  const [historyTick, setHistoryTick] = useState(0); // Force refresh
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   const isLibrarian = user?.role === "LIBRARIAN" || user?.role === "PUSTAKAWAN_JUNIOR";
+  const userId = user?.id || "guest";
+
+  // Load search history when palette opens or user changes
+  useEffect(() => {
+    if (commandPaletteOpen) {
+      setSearchHistory(getSearchHistory(userId));
+    }
+  }, [commandPaletteOpen, userId, historyTick]);
 
   // Reset state when palette opens
   useEffect(() => {
@@ -321,6 +347,7 @@ export function CommandPalette() {
       return {
         recents,
         all: menuItems,
+        searchHistory: searchHistory.slice(0, 5),
       };
     }
 
@@ -340,8 +367,8 @@ export function CommandPalette() {
       .sort((a, b) => b.score - a.score)
       .map((s) => s.item);
 
-    return { recents: [], all: scored };
-  }, [menuItems, query, recentItems]);
+    return { recents: [], all: scored, searchHistory: [] };
+  }, [menuItems, query, recentItems, searchHistory]);
 
   // Combined list for keyboard nav
   const flatList = useMemo(() => {
@@ -381,12 +408,43 @@ export function CommandPalette() {
         label: item.label,
         group: item.group,
       });
+      // Track search history (only if there was a query)
+      if (query.trim().length >= 2) {
+        trackSearch(userId, query);
+        setHistoryTick((t) => t + 1);
+      }
       // Execute action
       item.action();
       // Close palette
       setCommandPaletteOpen(false);
     },
-    [trackRecent, setCommandPaletteOpen]
+    [trackRecent, setCommandPaletteOpen, query, userId]
+  );
+
+  // Search history actions
+  const handleClearHistory = useCallback(() => {
+    clearSearchHistory(userId);
+    setHistoryTick((t) => t + 1);
+  }, [userId]);
+
+  const handleDeleteSearchEntry = useCallback(
+    (entry: string) => {
+      deleteSearchEntry(userId, entry);
+      setHistoryTick((t) => t + 1);
+    },
+    [userId]
+  );
+
+  const handleReplaySearch = useCallback((entry: string) => {
+    setQuery(entry);
+    setSelectedIdx(0);
+    setTimeout(() => inputRef.current?.focus(), 10);
+  }, []);
+
+  // Search suggestions while typing
+  const suggestions = useMemo(
+    () => (query.length >= 2 ? getSearchSuggestions(userId, query, 3) : []),
+    [query, userId, historyTick]
   );
 
   // Keyboard navigation
@@ -544,6 +602,74 @@ export function CommandPalette() {
                   })}
                 </div>
               ))}
+
+              {/* Search history section (when no query) */}
+              {!query.trim() && filtered.searchHistory.length > 0 && (
+                <div className="mt-1 border-t pt-2">
+                  <div className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <History className="h-3 w-3" />
+                    Pencarian Terakhir
+                  </div>
+                  {filtered.searchHistory.map((entry, idx) => (
+                    <div
+                      key={`search-${entry.query}-${idx}`}
+                      className="group flex items-center gap-2 px-4 py-1.5 hover:bg-muted/50"
+                    >
+                      <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <button
+                        onClick={() => handleReplaySearch(entry.query)}
+                        className="flex-1 text-left text-sm flex items-center gap-2 min-w-0"
+                      >
+                        <span className="truncate">{entry.query}</span>
+                        {entry.count > 1 && (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                            <TrendingUp className="h-2.5 w-2.5" />
+                            {entry.count}x
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteSearchEntry(entry.query);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-opacity"
+                        aria-label={`Hapus ${entry.query}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={handleClearHistory}
+                    className="w-full px-4 py-2 mt-1 text-xs text-muted-foreground hover:text-destructive text-left"
+                  >
+                    <History className="inline h-3 w-3 mr-1" />
+                    Bersihkan semua pencarian
+                  </button>
+                </div>
+              )}
+
+              {/* Search suggestions (while typing) */}
+              {query.trim() && suggestions.length > 0 && (
+                <div className="mt-1 border-t pt-2">
+                  <div className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <History className="h-3 w-3" />
+                    Saran dari Riwayat
+                  </div>
+                  <div className="flex flex-wrap gap-1 px-4 pb-2">
+                    {suggestions.map((s, idx) => (
+                      <button
+                        key={`sugg-${idx}`}
+                        onClick={() => handleReplaySearch(s)}
+                        className="text-xs px-2 py-1 rounded-md bg-muted hover:bg-muted/70 text-foreground"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Clear recent button */}
               {!query.trim() && recentItems.length > 0 && (
