@@ -667,15 +667,22 @@ export function Sidebar() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari menu..."
-              className="h-8 pl-9 pr-8 text-xs bg-sidebar-accent/30 border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/50"
+              className="h-8 pl-9 pr-16 text-xs bg-sidebar-accent/30 border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/50"
+              onFocus={() => {
+                // Hint: pressing Cmd+K opens full command palette
+              }}
             />
-            {search && (
+            {search ? (
               <button
                 onClick={() => setSearch("")}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-sidebar-foreground/50 hover:text-sidebar-foreground"
               >
                 <X className="h-3 w-3" />
               </button>
+            ) : (
+              <kbd className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:inline-flex h-5 select-none items-center rounded border border-sidebar-border bg-sidebar-accent/30 px-1 font-mono text-[9px] text-sidebar-foreground/60">
+                ⌘K
+              </kbd>
             )}
           </div>
         </div>
