@@ -1590,3 +1590,26 @@ model ExchangeOffer {
   @@index([listingId, status])
   @@index([offererId, createdAt])
 }
+
+// ===== Certificates (Sprint S - Tier 4 #15) =====
+model Certificate {
+  id              String   @id @default(cuid())
+  type            String   // BOOKS_10, BOOKS_25, etc.
+  memberId        String
+  member          Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  title           String
+  description     String
+  emoji           String
+  color           String
+
+  metadata        String   @default("{}") // JSON: booksRead, streak, level, etc.
+
+  verificationHash String  @unique // SHA-256 hash of content
+  slug            String   @unique // URL slug for verification
+  achievementDate DateTime
+  issuedAt        DateTime @default(now())
+
+  @@index([memberId, type])
+  @@index([issuedAt])
+}
