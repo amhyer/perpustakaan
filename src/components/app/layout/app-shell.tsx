@@ -6,6 +6,7 @@ import { ErrorBoundary } from "@/components/app/shared/error-boundary";
 import { ConfirmProvider } from "@/hooks/use-confirm";
 import { OnboardingWizard } from "@/components/app/onboarding/onboarding-wizard";
 import { SseProvider } from "@/components/app/layout/sse-provider";
+import { ChatAssistant } from "@/components/app/chat/chat-assistant";
 import { useAppStore } from "@/store/use-app-store";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -14,6 +15,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <ConfirmProvider>
       <OnboardingWizard />
       <SseProvider />
+      <ChatAssistant />
       <div className="min-h-screen flex bg-background">
         <Sidebar />
         <div className="flex-1 flex flex-col min-w-0">

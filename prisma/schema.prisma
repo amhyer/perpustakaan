@@ -1010,3 +1010,124 @@ model NotificationSchedule {
 
   @@index([enabled, type])
 }
+
+// =========================================================================
+// AI CHAT ASSISTANT — Customer service chatbot untuk siswa/guru
+// =========================================================================
+//
+// Conversation = sesi chat per user (multiple session allowed)
+// Message = individual message dalam conversation (user atau assistant)
+// Intent = klasifikasi pertanyaan untuk routing & analytics
+//
+// Fitur:
+// - Multi-turn conversation dengan memory
+// - Intent detection (cari buku, cek pinjaman, info poin, dll)
+// - Personal context (loan history, point balance, recommendations)
+// - Rate limiting per user (default 20 msg/jam)
+// - Escalation ke pustakawan jika confidence rendah
+// - Cached responses untuk pertanyaan yang sering ditanya (FAQ)
+
+/// Sesi percakapan antara user dan AI assistant.
+/// 1 user bisa punya banyak conversation (history).
+model ChatConversation {
+  id          String        @id @default(cuid())
+
+  // User
+  userId      String
+  // Optional: link ke member (kalau user adalah student/teacher)
+  memberId    String?
+
+  // Metadata sesi
+  title       String        // "Cari buku novel" (auto-generated dari pesan pertama)
+  channel     String        @default("WEB") // WEB | MOBILE | KIOSK
+  locale      String        @default("id")  // "id" | "en" | "ar"
+
+  // Status
+  isActive    Boolean       @default(true)
+  escalated   Boolean       @default(false) // Di-escalate ke pustakawan?
+  escalatedAt DateTime?
+  closedAt    DateTime?
+
+  // Statistik
+  messageCount Int          @default(0)
+  userRating   Int?         // 1-5, feedback dari user
+  userFeedback String?      // Komentar feedback
+
+  // Token tracking (untuk cost monitoring)
+  totalTokens  Int          @default(0)
+
+  // Relations
+  messages     ChatMessage[]
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([memberId, createdAt])
+  @@index([isActive, updatedAt])
+  @@index([escalated])
+}
+
+/// Individual message dalam conversation.
+/// "user" = pesan dari user, "assistant" = balasan AI, "system" = system prompt,
+/// "tool" = hasil function call (untuk advanced usage).
+model ChatMessage {
+  id              String          @id @default(cuid())
+
+  conversationId  String
+  conversation    ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  // Isi
+  role            String          // "user" | "assistant" | "system" | "tool"
+  content         String
+
+  // Intent classification (untuk assistant messages)
+  intent          String?         // "book_search" | "loan_status" | "points_info" | "faq" | "general"
+  confidence      Float?          // 0-1, hasil classification
+
+  // AI metadata
+  provider        String?         // "openai" | "anthropic" | "google" | "mock"
+  model           String?         // "gpt-4o-mini" | "claude-3-5-haiku" | "gemini-1.5-flash"
+  tokens          Int?            // Total tokens used
+  latencyMs       Int?            // Response time
+
+  // Cited sources (untuk RAG)
+  sources         String?         // JSON array of {bookId, bookTitle, score}
+  suggestedActions String?        // JSON array of {action, label, params}
+
+  // Feedback
+  isHelpful       Boolean?        // User feedback (thumbs up/down)
+  feedbackNote    String?
+
+  createdAt       DateTime        @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([intent])
+  @@index([role])
+}
+
+/// FAQ cache — untuk pertanyaan yang sering ditanya.
+/// Cached response supaya hemat token & lebih cepat.
+model ChatFAQ {
+  id          String   @id @default(cuid())
+
+  // Pertanyaan & jawaban
+  question    String   @unique // Pattern / exact question
+  answer      String   // Response template
+  category    String   // "hours" | "membership" | "loan_rules" | "points" | "general"
+  locale      String   @default("id")
+
+  // Tracking
+  hitCount    Int      @default(0)
+  lastHitAt   DateTime?
+  isActive    Boolean  @default(true)
+
+  // Variasi pertanyaan (JSON array of alternative phrasings)
+  variations  String?  // ["kapan buka", "jam berapa", "jam operasional"]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category, isActive])
+  @@index([locale, isActive])
+}
