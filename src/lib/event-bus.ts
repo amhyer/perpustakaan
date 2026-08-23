@@ -122,6 +122,14 @@ export const EVENTS = {
   VISITOR_CHECKIN: "visitor:checkin",
   // Sync events
   DATA_CHANGED: "data:changed",
+  // Reward System events
+  POINTS_EARNED: "reward:points-earned",
+  REDEMPTION_CREATED: "reward:claim-pending",
+  REDEMPTION_APPROVED: "reward:claim-approved",
+  REDEMPTION_DELIVERED: "reward:claim-delivered",
+  REDEMPTION_REJECTED: "reward:claim-rejected",
+  LEADERBOARD_UPDATED: "reward:leaderboard-updated",
+  STREAK_BONUS: "reward:streak-bonus",
 } as const;
 
 export type EventType = (typeof EVENTS)[keyof typeof EVENTS];

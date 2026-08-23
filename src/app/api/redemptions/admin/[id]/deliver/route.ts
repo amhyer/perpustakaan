@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireLibrarian } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { eventBus, EVENTS } from "@/lib/event-bus";
 import { logger } from "@/lib/logger";
 import { notify } from "@/lib/notification-service";
 
@@ -55,7 +56,7 @@ export async function POST(
     return NextResponse.json({ error: result.reason }, { status: 400 });
   }
 
-  // Notif ke siswa
+  // Notif ke siswa dengan template
   const member = await db.member.findUnique({
     where: { id: result.redemption.memberId },
     select: { userId: true, fullName: true },
@@ -67,6 +68,13 @@ export async function POST(
       message: `Selamat! Hadiah "${result.redemption.rewardName}" sudah kamu terima. Semoga bermanfaat!`,
       type: "INFO",
       relatedId: result.redemption.id,
+      template: {
+        whatsappKey: "rewardDelivered",
+        templateData: {
+          name: member.fullName,
+          rewardName: result.redemption.rewardName,
+        },
+      },
     });
   }
 
@@ -82,6 +90,14 @@ export async function POST(
     redemptionId: id,
     deliveredBy: user!.id,
   });
+
+  // Publish real-time event
+  if (member?.userId) {
+    eventBus.publish(member.userId, EVENTS.REDEMPTION_DELIVERED, {
+      redemptionId: id,
+      rewardName: result.redemption.rewardName,
+    });
+  }
 
   return NextResponse.json({
     success: true,

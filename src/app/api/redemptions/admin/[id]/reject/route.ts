@@ -79,7 +79,7 @@ export async function POST(
     user!.id
   );
 
-  // Notif ke siswa
+  // Notif ke siswa dengan template
   const member = await db.member.findUnique({
     where: { id: result.redemption.memberId },
     select: { userId: true, fullName: true },
@@ -91,6 +91,15 @@ export async function POST(
       message: `Klaim "${result.redemption.rewardName}" ditolak. Alasan: ${reason}. Poin ${result.redemption.pointsSpent} sudah dikembalikan.`,
       type: "WARNING",
       relatedId: result.redemption.id,
+      template: {
+        emailKey: "rewardClaimRejected",
+        whatsappKey: "rewardClaimRejected",
+        templateData: {
+          name: member.fullName,
+          rewardName: result.redemption.rewardName,
+          reason,
+        },
+      },
     });
   }
 

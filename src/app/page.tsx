@@ -52,6 +52,9 @@ import {
   RewardsCatalogView,
   MyRedemptionsView,
   RewardsManagementView,
+  RFIDSImulatorView,
+  RFIDDashboardView,
+  BlockchainExplorerView,
 } from "@/components/app/views";
 
 export default function Page() {
@@ -165,6 +168,12 @@ export default function Page() {
         return <MyRedemptionsView />;
       case "rewards-management":
         return <RewardsManagementView />;
+      case "rfid-simulator":
+        return <RFIDSImulatorView />;
+      case "rfid-dashboard":
+        return <RFIDDashboardView />;
+      case "blockchain-explorer":
+        return <BlockchainExplorerView />;
       default:
         return <DashboardView />;
     }

@@ -11,6 +11,8 @@ async function main() {
   // Bersihkan data lama
   await db.pointTransaction.deleteMany();
   await db.rewardRedemption.deleteMany();
+  await db.semesterArchive.deleteMany();
+  await db.notificationSchedule.deleteMany();
   await db.reward.deleteMany();
   await db.pointRule.deleteMany();
   await db.notification.deleteMany();
@@ -568,6 +570,201 @@ async function main() {
         description: "Penyesuaian saldo demo (hackathon seed)",
         awardedById: lib.user.id,
       },
+    });
+  }
+
+  // ===== Notification Schedules (default) =====
+  console.log("   - Seeding notification schedules...");
+  const existingSchedules = await db.notificationSchedule.findMany();
+  if (existingSchedules.length === 0) {
+    await db.notificationSchedule.createMany({
+      data: [
+        { name: "Weekly Student Digest", type: "WEEKLY", channel: "BOTH", targetRole: "STUDENT", dayOfWeek: 0, hour: 18, templateKey: "weeklyDigestStudent" },
+        { name: "Monthly Top Reader", type: "MONTHLY", channel: "BOTH", targetRole: "STUDENT", dayOfMonth: 1, hour: 9, templateKey: "monthlyTopReader" },
+        { name: "Weekly Teacher Recap", type: "WEEKLY", channel: "EMAIL", targetRole: "TEACHER", dayOfWeek: 5, hour: 16, templateKey: "weeklyDigestTeacher" },
+      ],
+    });
+  }
+
+  // ===== Settings (reward config) =====
+  await db.setting.upsert({
+    where: { key: "leaderboard_reset_mode" },
+    update: {},
+    create: { key: "leaderboard_reset_mode", value: "ARCHIVE" },
+  });
+
+  // ===== IoT RFID (Sprint F4) =====
+  console.log("   - Seeding RFID readers & sample cards...");
+  const existingReaders = await db.rFIDReader.count();
+  if (existingReaders === 0) {
+    await db.rFIDReader.createMany({
+      data: [
+        {
+          code: "READER-ENTRANCE-01",
+          name: "Pintu Masuk Utama",
+          location: "Pintu depan perpustakaan",
+          model: "RC522",
+          type: "CHECKIN",
+          isOnline: true,
+          batteryLevel: 95,
+        },
+        {
+          code: "READER-DESK-01",
+          name: "Meja Sirkulasi",
+          location: "Meja pustakawan",
+          model: "PN532",
+          type: "BOTH",
+          isOnline: true,
+          batteryLevel: 88,
+        },
+        {
+          code: "READER-EXIT-01",
+          name: "Pintu Keluar",
+          location: "Pintu belakang",
+          model: "RC522",
+          type: "EXIT",
+          isOnline: false,
+          batteryLevel: 12,
+        },
+      ],
+    });
+  }
+
+  // Sample RFID cards for first 3 students
+  const sampleStudents = await db.member.findMany({
+    where: { category: "STUDENT" },
+    take: 3,
+  });
+  if (sampleStudents.length > 0) {
+    const existingCards = await db.rFIDCard.count();
+    if (existingCards === 0) {
+      for (let i = 0; i < sampleStudents.length; i++) {
+        const student = sampleStudents[i];
+        // Generate UIDs in standard format like AA:BB:CC:DD
+        const hex = (i + 1).toString(16).padStart(2, "0").toUpperCase();
+        await db.rFIDCard.create({
+          data: {
+            uid: `A1:B2:C3:${hex}${hex}`,
+            memberId: student.id,
+            cardType: "MEMBER",
+          },
+        });
+      }
+    }
+  }
+
+  // Sample book tags (3 first book items)
+  const sampleBookItems = await db.bookItem.findMany({
+    take: 5,
+  });
+  if (sampleBookItems.length > 0) {
+    const existingTags = await db.bookItemTag.count();
+    if (existingTags === 0) {
+      for (let i = 0; i < Math.min(3, sampleBookItems.length); i++) {
+        const item = sampleBookItems[i];
+        const hex = (i + 1).toString(16).padStart(4, "0").toUpperCase();
+        await db.bookItemTag.create({
+          data: {
+            bookItemId: item.id,
+            tagUid: `B1:B2:${hex}:EE`,
+          },
+        });
+      }
+    }
+  }
+
+  // ===== Chat FAQ (Sprint F1 - AI Assistant) =====
+  console.log("   - Seeding chat FAQ cache...");
+  const existingFAQs = await db.chatFAQ.count();
+  if (existingFAQs === 0) {
+    await db.chatFAQ.createMany({
+      data: [
+        {
+          question: "Jam buka perpustakaan?",
+          answer: "🕐 **Jam Operasional**\n- Senin-Jumat: 07.00 - 15.00\n- Sabtu: 08.00 - 12.00\n- Minggu & hari libur: Tutup",
+          category: "hours",
+          locale: "id",
+          variations: JSON.stringify(["jam buka", "kapan buka", "jam operasional", "buka jam berapa", "tutup jam berapa"]),
+        },
+        {
+          question: "Bagaimana cara pinjam buku?",
+          answer: "📖 **Cara Meminjam Buku**\n1. Datang ke perpustakaan\n2. Bawa kartu anggota\n3. Pilih buku dari katalog\n4. Scan barcode di meja sirkulasi\n5. Batas waktu pengembalian sesuai aturan\n\n**Syarat**: Keanggotaan aktif, tidak ada pinjaman terlambat.",
+          category: "loan_rules",
+          locale: "id",
+          variations: JSON.stringify(["cara pinjam", "pinjam buku", "meminjam", "how to borrow", "borrow book"]),
+        },
+        {
+          question: "Berapa lama siswa boleh pinjam buku?",
+          answer: "📚 **Aturan Peminjaman**\n- **Siswa**: max 3 buku, 7 hari\n- **Guru**: max 5 buku, 14 hari\n- **Pustakawan**: max 10 buku, 30 hari\n\nPerpanjangan: 1x (7 hari) jika tidak ada yang予約.",
+          category: "loan_rules",
+          locale: "id",
+          variations: JSON.stringify(["berapa lama", "lama pinjam", "max pinjam", "aturan pinjam", "loan duration"]),
+        },
+        {
+          question: "Berapa denda jika terlambat?",
+          answer: "💰 **Denda Keterlambatan**\n- Siswa: Rp 1.000/hari/buku\n- Guru: Rp 500/hari/buku\n- Rusak/hilang: ganti buku baru atau 2x harga\n\n💡 Tips: Kembalikan tepat waktu untuk menghindari denda!",
+          category: "loan_rules",
+          locale: "id",
+          variations: JSON.stringify(["denda", "denda berapa", "telat", "terlambat", "fine"]),
+        },
+        {
+          question: "Bagaimana cara daftar anggota perpustakaan?",
+          answer: "📋 **Pendaftaran Anggota**\n1. Datang ke perpustakaan saat jam buka\n2. Bawa fotokopi kartu pelajar / KTP\n3. Isi formulir pendaftaran\n4. Foto untuk kartu anggota\n5. Langsung aktif! Gratis untuk siswa & guru.\n\nNomor anggota + QR code langsung diterbitkan.",
+          category: "membership",
+          locale: "id",
+          variations: JSON.stringify(["daftar anggota", "cara daftar", "mendaftar", "registrasi", "jadi anggota"]),
+        },
+        {
+          question: "Apa itu sistem poin?",
+          answer: "⭐ **Sistem Poin Jendela**\nDapatkan poin dari:\n- Selesai baca & kembalikan buku (+10)\n- Tulis review (+5)\n- Streak 7 hari berturut (+25)\n- Streak 30 hari (+100)\n\nTukar poin dengan hadiah di katalog!",
+          category: "points",
+          locale: "id",
+          variations: JSON.stringify(["poin", "apa itu poin", "sistem poin", "point system"]),
+        },
+        {
+          question: "Bagaimana cara klaim hadiah?",
+          answer: "🎁 **Cara Klaim Hadiah**\n1. Buka menu **Hadiah** → pilih katalog\n2. Klik hadiah yang kamu mau\n3. Konfirmasi klaim (poin akan terpotong)\n4. Tunggu approval pustakawan\n5. Datang ke perpustakaan dengan kode pickup\n6. Scan QR saat mengambil",
+          category: "points",
+          locale: "id",
+          variations: JSON.stringify(["klaim hadiah", "cara klaim", "tukar poin", "claim reward", "redeem"]),
+        },
+        {
+          question: "Apakah perpustakaan punya wifi?",
+          answer: "📶 **WiFi Perpustakaan**\nYa, tersedia WiFi gratis untuk siswa & guru.\n\n**SSID**: PerpustakaanJI\n**Password**: jendela2026\n\n⚠️ Dilarang untuk akses konten negatif.",
+          category: "general",
+          locale: "id",
+          variations: JSON.stringify(["wifi", "internet", "ssid", "password wifi"]),
+        },
+        {
+          question: "Boleh bawa makanan ke perpustakaan?",
+          answer: "🍔 **Kebijakan Makanan**\n- **Dilarang**: makanan berat, minuman berwarna, makanan berbau tajam\n- **Diperbolehkan**: air putih dalam botol tertutup, snack ringan tanpa bau\n\nJaga kebersihan & kenyamanan bersama! 🙏",
+          category: "general",
+          locale: "id",
+          variations: JSON.stringify(["makanan", "makan", "minum", "bawa makanan"]),
+        },
+        {
+          question: "Bagaimana cara mencari buku tertentu?",
+          answer: "🔍 **Cara Cari Buku**\n1. Buka menu **Katalog** di sidebar\n2. Ketik judul / pengarang / ISBN di search bar\n3. Filter berdasarkan kategori / lokasi rak\n4. Klik buku untuk lihat detail & ketersediaan\n\nAtau tanya saya langsung, saya bantu cari! 😊",
+          category: "general",
+          locale: "id",
+          variations: JSON.stringify(["cari buku", "menemukan buku", "find book", "search"]),
+        },
+        // English FAQ
+        {
+          question: "What are the library hours?",
+          answer: "🕐 **Opening Hours**\n- Monday-Friday: 07.00 - 15.00\n- Saturday: 08.00 - 12.00\n- Sunday & holidays: Closed",
+          category: "hours",
+          locale: "en",
+          variations: JSON.stringify(["library hours", "when open", "opening times"]),
+        },
+        {
+          question: "How do I borrow a book?",
+          answer: "📖 **How to Borrow**\n1. Visit the library\n2. Bring your member card\n3. Choose books from the catalog\n4. Scan the barcode at the circulation desk\n5. Return by the due date\n\n**Requirements**: Active membership, no overdue loans.",
+          category: "loan_rules",
+          locale: "en",
+          variations: JSON.stringify(["borrow", "how to borrow", "check out"]),
+        },
+      ],
     });
   }
 

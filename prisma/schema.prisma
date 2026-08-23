@@ -37,6 +37,8 @@ model User {
   rewardsCreated           Reward[]            @relation("RewardCreator")
   redemptionsApproved      RewardRedemption[]  @relation("RewardApprover")
   redemptionsDelivered     RewardRedemption[]  @relation("RewardDeliverer")
+  // Push notification
+  pushSubscriptions        PushSubscription[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -78,14 +80,17 @@ model Member {
   loans        Loan[]
   reservations Reservation[]
   wishlists    Wishlist[]
-  proposals    BookProposal[]
-  reviews      BookReview[]
+  proposals     BookProposal[]
+  reviews       BookReview[]
   roomBookings RoomBooking[]
   visitors     Visitor[]
   assetLoans   AssetLoan[]
   // Reward System relations
   pointTransactions PointTransaction[]
   redemptions       RewardRedemption[]
+  recommendations   Recommendation[]
+  // IoT RFID relations
+  rfidCards    RFIDCard[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -140,6 +145,7 @@ model Book {
   locationId  String?
   location    Location? @relation(fields: [locationId], references: [id])
   items       BookItem[]
+  recommendations Recommendation[]
   reservations Reservation[]
   wishlists   Wishlist[]
   attachments BookAttachment[]
@@ -164,6 +170,7 @@ model BookItem {
   stocktakingScans StocktakingScan[]
   conditionLogs ConditionLog[]
   transfers   BookTransfer[]
+  rfidTag     BookItemTag?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -395,9 +402,14 @@ model AuditLog {
   detail     String?
   createdAt  DateTime @default(now())
 
+  // Blockchain inclusion (nullable - block not sealed yet)
+  blockId    String?
+  block      AuditBlock? @relation("AuditLogBlock", fields: [blockId], references: [id])
+
   @@index([userId])
   @@index([entityType, entityId])
   @@index([createdAt])
+  @@index([blockId])
 }
 
 model BookReview {
@@ -846,4 +858,516 @@ model RewardRedemption {
   @@index([rewardId])
   @@index([pickupCode])
   @@index([approvedById])
+}
+
+/// =========================================================================
+/// SEMESTER ARCHIVE — Snapshot leaderboard per periode akademik
+/// =========================================================================
+///
+/// Setiap akhir semester (Ganjil ~Januari, Genap ~Juli), sistem akan
+/// snapshot top 100 members dengan saldo poin mereka. Ini jadi:
+/// - "Top Reader of the Semester" — historical record
+/// - Reset saldo untuk semester baru (opsional, configurable)
+/// - Bukti prestasi untuk rapor / sertifikat
+///
+/// Reset policy (configurable via Setting table):
+/// - "leaderboard_reset_mode" = "ARCHIVE" (default) — saldo tetap, archive dibuat
+/// - "leaderboard_reset_mode" = "RESET" — saldo di-reset ke 0 setelah archive
+/// - "leaderboard_reset_mode" = "CARRYOVER" — saldo tetap, no archive (legacy)
+model SemesterArchive {
+  id            String   @id @default(cuid())
+
+  // Identifikasi periode
+  periodName    String   // "Ganjil 2025/2026" atau "Genap 2025/2026"
+  periodType    String   // "ODD" (Ganjil) | "EVEN" (Genap) | "CUSTOM"
+  startDate     DateTime
+  endDate       DateTime
+
+  // Hasil ranking (snapshot, immutable)
+  // Format JSON: [{ rank, memberId, memberName, memberNumber, totalPoints, booksRead }]
+  rankings      String   // JSON array
+
+  // Metadata
+  totalMembers  Int      // Berapa member yang ikut ranking
+  totalPoints   Int      // Total poin beredar di periode ini
+  archivedAt    DateTime @default(now())
+  archivedBy    String   // "auto-cron" | "manual:<userId>"
+
+  // Audit
+  createdAt     DateTime @default(now())
+
+  @@index([periodType, startDate])
+  @@index([archivedAt])
+  @@unique([periodName, periodType])
+}
+
+/// =========================================================================
+/// PUSH SUBSCRIPTION — Web Push API subscriptions
+/// =========================================================================
+///
+/// Setiap user yang opt-in untuk push notification punya record di sini.
+/// Saat ada event (loan overdue, klaim disetujui, dll), server kirim
+/// push via web-push library ke semua subscription yang match.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Subscription details (dari Push API)
+  endpoint  String   @unique
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  keys      String   // JSON string of p256dh + auth keys
+
+  // Device info
+  userAgent String?
+
+  // Status
+  isActive  Boolean  @default(true)
+  lastUsedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, isActive])
+  @@index([isActive])
+}
+
+/// =========================================================================
+/// EXPERIMENT ASSIGNMENT — A/B testing untuk reward catalog
+/// =========================================================================
+///
+/// Setiap user di-assign ke satu variant ("control" atau "treatment") untuk
+/// experiment tertentu. Berguna untuk testing catalog baru, copy, dll.
+model ExperimentAssignment {
+  id            String   @id @default(cuid())
+
+  // Identifikasi experiment
+  experimentKey String   // "reward_catalog_v2", "point_multiplier_oct"
+  variant       String   // "control" | "treatment_a" | "treatment_b"
+
+  // Subject
+  memberId      String?
+  userId        String?
+  classGrade    String?  // untuk cluster experiment by kelas
+
+  // Metadata
+  assignedAt    DateTime @default(now())
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  metadata      String?  // JSON additional data
+
+  @@unique([experimentKey, memberId])
+  @@index([experimentKey, variant])
+  @@index([memberId])
+}
+
+/// =========================================================================
+/// RECOMMENDATION — ML-based book recommendations
+/// =========================================================================
+///
+/// Cache rekomendasi per-member. Dihitung via collaborative filtering
+/// sederhana: "member A dan B sama-sama pinjam buku X, jadi B mungkin
+/// tertarik buku Y yang dipinjam A".
+///
+/// Re-compute setiap 6 jam via cron.
+model Recommendation {
+  id        String   @id @default(cuid())
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  // Recommendation result
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  score     Float    // 0-1, higher = more recommended
+  reason    String   // "Karena kamu sering pinjam fiksi", "Trending di kelasmu"
+
+  rank      Int      // 1-N, top N recommendations
+  generatedAt DateTime @default(now())
+
+  @@unique([memberId, bookId])
+  @@index([memberId, rank])
+}
+
+/// =========================================================================
+/// NOTIFICATION SCHEDULE — Notifikasi berkala (digest) yang dijadwalkan
+/// =========================================================================
+///
+/// Untuk mengirim digest mingguan / bulanan ke siswa via WhatsApp/email.
+/// Disimpan sebagai record supaya bisa di-track statusnya.
+model NotificationSchedule {
+  id            String   @id @default(cuid())
+
+  // Schedule metadata
+  name          String   // "Weekly Digest", "Monthly Summary", dll
+  type          String   // "WEEKLY" | "MONTHLY" | "CUSTOM"
+  channel       String   // "EMAIL" | "WHATSAPP" | "BOTH"
+  targetRole    String   // "STUDENT" | "TEACHER" | "ALL"
+
+  // Schedule
+  dayOfWeek     Int?     // 0-6 (Sunday-Saturday) for WEEKLY
+  dayOfMonth    Int?     // 1-31 for MONTHLY
+  hour          Int      @default(8)  // 0-23
+
+  // Template
+  templateKey   String   // Key di whatsappTemplates / emailTemplates
+  enabled       Boolean  @default(true)
+
+  // Last run
+  lastRunAt     DateTime?
+  lastRunStatus String?  // "success" | "partial" | "failed"
+  lastRunCount  Int?     // Berapa orang dikirimi
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([enabled, type])
+}
+
+// =========================================================================
+// AI CHAT ASSISTANT — Customer service chatbot untuk siswa/guru
+// =========================================================================
+//
+// Conversation = sesi chat per user (multiple session allowed)
+// Message = individual message dalam conversation (user atau assistant)
+// Intent = klasifikasi pertanyaan untuk routing & analytics
+//
+// Fitur:
+// - Multi-turn conversation dengan memory
+// - Intent detection (cari buku, cek pinjaman, info poin, dll)
+// - Personal context (loan history, point balance, recommendations)
+// - Rate limiting per user (default 20 msg/jam)
+// - Escalation ke pustakawan jika confidence rendah
+// - Cached responses untuk pertanyaan yang sering ditanya (FAQ)
+
+/// Sesi percakapan antara user dan AI assistant.
+/// 1 user bisa punya banyak conversation (history).
+model ChatConversation {
+  id          String        @id @default(cuid())
+
+  // User
+  userId      String
+  // Optional: link ke member (kalau user adalah student/teacher)
+  memberId    String?
+
+  // Metadata sesi
+  title       String        // "Cari buku novel" (auto-generated dari pesan pertama)
+  channel     String        @default("WEB") // WEB | MOBILE | KIOSK
+  locale      String        @default("id")  // "id" | "en" | "ar"
+
+  // Status
+  isActive    Boolean       @default(true)
+  escalated   Boolean       @default(false) // Di-escalate ke pustakawan?
+  escalatedAt DateTime?
+  closedAt    DateTime?
+
+  // Statistik
+  messageCount Int          @default(0)
+  userRating   Int?         // 1-5, feedback dari user
+  userFeedback String?      // Komentar feedback
+
+  // Token tracking (untuk cost monitoring)
+  totalTokens  Int          @default(0)
+
+  // Relations
+  messages     ChatMessage[]
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([memberId, createdAt])
+  @@index([isActive, updatedAt])
+  @@index([escalated])
+}
+
+/// Individual message dalam conversation.
+/// "user" = pesan dari user, "assistant" = balasan AI, "system" = system prompt,
+/// "tool" = hasil function call (untuk advanced usage).
+model ChatMessage {
+  id              String          @id @default(cuid())
+
+  conversationId  String
+  conversation    ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  // Isi
+  role            String          // "user" | "assistant" | "system" | "tool"
+  content         String
+
+  // Intent classification (untuk assistant messages)
+  intent          String?         // "book_search" | "loan_status" | "points_info" | "faq" | "general"
+  confidence      Float?          // 0-1, hasil classification
+
+  // AI metadata
+  provider        String?         // "openai" | "anthropic" | "google" | "mock"
+  model           String?         // "gpt-4o-mini" | "claude-3-5-haiku" | "gemini-1.5-flash"
+  tokens          Int?            // Total tokens used
+  latencyMs       Int?            // Response time
+
+  // Cited sources (untuk RAG)
+  sources         String?         // JSON array of {bookId, bookTitle, score}
+  suggestedActions String?        // JSON array of {action, label, params}
+
+  // Feedback
+  isHelpful       Boolean?        // User feedback (thumbs up/down)
+  feedbackNote    String?
+
+  createdAt       DateTime        @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([intent])
+  @@index([role])
+}
+
+/// FAQ cache — untuk pertanyaan yang sering ditanya.
+/// Cached response supaya hemat token & lebih cepat.
+model ChatFAQ {
+  id          String   @id @default(cuid())
+
+  // Pertanyaan & jawaban
+  question    String   @unique // Pattern / exact question
+  answer      String   // Response template
+  category    String   // "hours" | "membership" | "loan_rules" | "points" | "general"
+  locale      String   @default("id")
+
+  // Tracking
+  hitCount    Int      @default(0)
+  lastHitAt   DateTime?
+  isActive    Boolean  @default(true)
+
+  // Variasi pertanyaan (JSON array of alternative phrasings)
+  variations  String?  // ["kapan buka", "jam berapa", "jam operasional"]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category, isActive])
+  @@index([locale, isActive])
+}
+
+// =========================================================================
+// IoT RFID — Auto-Checkout via RFID Reader Hardware
+// =========================================================================
+//
+// Flow:
+// 1. Siswa tap kartu RFID di reader (di pintu perpustakaan atau meja sirkulasi)
+// 2. Reader sends UID + timestamp ke /api/rfid/event (via HTTP/POST or MQTT)
+// 3. Server identifies member by RFID UID
+// 4. Server processes scan (check-in, check-out, or unknown)
+// 5. Audit log + real-time notification
+//
+// Use cases:
+// - Auto check-in saat siswa masuk perpustakaan (dengan kartu di reader pintu)
+// - Self-service check-out (siswa tap buku + kartu anggota)
+// - Anti-theft detection (buku diambil tanpa tap kartu)
+
+/// Setiap kartu RFID yang digunakan. Satu kartu per member.
+model RFIDCard {
+  id          String   @id @default(cuid())
+
+  // UID dari RFID reader (unique per kartu)
+  uid         String   @unique // "A1:B2:C3:D4" format
+
+  // Owner
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  // Card metadata
+  cardType    String   @default("MEMBER") // MEMBER | STAFF | VISITOR
+  issuedAt    DateTime @default(now())
+  expiresAt   DateTime?
+  isActive    Boolean  @default(true)
+
+  // Usage tracking
+  lastUsedAt  DateTime?
+  usageCount  Int      @default(0)
+
+  // Notes (alasan deactivate, dll)
+  notes       String?
+
+  // Relations
+  events      RFIDEvent[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([memberId, isActive])
+  @@index([uid, isActive])
+}
+
+/// RFID reader hardware yang terdaftar.
+/// Bisa physical (terhubung via USB/serial → server) atau virtual (testing).
+model RFIDReader {
+  id          String   @id @default(cuid())
+
+  // Identifikasi reader
+  code        String   @unique // "READER-ENTRANCE-01", "READER-DESK-01"
+  name        String
+  location    String?  // "Pintu masuk", "Meja sirkulasi", "Exit gate"
+
+  // Hardware info
+  model       String?  // "RC522", "PN532", "Simulator"
+  firmware    String?
+
+  // Konfigurasi
+  type        String   @default("CHECKIN") // CHECKIN | CHECKOUT | BOTH | EXIT
+  isActive    Boolean  @default(true)
+
+  // Beep settings
+  beepOnSuccess Boolean @default(true)
+  ledOnSuccess  String  @default("GREEN") // GREEN | BLUE | RED
+  beepOnError   Boolean @default(true)
+
+  // Status monitoring
+  lastSeenAt   DateTime?
+  isOnline     Boolean  @default(false)
+  batteryLevel Int?     // 0-100, null kalau wired
+
+  // API key untuk authenticate reader → server
+  apiKeyHash   String?  @unique
+
+  // Relations
+  events       RFIDEvent[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([code, isActive])
+  @@index([isOnline])
+}
+
+/// Setiap tap/ scan event dari reader.
+/// Immutable log untuk audit & analytics.
+model RFIDEvent {
+  id          String   @id @default(cuid())
+
+  // Hardware
+  readerId    String
+  reader      RFIDReader @relation(fields: [readerId], references: [id])
+
+  // Kartu yang di-tap
+  cardId      String?
+  card        RFIDCard?  @relation(fields: [cardId], references: [id])
+  uid         String   // UID yang di-scan (untuk forensics)
+
+  // Event type
+  eventType   String   // CHECKIN | CHECKOUT | CHECKOUT_BOOK | UNKNOWN_CARD | ERROR
+
+  // Result
+  status      String   @default("OK") // OK | DENIED | ERROR | DUPLICATE
+  memberId    String?  // resolved member
+  message     String?  // human-readable message
+
+  // Book context (untuk CHECKOUT_BOOK)
+  bookItemId  String?
+  loanId      String?
+
+  // Anti-duplicate
+  isDebounced Boolean  @default(false) // duplicate within 2s window
+
+  // Timing
+  scannedAt   DateTime  // waktu tap (from reader)
+  receivedAt  DateTime @default(now()) // waktu server terima
+  processedAt DateTime?
+
+  // Raw data (untuk debugging)
+  rawData     String?  // JSON: signal strength, sector data, etc
+
+  @@index([scannedAt])
+  @@index([memberId, scannedAt])
+  @@index([eventType, status])
+  @@index([readerId, scannedAt])
+}
+
+/// RFID-tagged book items.
+/// Setiap eksemplar bisa punya tag RFID (biasanya贴在 dalam buku).
+model BookItemTag {
+  id          String   @id @default(cuid())
+  bookItemId  String   @unique
+  bookItem    BookItem @relation(fields: [bookItemId], references: [id], onDelete: Cascade)
+
+  // Tag UID (unique per buku)
+  tagUid      String   @unique
+
+  isActive    Boolean  @default(true)
+  lastScannedAt DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tagUid, isActive])
+}
+
+// =========================================================================
+// BLOCKCHAIN AUDIT TRAIL — Immutable hash-chained log
+// =========================================================================
+//
+// Setiap audit event di-hash dan di-link ke previous block (chain).
+// Tampering dengan satu block invalidates seluruh chain ke depannya.
+//
+// Use cases:
+// - Compliance audit (prove no data was tampered)
+// - Forensics (track who changed what, when)
+// - Legal evidence (immutable record untuk kasus hukum)
+//
+// Architecture:
+// - AuditBlock = 1 block dalam chain (batch of audit events)
+// - Setiap block punya: index, timestamp, prevHash, hash, merkleRoot
+// - hash dihitung dari (index + timestamp + prevHash + merkleRoot + nonce)
+// - Verifikasi = recompute hash & compare
+//
+// Note: ini BUKAN real blockchain (no consensus, no distributed nodes).
+// Tapi menggunakan konsep hash chain yang sama untuk immutability.
+
+/// Audit block dalam chain. Immutable setelah created.
+model AuditBlock {
+  id            String   @id @default(cuid())
+
+  // Block position
+  index         Int      @unique // 0, 1, 2, 3, ...
+  timestamp     DateTime // when block was sealed
+
+  // Chain linkage
+  previousHash  String   // hash of previous block (genesis = "0")
+  hash          String   @unique // this block's hash
+  merkleRoot    String   // root of merkle tree of audit logs in this block
+
+  // Block content
+  eventCount    Int      // number of audit events in this block
+  firstEventId  String?  // first audit log id in this block
+  lastEventId   String?  // last audit log id in this block
+
+  // Proof of work (optional, simplified - just a counter)
+  nonce         Int      @default(0)
+  difficulty    Int      @default(0) // number of leading zeros required
+
+  // Metadata
+  sealedBy      String?  // userId of who sealed the block
+  sealReason    String?  // "AUTO_INTERVAL" | "MANUAL" | "BATCH_SIZE"
+  size          Int      @default(0) // bytes
+
+  createdAt     DateTime @default(now())
+
+  // Relations - audit events in this block
+  events        AuditLog[] @relation("AuditLogBlock")
+
+  @@index([index])
+  @@index([timestamp])
+  @@index([hash])
+}
+
+/// Extend AuditLog untuk track blockchain inclusion.
+/// Setiap audit log di-link ke block setelah block sealed.
+model AuditLogBlockchain {
+  id          String   @id @default(cuid())
+
+  auditLogId  String   @unique
+  blockId     String
+
+  // Verification data
+  merkleProof String   // JSON array of sibling hashes
+  leafHash    String   // hash of this specific audit log
+
+  sealedAt    DateTime @default(now())
+
+  @@index([blockId])
+  @@index([auditLogId])
 }

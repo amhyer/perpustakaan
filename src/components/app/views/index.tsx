@@ -223,3 +223,19 @@ export const AdminRedeemView = dynamic(
   () => import("../rewards/admin-redeem-view").then((m) => m.AdminRedeemView),
   { loading: () => loadingComponent, ssr: false }
 );
+
+// IoT RFID (Sprint F4)
+export const RFIDSImulatorView = dynamic(
+  () => import("./iot-views").then((m) => m.RFIDSImulatorView),
+  { loading: () => loadingComponent, ssr: false }
+);
+export const RFIDDashboardView = dynamic(
+  () => import("./iot-views").then((m) => m.RFIDDashboardView),
+  { loading: () => loadingComponent, ssr: false }
+);
+
+// Blockchain Audit (Sprint F5)
+export const BlockchainExplorerView = dynamic(
+  () => import("./blockchain-view").then((m) => m.BlockchainExplorerView),
+  { loading: () => loadingComponent, ssr: false }
+);

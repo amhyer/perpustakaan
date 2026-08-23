@@ -7,6 +7,7 @@
  * 3. Adjust manual oleh pustakawan (ADJUST_UP / ADJUST_DOWN)
  * 4. Validasi anti-cheat (minLoanDays, minBookPages, dll)
  * 5. Menghitung saldo running balance
+ * 6. Streak detection (auto-award 7/30 day bonus)
  *
  * Prinsip:
  * - Semua perubahan poin via PointTransaction (audit trail)
@@ -17,6 +18,8 @@
 
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { checkAndAwardStreak } from "./streak-detector";
+import { eventBus, EVENTS } from "./event-bus";
 
 // =========================================================================
 // TYPES
@@ -223,6 +226,26 @@ export async function awardPoints(
       newBalance: result.newBalance,
     });
 
+    // Publish real-time event untuk update UI (widget, leaderboard)
+    const memberUser = await db.member.findUnique({
+      where: { id: memberId },
+      select: { userId: true },
+    });
+    if (memberUser?.userId) {
+      eventBus.publish(memberUser.userId, EVENTS.POINTS_EARNED, {
+        memberId,
+        amount: rule.points,
+        source,
+        description: options.description,
+        newBalance: result.newBalance,
+      });
+      // Global leaderboard refresh event (broadcast ke semua pustakawan)
+      eventBus.publish("__global__", EVENTS.LEADERBOARD_UPDATED, {
+        memberId,
+        delta: rule.points,
+      });
+    }
+
     return {
       success: true,
       awarded: rule.points,
@@ -384,6 +407,26 @@ export async function redeemReward(
         newBalance,
         status: initialStatus,
       });
+
+      // Publish real-time event untuk student + global leaderboard refresh
+      const memberUser = await db.member.findUnique({
+        where: { id: memberId },
+        select: { userId: true },
+      });
+      if (memberUser?.userId) {
+        eventBus.publish(memberUser.userId, EVENTS.REDEMPTION_CREATED, {
+          memberId,
+          rewardId,
+          rewardName: reward.name,
+          pointsSpent: reward.pointCost,
+          status: initialStatus,
+          pickupCode: redemption.pickupCode,
+        });
+        eventBus.publish("__global__", EVENTS.LEADERBOARD_UPDATED, {
+          memberId,
+          delta: -reward.pointCost,
+        });
+      }
 
       return {
         success: true,
@@ -595,6 +638,16 @@ export async function onLoanReturned(
     if (early.success && early.awarded > 0) {
       sources.push("EARLY_RETURN");
       totalAwarded += early.awarded;
+    }
+  }
+
+  // 4. Streak bonus (7/30 hari)
+  if (totalAwarded > 0) {
+    // Only check streak kalau baru saja ada poin dari loan returned
+    const streakResult = await checkAndAwardStreak(loan.memberId);
+    if (streakResult.awarded > 0) {
+      sources.push(...streakResult.sources);
+      totalAwarded += streakResult.awarded;
     }
   }
 

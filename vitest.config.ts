@@ -8,6 +8,7 @@ export default defineConfig({
     environment: "happy-dom",
     include: [
       "src/**/*.{test,spec}.{ts,tsx}",
+      "mobile/src/**/*.{test,spec}.{ts,tsx}",
       "tests/unit/**/*.{test,spec}.{ts,tsx}",
       "tests/integration/**/*.{test,spec}.{ts,tsx}",
     ],
@@ -48,6 +49,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "react-native": path.resolve(__dirname, "./mobile/__mocks__/react-native.ts"),
     },
   },
 });

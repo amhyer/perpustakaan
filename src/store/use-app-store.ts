@@ -38,6 +38,11 @@ export type ViewKey =
   | "rewards-catalog"
   | "my-redemptions"
   | "rewards-management"
+  // IoT RFID
+  | "rfid-dashboard"
+  | "rfid-simulator"
+  // Blockchain Audit
+  | "blockchain-explorer"
   // Member (teacher/student)
   | "my-dashboard"
   | "my-loans"

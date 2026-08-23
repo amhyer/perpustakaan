@@ -6,7 +6,17 @@
  */
 
 import { useEffect, useState } from "react";
-import { Inbox, Package, BarChart3, ScanLine, Plus, Edit, Trash2, RotateCcw } from "lucide-react";
+import {
+  Inbox,
+  Package,
+  BarChart3,
+  ScanLine,
+  Plus,
+  Edit,
+  Trash2,
+  RotateCcw,
+  Download,
+} from "lucide-react";
 import { api } from "@/lib/api-client";
 import { Card, CardContent } from "@/components/ui/layout/card";
 import { Button } from "@/components/ui/form/button";
@@ -610,11 +620,32 @@ function AnalyticsTab() {
       .finally(() => setLoading(false));
   }, []);
 
+  const downloadCsv = (type: "leaderboard" | "redemptions" | "transactions") => {
+    // Trigger download via anchor
+    const url = `/api/rewards/analytics/export?type=${type}`;
+    window.open(url, "_blank");
+  };
+
   if (loading) return <div className="text-center py-8">Loading analytics...</div>;
   if (!data) return <div className="text-center py-8 text-red-500">Gagal memuat analytics</div>;
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-end gap-2 flex-wrap">
+        <span className="text-sm text-slate-500">📥 Export:</span>
+        <Button size="sm" variant="outline" onClick={() => downloadCsv("leaderboard")}>
+          <Download className="h-3 w-3 mr-1" />
+          Leaderboard
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => downloadCsv("redemptions")}>
+          <Download className="h-3 w-3 mr-1" />
+          Klaim
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => downloadCsv("transactions")}>
+          <Download className="h-3 w-3 mr-1" />
+          Transaksi
+        </Button>
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card>
           <CardContent className="p-4">
