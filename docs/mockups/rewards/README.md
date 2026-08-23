@@ -19,6 +19,8 @@
 | 4 | **Approval Queue** | Pustakawan | Approve/reject klaim masuk |
 | 5 | **Analytics Dashboard** | Pustakawan | Laporan ke kepala sekolah |
 
+> **Catatan:** Setelah Sprint 2, ada view tambahan **"Scan & Deliver"** untuk pustakawan yang tidak ada di mockup awal. View ini ditambahkan berdasarkan feedback bahwa pustakawan butuh cara cepat untuk memvalidasi pickup code saat siswa datang ke perpustakaan.
+
 ## 🎨 Design Decisions
 
 ### Color Palette
