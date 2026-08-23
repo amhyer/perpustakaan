@@ -271,4 +271,106 @@ export const emailTemplates = {
     const text = `📢 ${title}\n\n${content}\n\n— ${authorName}, ${LIBRARY_NAME}`;
     return { subject, html, text };
   },
+
+  // =========================================================================
+  // REWARD SYSTEM TEMPLATES
+  // =========================================================================
+
+  rewardEarned({ name, amount, description, totalBalance }: {
+    name: string;
+    amount: number;
+    description: string;
+    totalBalance: number;
+  }) {
+    const subject = `⭐ +${amount} Poin dari Perpustakaan!`;
+    const html = baseTemplate(
+      subject,
+      `
+        <h2 style="margin:0 0 16px 0;color:${PRIMARY_COLOR};">⭐ Selamat, ${name}!</h2>
+        <p style="font-size:15px;color:#2d2d2d;line-height:1.7;">
+          Anda baru saja mendapat <strong style="color:#f59e0b;">+${amount} poin</strong> karena:
+        </p>
+        <div style="background-color:#fffbeb;padding:16px;margin:24px 0;border-radius:8px;border-left:4px solid #f59e0b;">
+          <p style="margin:0;color:#92400e;">${description}</p>
+        </div>
+        <p style="font-size:15px;color:#2d2d2d;">
+          💰 Saldo poin Anda saat ini: <strong style="color:${PRIMARY_COLOR};">${totalBalance} poin</strong>
+        </p>
+        <p style="text-align:center;margin:32px 0;">
+          <a href="${process.env.NEXTAUTH_URL || "http://localhost:3001"}/rewards" style="display:inline-block;background-color:${PRIMARY_COLOR};color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:6px;font-weight:600;">Tukar Poin Sekarang</a>
+        </p>
+      `
+    );
+    const text = `Selamat ${name}!\n\n+${amount} poin dari: ${description}\n\nSaldo: ${totalBalance} poin\n\nTukar: ${process.env.NEXTAUTH_URL || "http://localhost:3001"}/rewards`;
+    return { subject, html, text };
+  },
+
+  rewardClaimApproved({ name, rewardName, pickupCode }: {
+    name: string;
+    rewardName: string;
+    pickupCode: string;
+  }) {
+    const subject = `🎁 Klaim Hadiah Disetujui: ${rewardName}`;
+    const html = baseTemplate(
+      subject,
+      `
+        <h2 style="margin:0 0 16px 0;color:${PRIMARY_COLOR};">🎁 Klaim Disetujui!</h2>
+        <p style="font-size:15px;color:#2d2d2d;line-height:1.7;">
+          Halo <strong>${name}</strong>,
+        </p>
+        <p style="font-size:15px;color:#2d2d2d;line-height:1.7;">
+          Klaim hadiah Anda telah disetujui oleh pustakawan:
+        </p>
+        <div style="background-color:#f0fdf4;padding:16px;margin:24px 0;border-radius:8px;border-left:4px solid #10b981;">
+          <p style="margin:0 0 8px 0;font-size:18px;font-weight:600;color:#065f46;">${rewardName}</p>
+          <p style="margin:0;color:#047857;">Kode Ambil: <code style="background-color:#fff;padding:6px 12px;border-radius:4px;font-size:16px;font-weight:600;">${pickupCode}</code></p>
+        </div>
+        <p style="font-size:15px;color:#2d2d2d;line-height:1.7;">
+          <strong>Cara mengambil:</strong>
+        </p>
+        <ol style="font-size:15px;color:#2d2d2d;line-height:1.7;">
+          <li>Datang ke meja sirkulasi perpustakaan</li>
+          <li>Tunjukkan kode <strong>${pickupCode}</strong> ke pustakawan</li>
+          <li>Atau scan QR code dari email ini</li>
+        </ol>
+        <p style="text-align:center;margin:32px 0;">
+          <a href="${process.env.NEXTAUTH_URL || "http://localhost:3001"}/my-redemptions" style="display:inline-block;background-color:${PRIMARY_COLOR};color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:6px;font-weight:600;">Lihat Klaim Saya</a>
+        </p>
+      `
+    );
+    const text = `Klaim Disetujui!\n\n${rewardName}\nKode: ${pickupCode}\n\nDatang ke perpus dan tunjukkan kode ke pustakawan.\n\nCek: ${process.env.NEXTAUTH_URL || "http://localhost:3001"}/my-redemptions`;
+    return { subject, html, text };
+  },
+
+  rewardClaimRejected({ name, rewardName, reason }: {
+    name: string;
+    rewardName: string;
+    reason: string;
+  }) {
+    const subject = `Klaim Hadiah Ditolak: ${rewardName}`;
+    const html = baseTemplate(
+      subject,
+      `
+        <h2 style="margin:0 0 16px 0;color:#a04040;">Klaim Ditolak</h2>
+        <p style="font-size:15px;color:#2d2d2d;line-height:1.7;">
+          Halo <strong>${name}</strong>,
+        </p>
+        <p style="font-size:15px;color:#2d2d2d;line-height:1.7;">
+          Maaf, klaim hadiah berikut <strong style="color:#a04040;">DITOLAK</strong>:
+        </p>
+        <div style="background-color:#fef2f2;padding:16px;margin:24px 0;border-radius:8px;border-left:4px solid #ef4444;">
+          <p style="margin:0 0 8px 0;font-size:16px;font-weight:600;color:#991b1b;">${rewardName}</p>
+          <p style="margin:0;color:#991b1b;"><strong>Alasan:</strong> ${reason}</p>
+        </div>
+        <p style="font-size:15px;color:#2d2d2d;">
+          💚 Poin Anda sudah <strong>dikembalikan otomatis</strong>. Silakan coba hadiah lain di katalog.
+        </p>
+        <p style="text-align:center;margin:32px 0;">
+          <a href="${process.env.NEXTAUTH_URL || "http://localhost:3001"}/rewards" style="display:inline-block;background-color:${PRIMARY_COLOR};color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:6px;font-weight:600;">Lihat Katalog</a>
+        </p>
+      `
+    );
+    const text = `Klaim Ditolak\n\n${rewardName}\nAlasan: ${reason}\n\nPoin sudah dikembalikan.\n\nCek: ${process.env.NEXTAUTH_URL || "http://localhost:3001"}/rewards`;
+    return { subject, html, text };
+  },
 };

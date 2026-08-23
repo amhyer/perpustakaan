@@ -154,6 +154,42 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const isDamaged = returnCondition && returnCondition !== "BAIK";
   const pointsResult = await onLoanReturned(loan.id, { damaged: !!isDamaged });
 
+  // Notif WhatsApp/email jika dapat poin (khusus loan returned minimal 10 poin)
+  if (pointsResult.awarded >= 10) {
+    const sources = pointsResult.sources;
+    const description = sources.includes("EARLY_RETURN")
+      ? `Bonus pengembalian lebih awal (+${pointsResult.awarded} poin)`
+      : sources.includes("ON_TIME_RETURN")
+      ? `Poin membaca "${loan.bookItem.book.title}"`
+      : `Selesai membaca "${loan.bookItem.book.title}"`;
+
+    // Ambil saldo terbaru untuk ditampilkan
+    const lastTxn = await db.pointTransaction.findFirst({
+      where: { memberId: loan.memberId },
+      orderBy: { createdAt: "desc" },
+      select: { balanceAfter: true },
+    });
+    const newBalance = lastTxn?.balanceAfter ?? 0;
+
+    await notify({
+      userId: loan.member.userId,
+      title: "⭐ Poin Baru!",
+      message: `+${pointsResult.awarded} poin dari membaca "${loan.bookItem.book.title}". Saldo: ${newBalance} poin.`,
+      type: "INFO",
+      relatedId: loan.id,
+      template: {
+        emailKey: "rewardEarned",
+        whatsappKey: "rewardEarned",
+        templateData: {
+          name: loan.member.fullName,
+          amount: pointsResult.awarded,
+          description,
+          totalBalance: newBalance,
+        },
+      },
+    });
+  }
+
   return NextResponse.json({
     loan: updated,
     fine,

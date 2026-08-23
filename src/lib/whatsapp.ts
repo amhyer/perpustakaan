@@ -248,4 +248,93 @@ ${content}
 
 — Perpustakaan Jendela Ilmu`;
   },
+
+  // =========================================================================
+  // REWARD SYSTEM TEMPLATES
+  // =========================================================================
+
+  rewardEarned({ name, amount, description, totalBalance }: {
+    name: string;
+    amount: number;
+    description: string;
+    totalBalance: number;
+  }) {
+    return `⭐ *Perpustakaan Jendela Ilmu*
+
+Halo *${name}*,
+
+Selamat! Anda baru saja mendapat poin:
+
+🎁 *+${amount} poin*
+📝 ${description}
+
+💰 Saldo poin Anda: *${totalBalance}*
+
+Tukar poin dengan hadiah menarik di katalog:
+${process.env.NEXTAUTH_URL || "http://localhost:3001"}/rewards
+
+— Perpustakaan Jendela Ilmu`;
+  },
+
+  rewardClaimApproved({ name, rewardName, pickupCode }: {
+    name: string;
+    rewardName: string;
+    pickupCode: string;
+  }) {
+    return `🎁 *Perpustakaan Jendela Ilmu*
+
+Halo *${name}*,
+
+Klaim hadiah Anda telah *DISETUJUI* oleh pustakawan!
+
+🎁 *${rewardName}*
+🔑 Kode ambil: *${pickupCode}*
+
+Datang ke perpustakaan dan tunjukkan kode di atas ke pustakawan untuk mengambil hadiah.
+
+Cek status klaim: ${process.env.NEXTAUTH_URL || "http://localhost:3001"}/my-redemptions
+
+— Perpustakaan Jendela Ilmu`;
+  },
+
+  rewardClaimRejected({ name, rewardName, reason }: {
+    name: string;
+    rewardName: string;
+    reason: string;
+  }) {
+    return `😔 *Perpustakaan Jendela Ilmu*
+
+Halo *${name}*,
+
+Maaf, klaim hadiah Anda *DITOLAK*.
+
+🎁 *${rewardName}*
+📝 Alasan: ${reason}
+
+💰 Poin Anda sudah dikembalikan secara otomatis.
+
+Coba lagi dengan hadiah lain di katalog:
+${process.env.NEXTAUTH_URL || "http://localhost:3001"}/rewards
+
+— Perpustakaan Jendela Ilmu`;
+  },
+
+  rewardDelivered({ name, rewardName }: {
+    name: string;
+    rewardName: string;
+  }) {
+    return `🎉 *Perpustakaan Jendela Ilmu*
+
+Halo *${name}*,
+
+Selamat! Hadiah Anda sudah diterima:
+
+🎁 *${rewardName}*
+
+Semoga bermanfaat! Terus kumpulkan poin dengan membaca buku di perpustakaan kami. 📚
+
+Cek saldo: ${process.env.NEXTAUTH_URL || "http://localhost:3001"}/rewards
+
+— Perpustakaan Jendela Ilmu`;
+  },
 };

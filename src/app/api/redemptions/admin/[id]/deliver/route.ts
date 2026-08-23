@@ -55,7 +55,7 @@ export async function POST(
     return NextResponse.json({ error: result.reason }, { status: 400 });
   }
 
-  // Notif ke siswa
+  // Notif ke siswa dengan template
   const member = await db.member.findUnique({
     where: { id: result.redemption.memberId },
     select: { userId: true, fullName: true },
@@ -67,6 +67,13 @@ export async function POST(
       message: `Selamat! Hadiah "${result.redemption.rewardName}" sudah kamu terima. Semoga bermanfaat!`,
       type: "INFO",
       relatedId: result.redemption.id,
+      template: {
+        whatsappKey: "rewardDelivered",
+        templateData: {
+          name: member.fullName,
+          rewardName: result.redemption.rewardName,
+        },
+      },
     });
   }
 

@@ -14,7 +14,7 @@ import { getBalance } from "@/lib/points-engine";
  * Atomically:
  * 1. Update redemption status → APPROVED
  * 2. Generate pickupCode (sudah auto-generated, tinggal expose)
- * 3. Notif ke siswa
+ * 3. Notif ke siswa (in-app + email + WhatsApp dengan template rewardClaimApproved)
  */
 export async function POST(
   req: Request,
@@ -31,7 +31,7 @@ export async function POST(
     const redemption = await tx.rewardRedemption.findUnique({
       where: { id },
       include: {
-        member: true,
+        member: { include: { user: { select: { id: true, email: true } } } },
         reward: true,
       },
     });
@@ -61,27 +61,30 @@ export async function POST(
     return NextResponse.json({ error: result.reason }, { status: 400 });
   }
 
-  // Notifikasi siswa (di luar transaction supaya tidak rollback kalau notif gagal)
-  const member = await db.member.findUnique({
-    where: { id: result.redemption.memberId },
-    select: { userId: true, fullName: true },
+  // Notifikasi multi-channel ke siswa
+  await notify({
+    userId: result.redemption.member.user.id,
+    title: "Klaim Hadiah Disetujui!",
+    message: `Klaim "${result.redemption.rewardName}" disetujui. Kode ambil: ${result.redemption.pickupCode}. Tunjukkan kode ini ke pustakawan.`,
+    type: "INFO",
+    relatedId: result.redemption.id,
+    template: {
+      emailKey: "rewardClaimApproved",
+      whatsappKey: "rewardClaimApproved",
+      templateData: {
+        name: result.redemption.member.fullName,
+        rewardName: result.redemption.rewardName,
+        pickupCode: result.redemption.pickupCode,
+      },
+    },
   });
-  if (member) {
-    await notify({
-      userId: member.userId,
-      title: "Klaim Hadiah Disetujui!",
-      message: `Klaim "${result.redemption.rewardName}" disetujui. Kode ambil: ${result.redemption.pickupCode}. Tunjukkan kode ini ke pustakawan.`,
-      type: "INFO",
-      relatedId: result.redemption.id,
-    });
-  }
 
   await logAudit(
     user!.id,
     "REWARD_APPROVE",
     "RewardRedemption",
     id,
-    `Setujui klaim ${result.redemption.rewardName} untuk ${member?.fullName || "member"}`
+    `Setujui klaim ${result.redemption.rewardName} untuk ${result.redemption.member.fullName}`
   );
 
   logger.info("Redemption approved", {
