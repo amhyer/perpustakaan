@@ -26,3 +26,8 @@ export { LazyChart } from "./lazy-chart";
 export { LibrarianActivityWidget } from "./librarian-activity-widget";
 export { StudentQuickActionsWidget } from "./student-quick-actions-widget";
 export { TeacherInsightsWidget } from "./teacher-insights-widget";
+
+// Sprint M — Reading level & gamification
+export { ReadingLevelWidget } from "./reading-level-widget";
+export { StreakCalendarWidget } from "./streak-calendar-widget";
+export { ClassLeaderboardWidget } from "./class-leaderboard-widget";
