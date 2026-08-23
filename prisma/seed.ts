@@ -593,6 +593,86 @@ async function main() {
     create: { key: "leaderboard_reset_mode", value: "ARCHIVE" },
   });
 
+  // ===== IoT RFID (Sprint F4) =====
+  console.log("   - Seeding RFID readers & sample cards...");
+  const existingReaders = await db.rFIDReader.count();
+  if (existingReaders === 0) {
+    await db.rFIDReader.createMany({
+      data: [
+        {
+          code: "READER-ENTRANCE-01",
+          name: "Pintu Masuk Utama",
+          location: "Pintu depan perpustakaan",
+          model: "RC522",
+          type: "CHECKIN",
+          isOnline: true,
+          batteryLevel: 95,
+        },
+        {
+          code: "READER-DESK-01",
+          name: "Meja Sirkulasi",
+          location: "Meja pustakawan",
+          model: "PN532",
+          type: "BOTH",
+          isOnline: true,
+          batteryLevel: 88,
+        },
+        {
+          code: "READER-EXIT-01",
+          name: "Pintu Keluar",
+          location: "Pintu belakang",
+          model: "RC522",
+          type: "EXIT",
+          isOnline: false,
+          batteryLevel: 12,
+        },
+      ],
+    });
+  }
+
+  // Sample RFID cards for first 3 students
+  const sampleStudents = await db.member.findMany({
+    where: { category: "STUDENT" },
+    take: 3,
+  });
+  if (sampleStudents.length > 0) {
+    const existingCards = await db.rFIDCard.count();
+    if (existingCards === 0) {
+      for (let i = 0; i < sampleStudents.length; i++) {
+        const student = sampleStudents[i];
+        // Generate UIDs in standard format like AA:BB:CC:DD
+        const hex = (i + 1).toString(16).padStart(2, "0").toUpperCase();
+        await db.rFIDCard.create({
+          data: {
+            uid: `A1:B2:C3:${hex}${hex}`,
+            memberId: student.id,
+            cardType: "MEMBER",
+          },
+        });
+      }
+    }
+  }
+
+  // Sample book tags (3 first book items)
+  const sampleBookItems = await db.bookItem.findMany({
+    take: 5,
+  });
+  if (sampleBookItems.length > 0) {
+    const existingTags = await db.bookItemTag.count();
+    if (existingTags === 0) {
+      for (let i = 0; i < Math.min(3, sampleBookItems.length); i++) {
+        const item = sampleBookItems[i];
+        const hex = (i + 1).toString(16).padStart(4, "0").toUpperCase();
+        await db.bookItemTag.create({
+          data: {
+            bookItemId: item.id,
+            tagUid: `B1:B2:${hex}:EE`,
+          },
+        });
+      }
+    }
+  }
+
   // ===== Chat FAQ (Sprint F1 - AI Assistant) =====
   console.log("   - Seeding chat FAQ cache...");
   const existingFAQs = await db.chatFAQ.count();

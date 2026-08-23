@@ -80,8 +80,8 @@ model Member {
   loans        Loan[]
   reservations Reservation[]
   wishlists    Wishlist[]
-  proposals    BookProposal[]
-  reviews      BookReview[]
+  proposals     BookProposal[]
+  reviews       BookReview[]
   roomBookings RoomBooking[]
   visitors     Visitor[]
   assetLoans   AssetLoan[]
@@ -89,6 +89,8 @@ model Member {
   pointTransactions PointTransaction[]
   redemptions       RewardRedemption[]
   recommendations   Recommendation[]
+  // IoT RFID relations
+  rfidCards    RFIDCard[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -168,6 +170,7 @@ model BookItem {
   stocktakingScans StocktakingScan[]
   conditionLogs ConditionLog[]
   transfers   BookTransfer[]
+  rfidTag     BookItemTag?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -1130,4 +1133,157 @@ model ChatFAQ {
 
   @@index([category, isActive])
   @@index([locale, isActive])
+}
+
+// =========================================================================
+// IoT RFID — Auto-Checkout via RFID Reader Hardware
+// =========================================================================
+//
+// Flow:
+// 1. Siswa tap kartu RFID di reader (di pintu perpustakaan atau meja sirkulasi)
+// 2. Reader sends UID + timestamp ke /api/rfid/event (via HTTP/POST or MQTT)
+// 3. Server identifies member by RFID UID
+// 4. Server processes scan (check-in, check-out, or unknown)
+// 5. Audit log + real-time notification
+//
+// Use cases:
+// - Auto check-in saat siswa masuk perpustakaan (dengan kartu di reader pintu)
+// - Self-service check-out (siswa tap buku + kartu anggota)
+// - Anti-theft detection (buku diambil tanpa tap kartu)
+
+/// Setiap kartu RFID yang digunakan. Satu kartu per member.
+model RFIDCard {
+  id          String   @id @default(cuid())
+
+  // UID dari RFID reader (unique per kartu)
+  uid         String   @unique // "A1:B2:C3:D4" format
+
+  // Owner
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  // Card metadata
+  cardType    String   @default("MEMBER") // MEMBER | STAFF | VISITOR
+  issuedAt    DateTime @default(now())
+  expiresAt   DateTime?
+  isActive    Boolean  @default(true)
+
+  // Usage tracking
+  lastUsedAt  DateTime?
+  usageCount  Int      @default(0)
+
+  // Notes (alasan deactivate, dll)
+  notes       String?
+
+  // Relations
+  events      RFIDEvent[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([memberId, isActive])
+  @@index([uid, isActive])
+}
+
+/// RFID reader hardware yang terdaftar.
+/// Bisa physical (terhubung via USB/serial → server) atau virtual (testing).
+model RFIDReader {
+  id          String   @id @default(cuid())
+
+  // Identifikasi reader
+  code        String   @unique // "READER-ENTRANCE-01", "READER-DESK-01"
+  name        String
+  location    String?  // "Pintu masuk", "Meja sirkulasi", "Exit gate"
+
+  // Hardware info
+  model       String?  // "RC522", "PN532", "Simulator"
+  firmware    String?
+
+  // Konfigurasi
+  type        String   @default("CHECKIN") // CHECKIN | CHECKOUT | BOTH | EXIT
+  isActive    Boolean  @default(true)
+
+  // Beep settings
+  beepOnSuccess Boolean @default(true)
+  ledOnSuccess  String  @default("GREEN") // GREEN | BLUE | RED
+  beepOnError   Boolean @default(true)
+
+  // Status monitoring
+  lastSeenAt   DateTime?
+  isOnline     Boolean  @default(false)
+  batteryLevel Int?     // 0-100, null kalau wired
+
+  // API key untuk authenticate reader → server
+  apiKeyHash   String?  @unique
+
+  // Relations
+  events       RFIDEvent[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([code, isActive])
+  @@index([isOnline])
+}
+
+/// Setiap tap/ scan event dari reader.
+/// Immutable log untuk audit & analytics.
+model RFIDEvent {
+  id          String   @id @default(cuid())
+
+  // Hardware
+  readerId    String
+  reader      RFIDReader @relation(fields: [readerId], references: [id])
+
+  // Kartu yang di-tap
+  cardId      String?
+  card        RFIDCard?  @relation(fields: [cardId], references: [id])
+  uid         String   // UID yang di-scan (untuk forensics)
+
+  // Event type
+  eventType   String   // CHECKIN | CHECKOUT | CHECKOUT_BOOK | UNKNOWN_CARD | ERROR
+
+  // Result
+  status      String   @default("OK") // OK | DENIED | ERROR | DUPLICATE
+  memberId    String?  // resolved member
+  message     String?  // human-readable message
+
+  // Book context (untuk CHECKOUT_BOOK)
+  bookItemId  String?
+  loanId      String?
+
+  // Anti-duplicate
+  isDebounced Boolean  @default(false) // duplicate within 2s window
+
+  // Timing
+  scannedAt   DateTime  // waktu tap (from reader)
+  receivedAt  DateTime @default(now()) // waktu server terima
+  processedAt DateTime?
+
+  // Raw data (untuk debugging)
+  rawData     String?  // JSON: signal strength, sector data, etc
+
+  @@index([scannedAt])
+  @@index([memberId, scannedAt])
+  @@index([eventType, status])
+  @@index([readerId, scannedAt])
+}
+
+/// RFID-tagged book items.
+/// Setiap eksemplar bisa punya tag RFID (biasanya贴在 dalam buku).
+model BookItemTag {
+  id          String   @id @default(cuid())
+  bookItemId  String   @unique
+  bookItem    BookItem @relation(fields: [bookItemId], references: [id], onDelete: Cascade)
+
+  // Tag UID (unique per buku)
+  tagUid      String   @unique
+
+  isActive    Boolean  @default(true)
+  lastScannedAt DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tagUid, isActive])
 }
