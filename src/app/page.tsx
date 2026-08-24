@@ -56,6 +56,16 @@ import {
   RFIDSImulatorView,
   RFIDDashboardView,
   BlockchainExplorerView,
+  ReadingAssignmentsView,
+  MarketplaceView,
+  CurriculumRecommendationsView,
+  CardQueueView,
+  WhatsappOverdueView,
+  AttendanceView,
+  ExecutiveStatsWidget,
+  BookOfWeekView,
+  ReadingChallengesView,
+  InterLibraryView,
 } from "@/components/app/views";
 
 export default function Page() {
@@ -177,6 +187,26 @@ export default function Page() {
         return <BlockchainExplorerView />;
       case "data-export":
         return <DataExportView />;
+      case "reading-assignments":
+        return <ReadingAssignmentsView />;
+      case "marketplace":
+        return <MarketplaceView />;
+      case "curriculum-recommendations":
+        return <CurriculumRecommendationsView />;
+      case "card-queue":
+        return <CardQueueView />;
+      case "whatsapp-overdue":
+        return <WhatsappOverdueView />;
+      case "attendance":
+        return <AttendanceView />;
+      case "executive-stats-widget":
+        return <ExecutiveStatsWidget />;
+      case "book-of-the-week":
+        return <BookOfWeekView />;
+      case "reading-challenges":
+        return <ReadingChallengesView />;
+      case "inter-library":
+        return <InterLibraryView />;
       default:
         return <DashboardView />;
     }

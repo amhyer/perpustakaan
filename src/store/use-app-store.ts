@@ -54,7 +54,21 @@ export type ViewKey =
   | "notifications"
   | "search-results"
   // E-book reader
-  | "ebook-reader";
+  | "ebook-reader"
+  // New features
+  | "reading-assignments"
+  | "marketplace"
+  | "curriculum-recommendations"
+  | "card-queue"
+  | "executive-stats-widget"
+  | "whatsapp-overdue"
+  | "attendance"
+  // Book of the Week
+  | "book-of-the-week"
+  // Reading Challenge
+  | "reading-challenges"
+  // Inter-Library Loan
+  | "inter-library";
 
 /**
  * Resolve default dashboard berdasar role + preferensi user.

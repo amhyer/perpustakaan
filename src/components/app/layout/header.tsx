@@ -76,6 +76,9 @@ export function Header() {
     assets: "Manajemen Aset",
     "api-keys": "API Keys",
     "my-sessions": "Sesi Aktif",
+    "book-of-the-week": "Buku Minggu Ini",
+    "reading-challenges": "Reading Challenge",
+    "inter-library": "Peminjaman Silang Antar Sekolah",
   };
 
   return (

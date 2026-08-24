@@ -243,3 +243,51 @@ export const BlockchainExplorerView = dynamic(
   () => import("./blockchain-view").then((m) => m.BlockchainExplorerView),
   { loading: () => loadingComponent, ssr: false }
 );
+
+// Book of the Week (Feature 8)
+export const BookOfWeekView = dynamic(
+  () => import("./book-of-the-week-view").then((m) => m.BookOfWeekView),
+  { loading: () => loadingComponent, ssr: false }
+);
+
+// Reading Challenges (Feature 9)
+export const ReadingChallengesView = dynamic(
+  () => import("./reading-challenges-view").then((m) => m.ReadingChallengesView),
+  { loading: () => loadingComponent, ssr: false }
+);
+
+// Inter-Library Loan (Feature 10)
+export const InterLibraryView = dynamic(
+  () => import("./inter-library-view").then((m) => m.InterLibraryView),
+  { loading: () => loadingComponent, ssr: false }
+);
+
+// New features
+export const ReadingAssignmentsView = dynamic(
+  () => import("./reading-assignments-view").then((m) => m.ReadingAssignmentsView),
+  { loading: () => loadingComponent, ssr: false }
+);
+export const MarketplaceView = dynamic(
+  () => import("./marketplace-view").then((m) => m.MarketplaceView),
+  { loading: () => loadingComponent, ssr: false }
+);
+export const CurriculumRecommendationsView = dynamic(
+  () => import("./curriculum-recommendations-view").then((m) => m.CurriculumRecommendationsView),
+  { loading: () => loadingComponent, ssr: false }
+);
+export const CardQueueView = dynamic(
+  () => import("./card-queue-view").then((m) => m.CardQueueView),
+  { loading: () => loadingComponent, ssr: false }
+);
+export const WhatsappOverdueView = dynamic(
+  () => import("./whatsapp-overdue-view").then((m) => m.WhatsappOverdueView),
+  { loading: () => loadingComponent, ssr: false }
+);
+export const AttendanceView = dynamic(
+  () => import("./attendance-view").then((m) => m.AttendanceView),
+  { loading: () => loadingComponent, ssr: false }
+);
+export const ExecutiveStatsWidget = dynamic(
+  () => import("../dashboard/widgets/executive-stats-widget").then((m) => m.ExecutiveStatsWidget),
+  { loading: () => loadingComponent, ssr: false }
+);

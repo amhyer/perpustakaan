@@ -34,3 +34,6 @@ export { ClassLeaderboardWidget } from "./class-leaderboard-widget";
 
 // Sprint U — Unified showcase
 export { AchievementShowcaseWidget } from "./achievement-showcase-widget";
+
+// Executive real-time stats widget (Feature 5)
+export { ExecutiveStatsWidget } from "./executive-stats-widget";

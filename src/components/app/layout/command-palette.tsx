@@ -252,6 +252,25 @@ export function CommandPalette() {
       );
     }
 
+    // Fitur Baru
+    if (isTeacher) {
+      items.push(
+        { id: "reading-assignments", label: "Program Baca Kelas", group: "Fitur Baru", icon: Sparkles, action: () => setView("reading-assignments") },
+        { id: "curriculum-recommendations", label: "Rekomendasi Buku", group: "Fitur Baru", icon: Sparkles, action: () => setView("curriculum-recommendations") }
+      );
+    } else if (!isLibrarian) {
+      items.push(
+        { id: "reading-assignments", label: "Tugas Baca Saya", group: "Fitur Baru", icon: Sparkles, action: () => setView("reading-assignments") },
+        { id: "marketplace", label: "Marketplace Buku", group: "Fitur Baru", icon: Sparkles, action: () => setView("marketplace") }
+      );
+    } else {
+      items.push(
+        { id: "reading-assignments", label: "Program Baca Kelas", group: "Fitur Baru", icon: Sparkles, action: () => setView("reading-assignments") },
+        { id: "marketplace", label: "Marketplace Buku", group: "Fitur Baru", icon: Sparkles, action: () => setView("marketplace") },
+        { id: "curriculum-recommendations", label: "Rekomendasi Buku", group: "Fitur Baru", icon: Sparkles, action: () => setView("curriculum-recommendations") }
+      );
+    }
+
     // IoT & Integrasi
     if (isLibrarian) {
       items.push(
@@ -288,6 +307,13 @@ export function CommandPalette() {
         { id: "notifications", label: "Notifikasi", group: "Komunikasi", icon: Sparkles, action: () => setView("notifications") }
       );
     }
+
+    // Fitur Baru
+    items.push(
+      { id: "book-of-the-week", label: "Buku Minggu Ini", group: "Koleksi", icon: Sparkles, action: () => setView("book-of-the-week"), keywords: ["buku minggu", "featured"] },
+      { id: "reading-challenges", label: "Reading Challenge", group: "Tantangan", icon: Sparkles, action: () => setView("reading-challenges"), keywords: ["tantangan", "challenge"] },
+      { id: "inter-library", label: "Peminjaman Silang", group: "Layanan", icon: Sparkles, action: () => setView("inter-library"), keywords: ["antar sekolah", "inter-library"] }
+    );
 
     // Quick actions
     items.push({

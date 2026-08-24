@@ -67,6 +67,13 @@ import {
   Clock,
   X,
   Download,
+  Trophy,
+  ArrowLeftRight,
+  Target,
+  MessageCircle,
+  ShoppingCart,
+  GraduationCap,
+  ClipboardCheck,
 } from "lucide-react";
 import { Logo } from "@/components/app/logo";
 import { Input } from "@/components/ui/form/input";
@@ -156,6 +163,12 @@ const NAV_GROUPS: NavGroup[] = [
         icon: ArrowRightLeft,
         keywords: ["pindah", "transfer", "rak"],
       },
+      {
+        key: "curriculum-recommendations",
+        label: "Rekomendasi Mapel",
+        icon: GraduationCap,
+        keywords: ["rekomendasi", "mapel", "kurikulum", "pelajaran"],
+      },
     ],
   },
 
@@ -191,6 +204,24 @@ const NAV_GROUPS: NavGroup[] = [
         icon: BookPlus,
         badge: 0, // dynamic
         keywords: ["usulan", "proposal", "request buku"],
+      },
+      {
+        key: "book-of-the-week",
+        label: "Buku Minggu Ini",
+        icon: Star,
+        keywords: ["buku minggu", "book of the week", "featured"],
+      },
+      {
+        key: "card-queue",
+        label: "Antrian Cetak Kartu",
+        icon: Printer,
+        keywords: ["antrian cetak", "cetak kartu", "card queue"],
+      },
+      {
+        key: "attendance",
+        label: "Absensi",
+        icon: ClipboardCheck,
+        keywords: ["absensi", "attendance", "hadir", "presensi"],
       },
     ],
   },
@@ -233,6 +264,12 @@ const NAV_GROUPS: NavGroup[] = [
         icon: Banknote,
         keywords: ["denda", "fine", "denda keterlambatan"],
       },
+      {
+        key: "reading-assignments",
+        label: "Tugas Baca Kelas",
+        icon: BookMarked,
+        keywords: ["tugas baca", "reading assignment", "kelas"],
+      },
     ],
   },
 
@@ -258,6 +295,28 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
 
+  // ===== Tantangan & Kolaborasi =====
+  {
+    id: "tantangan",
+    label: "Tantangan & Kolaborasi",
+    icon: Trophy,
+    defaultOpen: false,
+    items: [
+      {
+        key: "reading-challenges",
+        label: "Reading Challenge",
+        icon: Trophy,
+        keywords: ["tantangan", "challenge", "membaca bulanan"],
+      },
+      {
+        key: "inter-library",
+        label: "Peminjaman Silang",
+        icon: ArrowLeftRight,
+        keywords: ["antar sekolah", "inter-library", "silang"],
+      },
+    ],
+  },
+
   // ===== Komunikasi =====
   {
     id: "komunikasi",
@@ -277,6 +336,12 @@ const NAV_GROUPS: NavGroup[] = [
         icon: Bell,
         badge: 0,
         keywords: ["notifikasi", "notification", "log"],
+      },
+      {
+        key: "whatsapp-overdue",
+        label: "WhatsApp Overdue",
+        icon: MessageCircle,
+        keywords: ["whatsapp", "overdue", "keterlambatan", "wa"],
       },
     ],
   },
@@ -337,6 +402,12 @@ const NAV_GROUPS: NavGroup[] = [
         icon: Link2,
         badge: "soon",
         keywords: ["blockchain", "audit", "immutable"],
+      },
+      {
+        key: "marketplace",
+        label: "Marketplace Buku",
+        icon: ShoppingCart,
+        keywords: ["marketplace", "jual", "beli", "bekas"],
       },
     ],
   },
@@ -419,6 +490,18 @@ const MEMBER_NAV_GROUPS: NavGroup[] = [
         icon: BookHeart,
         keywords: ["wishlist", "favorit", "bookmark"],
       },
+      {
+        key: "book-of-the-week",
+        label: "Buku Minggu Ini",
+        icon: Star,
+        keywords: ["buku minggu", "book of the week", "featured"],
+      },
+      {
+        key: "marketplace",
+        label: "Marketplace Buku",
+        icon: ShoppingCart,
+        keywords: ["marketplace", "jual", "beli", "bekas"],
+      },
     ],
   },
   {
@@ -439,6 +522,18 @@ const MEMBER_NAV_GROUPS: NavGroup[] = [
         label: "Kartu Anggota",
         icon: CreditCard,
         keywords: ["kartu", "card", "anggota"],
+      },
+      {
+        key: "reading-assignments",
+        label: "Tugas Baca",
+        icon: BookMarked,
+        keywords: ["tugas baca", "reading assignment"],
+      },
+      {
+        key: "inter-library",
+        label: "Peminjaman Silang",
+        icon: ArrowLeftRight,
+        keywords: ["antar sekolah", "inter-library", "silang"],
       },
     ],
   },
@@ -500,6 +595,24 @@ const MEMBER_NAV_GROUPS: NavGroup[] = [
         label: "Ajukan Buku",
         icon: BookPlus,
         keywords: ["usulan", "ajukan buku"],
+      },
+      {
+        key: "reading-challenges",
+        label: "Reading Challenge",
+        icon: Trophy,
+        keywords: ["tantangan", "challenge", "membaca"],
+      },
+      {
+        key: "inter-library",
+        label: "Peminjaman Silang",
+        icon: ArrowLeftRight,
+        keywords: ["antar sekolah", "inter-library", "silang"],
+      },
+      {
+        key: "attendance",
+        label: "Absensi Perpustakaan",
+        icon: ClipboardCheck,
+        keywords: ["absensi", "attendance", "hadir", "presensi"],
       },
     ],
   },

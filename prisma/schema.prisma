@@ -37,6 +37,7 @@ model User {
   rewardsCreated           Reward[]            @relation("RewardCreator")
   redemptionsApproved      RewardRedemption[]  @relation("RewardApprover")
   redemptionsDelivered     RewardRedemption[]  @relation("RewardDeliverer")
+  donationsApproved        Donation[]          @relation("DonationApprover")
   // Push notification
   pushSubscriptions        PushSubscription[]
   createdAt    DateTime @default(now())
@@ -91,6 +92,28 @@ model Member {
   recommendations   Recommendation[]
   // IoT RFID relations
   rfidCards    RFIDCard[]
+  // New features relations
+  bookListingsSold    BookListing[] @relation("BookListingSeller")
+  bookListingsBought  BookListing[] @relation("BookListingBuyer")
+  readingProgress     ReadingProgress[]
+  cardPrintQueue      CardPrintQueue[]
+  libraryAttendance   LibraryAttendance[]
+  challengeParticipations ChallengeParticipant[]
+  // Social reading relations
+  readingLists        ReadingList[]
+  readingListLikes    ReadingListLike[]
+  readingListFollows  ReadingListFollow[]
+  readingListComments ReadingListComment[]
+  // Book club relations
+  bookClubMemberships    BookClubMember[]
+  bookClubDiscussions    BookClubDiscussion[]
+  bookClubDiscussionLikes BookClubDiscussionLike[]
+  clubsCreated           BookClub[]             @relation("ClubCreator")
+  // Donation & exchange relations
+  donations        Donation[]
+  exchangeOffers   ExchangeOffer[]           @relation("Offerer")
+  // Certificate relations
+  certificates     Certificate[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -106,6 +129,7 @@ model Category {
   code        String   @unique // kode klasifikasi mirip Dewey sederhana
   description String?
   books       Book[]
+  donations   Donation[]
   createdAt   DateTime @default(now())
 }
 
@@ -150,6 +174,13 @@ model Book {
   wishlists   Wishlist[]
   attachments BookAttachment[]
   reviews     BookReview[]
+  curriculumRecommendations CurriculumRecommendation[]
+  bookOfWeek  BookOfTheWeek[]
+  readingListItems    ReadingListItem[]
+  readingSchedules    ReadingSchedule[]
+  coverSignature      CoverSignature?
+  arTreasureHunts     ARTreasureHunt[]
+  bookClubCurrentBooks BookClub[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -1672,4 +1703,230 @@ model DeviceFingerprint {
 
   @@unique([userId, fingerprintHash])
   @@index([userId, lastUsedAt])
+}
+
+// ===== 1. Class Reading Program =====
+model ReadingAssignment {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  bookId      String
+  classGrade  String   // "10-A", "11-B", etc
+  subject     String?  // "Bahasa Indonesia", "IPA", etc
+  assignedBy  String   // userId of teacher
+  dueDate     DateTime
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  progress    ReadingProgress[]
+  @@index([classGrade])
+  @@index([assignedBy])
+}
+
+model ReadingProgress {
+  id             String   @id @default(cuid())
+  assignmentId   String
+  memberId       String
+  status         String   @default("NOT_STARTED") // NOT_STARTED, READING, COMPLETED
+  currentPage    Int      @default(0)
+  totalPages     Int      @default(0)
+  notes          String?
+  completedAt    DateTime?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  assignment     ReadingAssignment @relation(fields: [assignmentId], references: [id])
+  member         Member           @relation(fields: [memberId], references: [id])
+
+  @@unique([assignmentId, memberId])
+  @@index([memberId])
+  @@index([status])
+}
+
+// ===== 2. Book Marketplace =====
+model BookListing {
+  id          String   @id @default(cuid())
+  sellerId    String   // memberId
+  bookTitle   String
+  author      String?
+  isbn        String?
+  condition   String   // GOOD, FAIR, WORN
+  pricePoints Int      // in poin (not real money)
+  description String?
+  coverImage  String?
+  status      String   @default("AVAILABLE") // AVAILABLE, RESERVED, SOLD, REMOVED
+  buyerId     String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  seller      Member   @relation("BookListingSeller", fields: [sellerId], references: [id])
+  buyer       Member?  @relation("BookListingBuyer", fields: [buyerId], references: [id])
+
+  @@index([sellerId])
+  @@index([status])
+}
+
+// ===== 3. Curriculum Book Recommendation =====
+model CurriculumRecommendation {
+  id          String   @id @default(cuid())
+  subject     String   // "Matematika", "Fisika", "Bahasa Indonesia"
+  classGrade  String   // "10", "11", "12"
+  bookId      String
+  reason      String?  // why this book is recommended
+  isRequired  Boolean  @default(false) // wajib vs recomended
+  addedBy     String   // userId
+
+  createdAt   DateTime @default(now())
+
+  book        Book     @relation(fields: [bookId], references: [id])
+  @@unique([subject, classGrade, bookId])
+  @@index([classGrade])
+  @@index([subject])
+}
+
+// ===== 4. Card Print Queue =====
+model CardPrintQueue {
+  id          String   @id @default(cuid())
+  memberId    String
+  cardType    String   @default("MEMBER") // MEMBER, GUEST
+  status      String   @default("QUEUED") // QUEUED, PRINTING, COMPLETED, CANCELLED
+  queueNumber Int
+  printedBy   String?
+  printedAt   DateTime?
+  notes       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  member      Member   @relation(fields: [memberId], references: [id])
+
+  @@index([status])
+  @@index([queueNumber])
+}
+
+// ===== 6. WhatsApp Overdue Notification =====
+model WhatsAppLog2 {
+  id          String   @id @default(cuid())
+  loanId      String
+  memberId    String
+  phone       String
+  message     String
+  status      String   @default("SENT") // SENT, DELIVERED, FAILED
+  sentAt      DateTime @default(now())
+
+  @@index([loanId])
+  @@index([memberId])
+}
+
+// ===== 7. Library Attendance =====
+model LibraryAttendance {
+  id          String   @id @default(cuid())
+  memberId    String
+  checkIn     DateTime @default(now())
+  checkOut    DateTime?
+  purpose     String?  // "MEMBER", "READING", "STUDY_GROUP", "EVENT"
+  room        String?
+
+  member      Member   @relation(fields: [memberId], references: [id])
+
+  @@index([memberId])
+  @@index([checkIn])
+}
+
+// ===== 8. Book of the Week =====
+model BookOfTheWeek {
+  id          String   @id @default(cuid())
+  bookId      String
+  reason      String?  // why this book was chosen
+  setBy       String   // userId of librarian
+  weekStart   DateTime
+  weekEnd     DateTime
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+
+  book        Book     @relation(fields: [bookId], references: [id])
+
+  @@index([weekStart])
+  @@index([isActive])
+}
+
+// ===== 9. Monthly Reading Challenge =====
+model MonthlyChallenge {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  month       Int      // 1-12
+  year        Int
+  goalType    String   // "BOOKS_COUNT", "PAGES_COUNT", "STREAK"
+  goalValue   Int      // e.g. 3 books, 100 pages, 7-day streak
+  rewardPoints Int     @default(100)
+  badgeName   String?
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+
+  participants ChallengeParticipant[]
+  @@unique([month, year])
+}
+
+model ChallengeParticipant {
+  id            String   @id @default(cuid())
+  challengeId   String
+  memberId      String
+  currentValue  Int      @default(0)
+  isCompleted   Boolean  @default(false)
+  completedAt   DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  challenge     MonthlyChallenge @relation(fields: [challengeId], references: [id])
+  member        Member           @relation(fields: [memberId], references: [id])
+
+  @@unique([challengeId, memberId])
+  @@index([memberId])
+}
+
+// ===== 10. Inter-Library Loan =====
+model SchoolLibrary {
+  id          String   @id @default(cuid())
+  name        String
+  address     String?
+  phone       String?
+  email       String?
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+
+  outgoingLoans InterLibraryLoan[] @relation("FromSchool")
+  incomingLoans InterLibraryLoan[] @relation("ToSchool")
+}
+
+model InterLibraryLoan {
+  id              String   @id @default(cuid())
+  fromSchoolId    String
+  toSchoolId      String
+  memberId        String
+  bookTitle       String
+  bookAuthor      String?
+  status          String   @default("REQUESTED") // REQUESTED, APPROVED, SHIPPED, RECEIVED, RETURNED, CANCELLED
+  requestNote     String?
+  dueDate         DateTime?
+  returnedAt      DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  fromSchool      SchoolLibrary @relation("FromSchool", fields: [fromSchoolId], references: [id])
+  toSchool        SchoolLibrary @relation("ToSchool", fields: [toSchoolId], references: [id])
+
+  @@index([fromSchoolId])
+  @@index([toSchoolId])
+  @@index([memberId])
+  @@index([status])
 }
