@@ -206,7 +206,7 @@ export async function scoreSessionSecurity(
   sessionId: string,
   userId: string
 ): Promise<SessionSecurity> {
-  const session = await db.session.findUnique({
+  const session = await db.activeSession.findUnique({
     where: { id: sessionId },
   });
 
@@ -239,7 +239,7 @@ export async function scoreSessionSecurity(
   }
 
   // Factor 2: 2FA enabled
-  const has2FA = await db.twoFactorAuth.findUnique({ where: { userId } });
+  const has2FA = await db.twoFactorSecret.findUnique({ where: { userId } });
   if (!has2FA?.enabled) {
     score -= 30;
     riskFactors.push({
@@ -269,7 +269,7 @@ export async function scoreSessionSecurity(
   }
 
   // Factor 4: Multiple active sessions
-  const activeSessions = await db.session.count({
+  const activeSessions = await db.activeSession.count({
     where: { userId, expiresAt: { gt: new Date() } },
   });
   if (activeSessions > 3) {
@@ -283,7 +283,7 @@ export async function scoreSessionSecurity(
   }
 
   // Factor 5: New device login (last 24h)
-  const recentSessions = await db.session.count({
+  const recentSessions = await db.activeSession.count({
     where: {
       userId,
       createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },

@@ -112,6 +112,8 @@ model Member {
   // Donation & exchange relations
   donations        Donation[]
   exchangeOffers   ExchangeOffer[]           @relation("Offerer")
+  // Gamification
+  gamificationProfile GamificationProfile?
   // Certificate relations
   certificates     Certificate[]
   createdAt    DateTime @default(now())
@@ -1931,4 +1933,35 @@ model InterLibraryLoan {
   @@index([toSchoolId])
   @@index([memberId])
   @@index([status])
+}
+
+// ===== Security: Login Audit Trail =====
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  userId    String?
+  email     String
+  success   Boolean
+  ipAddress String?
+  userAgent String?
+  location  String?  // JSON string { lat, lon, city, country }
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([email])
+  @@index([createdAt])
+  @@index([success])
+}
+
+// ===== Gamification Profile =====
+model GamificationProfile {
+  id             String   @id @default(cuid())
+  memberId       String   @unique
+  member         Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  points         Int      @default(0)
+  level          Int      @default(1)
+  badges         String?  // JSON array of earned badge IDs
+  streakDays     Int      @default(0)
+  lastActivityAt DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }

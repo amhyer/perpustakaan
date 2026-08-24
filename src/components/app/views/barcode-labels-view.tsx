@@ -71,7 +71,17 @@ export function BarcodeLabelsView() {
   const [labelFormat, setLabelFormat] = useState<"CODE128" | "QR">("CODE128");
   const [showSettings, setShowSettings] = useState(false);
 
-  // Guard: pustakawan only
+  // Fetch all books
+  const { data: books, loading: loadingBooks } = useFetch<Book[]>(
+    "/api/books?pageSize=500"
+  );
+
+  // Fetch all book items (eksemplar)
+  const { data: items, loading: loadingItems } = useFetch<BookItem[]>(
+    "/api/book-items/all?pageSize=1000"
+  );
+
+  // Guard: pustakawan only — AFTER all hooks
   if (user?.role !== "LIBRARIAN" && user?.role !== "PUSTAKAWAN_JUNIOR") {
     return (
       <div className="space-y-6">
@@ -90,16 +100,6 @@ export function BarcodeLabelsView() {
       </div>
     );
   }
-
-  // Fetch all books
-  const { data: books, loading: loadingBooks } = useFetch<Book[]>(
-    "/api/books?pageSize=500"
-  );
-
-  // Fetch all book items (eksemplar)
-  const { data: items, loading: loadingItems } = useFetch<BookItem[]>(
-    "/api/book-items/all?pageSize=1000" // Custom endpoint we'll add
-  );
 
   // Filter books by search
   const filteredBooks = useMemo(() => {

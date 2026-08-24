@@ -44,7 +44,10 @@ export async function PUT(req: Request) {
   }
 
   const hash = await hashPassword(newPassword);
-  await db.user.update({ where: { id: user!.id }, data: { passwordHash: hash } });
+  await db.$transaction([
+    db.user.update({ where: { id: user!.id }, data: { passwordHash: hash } }),
+    db.activeSession.deleteMany({ where: { userId: user!.id } }),
+  ]);
 
-  return NextResponse.json({ success: true, message: "Password berhasil diubah" });
+  return NextResponse.json({ success: true, message: "Password berhasil diubah. Silakan login kembali." });
 }

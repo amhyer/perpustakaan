@@ -33,61 +33,55 @@ export async function POST(
     return NextResponse.json({ error: "Tidak dapat membeli buku sendiri" }, { status: 400 });
   }
 
-  // Check buyer's point balance
-  const lastTx = await db.pointTransaction.findFirst({
-    where: { memberId: member.id },
-    orderBy: { createdAt: "desc" },
-    select: { balanceAfter: true },
+  // Transaction: verify balance inside transaction, deduct buyer points, add seller points
+  await db.$transaction(async (tx) => {
+    // Re-check balance inside transaction to prevent TOCTOU
+    const lastTx = await tx.pointTransaction.findFirst({
+      where: { memberId: member.id },
+      orderBy: { createdAt: "desc" },
+      select: { balanceAfter: true },
+    });
+    const currentBalance = lastTx?.balanceAfter ?? 0;
+    if (currentBalance < listing.pricePoints) {
+      throw new Error("INSUFFICIENT_BALANCE");
+    }
+
+    const newBuyerBalance = currentBalance - listing.pricePoints;
+
+    const sellerLastTx = await tx.pointTransaction.findFirst({
+      where: { memberId: listing.sellerId },
+      orderBy: { createdAt: "desc" },
+      select: { balanceAfter: true },
+    });
+    const sellerNewBalance = (sellerLastTx?.balanceAfter ?? 0) + listing.pricePoints;
+
+    await Promise.all([
+      tx.bookListing.update({
+        where: { id },
+        data: { status: "SOLD", buyerId: member.id },
+      }),
+      tx.pointTransaction.create({
+        data: {
+          memberId: member.id,
+          type: "REDEEM",
+          source: "MARKETPLACE_BUY",
+          amount: listing.pricePoints,
+          balanceAfter: newBuyerBalance,
+          description: `Membeli "${listing.bookTitle}" dari marketplace`,
+        },
+      }),
+      tx.pointTransaction.create({
+        data: {
+          memberId: listing.sellerId,
+          type: "EARN",
+          source: "MARKETPLACE_SELL",
+          amount: listing.pricePoints,
+          balanceAfter: sellerNewBalance,
+          description: `Menjual "${listing.bookTitle}" di marketplace`,
+        },
+      }),
+    ]);
   });
-
-  const currentBalance = lastTx?.balanceAfter ?? 0;
-  if (currentBalance < listing.pricePoints) {
-    return NextResponse.json(
-      { error: `Poin tidak cukup. Saldo: ${currentBalance}, Harga: ${listing.pricePoints}` },
-      { status: 400 }
-    );
-  }
-
-  // Transaction: deduct buyer points, add seller points, mark listing sold
-  const newBuyerBalance = currentBalance - listing.pricePoints;
-
-  // Get seller's last balance
-  const sellerLastTx = await db.pointTransaction.findFirst({
-    where: { memberId: listing.sellerId },
-    orderBy: { createdAt: "desc" },
-    select: { balanceAfter: true },
-  });
-  const sellerNewBalance = (sellerLastTx?.balanceAfter ?? 0) + listing.pricePoints;
-
-  await db.$transaction([
-    // Mark listing as sold
-    db.bookListing.update({
-      where: { id },
-      data: { status: "SOLD", buyerId: member.id },
-    }),
-    // Deduct buyer points
-    db.pointTransaction.create({
-      data: {
-        memberId: member.id,
-        type: "REDEEM",
-        source: "MARKETPLACE_BUY",
-        amount: listing.pricePoints,
-        balanceAfter: newBuyerBalance,
-        description: `Membeli "${listing.bookTitle}" dari marketplace`,
-      },
-    }),
-    // Add seller points
-    db.pointTransaction.create({
-      data: {
-        memberId: listing.sellerId,
-        type: "EARN",
-        source: "MARKETPLACE_SELL",
-        amount: listing.pricePoints,
-        balanceAfter: sellerNewBalance,
-        description: `Menjual "${listing.bookTitle}" di marketplace`,
-      },
-    }),
-  ]);
 
   return NextResponse.json({ success: true, message: "Pembelian berhasil" });
 }

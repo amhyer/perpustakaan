@@ -341,7 +341,7 @@ export async function calculateSecurityScore(userId: string): Promise<SecuritySc
   let totalDeduction = 0;
 
   // Factor 1: 2FA enabled
-  const has2FA = await db.twoFactorAuth.findUnique({ where: { userId } });
+  const has2FA = await db.twoFactorSecret.findUnique({ where: { userId } });
   if (has2FA?.enabled) {
     factors.push({ label: "2FA aktif", impact: 0, reason: "Akun dilindungi 2FA" });
   } else {
@@ -370,7 +370,7 @@ export async function calculateSecurityScore(userId: string): Promise<SecuritySc
   }
 
   // Factor 3: Active sessions
-  const activeSessions = await db.session.count({
+  const activeSessions = await db.activeSession.count({
     where: { userId, expiresAt: { gt: new Date() } },
   });
   if (activeSessions > 3) {

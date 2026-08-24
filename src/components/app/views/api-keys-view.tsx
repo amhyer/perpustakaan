@@ -231,7 +231,8 @@ export function ApiKeysView() {
           ) : (
             <div className="space-y-2">
               {keys.map((k) => {
-                const scopes = JSON.parse(k.scopes) as string[];
+                let scopes: string[] = [];
+                try { scopes = JSON.parse(k.scopes); } catch { scopes = []; }
                 return (
                   <div
                     key={k.id}

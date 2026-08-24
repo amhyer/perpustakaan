@@ -53,25 +53,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Anggota sudah memiliki antrian aktif" }, { status: 409 });
   }
 
-  // Generate queue number (max queueNumber + 1)
-  const lastQueue = await db.cardPrintQueue.findFirst({
-    orderBy: { queueNumber: "desc" },
-    select: { queueNumber: true },
-  });
-  const queueNumber = (lastQueue?.queueNumber ?? 0) + 1;
+  // Generate queue number atomically inside transaction
+  const entry = await db.$transaction(async (tx) => {
+    const lastQueue = await tx.cardPrintQueue.findFirst({
+      orderBy: { queueNumber: "desc" },
+      select: { queueNumber: true },
+    });
+    const queueNumber = (lastQueue?.queueNumber ?? 0) + 1;
 
-  const entry = await db.cardPrintQueue.create({
-    data: {
-      memberId,
-      cardType: body.cardType || "MEMBER",
-      queueNumber,
-      notes: body.notes || null,
-    },
-    include: {
-      member: {
-        select: { fullName: true, memberNumber: true, category: true, phone: true },
+    return tx.cardPrintQueue.create({
+      data: {
+        memberId,
+        cardType: body.cardType || "MEMBER",
+        queueNumber,
+        notes: body.notes || null,
       },
-    },
+      include: {
+        member: {
+          select: { fullName: true, memberNumber: true, category: true, phone: true },
+        },
+      },
+    });
   });
 
   return NextResponse.json(entry, { status: 201 });
