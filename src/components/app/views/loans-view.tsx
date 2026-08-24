@@ -193,7 +193,7 @@ function LoansViewContent() {
         toast.success(`"${title}" berhasil dikembalikan.`);
       }
       if (res.nextReservation) {
-        toast.info(`Reservasi oleh ${res.nextReservation.member.fullName} kini siap diambil.`);
+        toast.info(`Reservasi oleh ${res.nextReservation.member?.fullName ?? "anggota"} kini siap diambil.`);
       }
       setReturnTarget(null);
       refetch();

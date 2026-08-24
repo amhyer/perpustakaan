@@ -178,6 +178,7 @@ model Book {
   bookOfWeek  BookOfTheWeek[]
   readingListItems    ReadingListItem[]
   readingSchedules    ReadingSchedule[]
+  readingAssignments  ReadingAssignment[]
   coverSignature      CoverSignature?
   arTreasureHunts     ARTreasureHunt[]
   bookClubCurrentBooks BookClub[]
@@ -1711,6 +1712,7 @@ model ReadingAssignment {
   title       String
   description String?
   bookId      String
+  book        Book     @relation(fields: [bookId], references: [id])
   classGrade  String   // "10-A", "11-B", etc
   subject     String?  // "Bahasa Indonesia", "IPA", etc
   assignedBy  String   // userId of teacher

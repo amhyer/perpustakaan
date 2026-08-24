@@ -285,8 +285,8 @@ export function BookTransferView() {
                         <div>{t.bookItem.book.title}</div>
                       </td>
                       <td className="py-2">{t.fromLocation?.name || "-"}</td>
-                      <td className="py-2">{t.toLocation.name}</td>
-                      <td className="py-2">{t.user.name}</td>
+                      <td className="py-2">{t.toLocation?.name ?? "-"}</td>
+                      <td className="py-2">{t.user?.name ?? "-"}</td>
                       <td className="py-2 text-muted-foreground">{t.reason || "-"}</td>
                     </tr>
                   ))}

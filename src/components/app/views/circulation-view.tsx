@@ -734,7 +734,7 @@ function CirculationViewContent() {
       }
       if (res.nextReservation) {
         toast.info(
-          `Reservasi berikutnya oleh ${res.nextReservation.member.fullName} kini siap diambil.`
+          `Reservasi berikutnya oleh ${res.nextReservation.member?.fullName ?? "anggota"} kini siap diambil.`
         );
       }
       setReturnTarget(null);

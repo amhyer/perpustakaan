@@ -44,7 +44,7 @@ export function useFetch<T>(url: string | null, options: UseFetchOptions = {}): 
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(url, { signal: controller.signal });
+        const res = await fetch(url, { signal: controller.signal, credentials: "include" });
         if (!res.ok) {
           let msg = `Error ${res.status}`;
           try {

@@ -345,12 +345,12 @@ export function AuditLogView() {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">
-                                {log.user.name.charAt(0)}
+                                {(log.user?.name ?? "?").charAt(0)}
                               </div>
                               <div className="min-w-0">
-                                <div className="text-sm font-medium truncate">{log.user.name}</div>
+                                <div className="text-sm font-medium truncate">{log.user?.name ?? "-"}</div>
                                 <div className="text-[11px] text-muted-foreground">
-                                  {ROLE_LABELS[log.user.role] ?? log.user.role}
+                                  {log.user ? (ROLE_LABELS[log.user.role] ?? log.user.role) : "-"}
                                 </div>
                               </div>
                             </div>

@@ -232,14 +232,14 @@ function NotificationLogContent() {
                 {data.map((item) => {
                   const typeCfg = TYPE_CONFIG[item.type] ?? { label: item.type, icon: Info, className: "" };
                   const TypeIcon = typeCfg.icon;
-                  const recipient = item.user.member?.fullName || item.user.name;
+                  const recipient = item.user?.member?.fullName || item.user?.name || "-";
                   return (
                     <TableRow key={item.id} className={!item.isRead ? "bg-sky-50/40 dark:bg-sky-950/10" : ""}>
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium text-sm">{recipient}</span>
                           <span className="text-[11px] text-muted-foreground">
-                            {item.user.member?.memberNumber ?? item.user.email}
+                            {item.user?.member?.memberNumber ?? item.user?.email ?? "-"}
                           </span>
                         </div>
                       </TableCell>

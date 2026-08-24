@@ -139,6 +139,7 @@ export function CommandPalette() {
   const listRef = useRef<HTMLDivElement>(null);
 
   const isLibrarian = user?.role === "LIBRARIAN" || user?.role === "PUSTAKAWAN_JUNIOR";
+  const isTeacher = user?.role === "TEACHER";
   const userId = user?.id || "guest";
 
   // Load search history when palette opens or user changes
