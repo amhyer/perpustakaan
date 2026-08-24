@@ -81,7 +81,7 @@ export function PdfViewer({
         // Set worker source
         pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
-        const loadingTask = pdfjsLib.getDocument(url);
+        const loadingTask = pdfjsLib.getDocument({ url });
         const doc = await loadingTask.promise;
 
         if (cancelled) return;

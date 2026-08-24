@@ -28,7 +28,7 @@
 import { id, type IdLocale } from "./locales/id";
 import { en } from "./locales/en";
 
-export type Locale = "id" | "en" | "ar";
+export type Locale = "id" | "en" | "ar" | "zh";
 
 export type Translations = IdLocale;
 
@@ -37,10 +37,12 @@ export type Translations = IdLocale;
  * untuk enable bahasa baru.
  */
 import { ar } from "./locales/ar";
+import { zh } from "./locales/zh";
 const LOCALES: Record<Locale, Translations> = {
   id,
   en,
   ar,
+  zh,
 };
 
 /**

@@ -122,7 +122,7 @@ export function usePushNotification() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const endpoint = (subscription.toJSON() as any).endpoint;
         await subscription.unsubscribe();
-        await api.delete("/api/push/subscribe", { endpoint });
+        await api.delete("/api/push/subscribe");
       }
       toast.success("Notifikasi dimatikan");
       await refresh();

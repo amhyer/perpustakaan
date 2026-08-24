@@ -452,18 +452,16 @@ export async function logAnomaly(anomaly: Anomaly): Promise<void> {
   try {
     await db.auditLog.create({
       data: {
-        userId: anomaly.userId || null,
+        userId: anomaly.userId,
         action: "ANOMALY_DETECTED",
-        resource: anomaly.type,
-        resourceId: null,
-        changes: {
+        entityType: anomaly.type,
+        entityId: undefined,
+        detail: JSON.stringify({
           severity: anomaly.severity,
           description: anomaly.description,
           evidence: anomaly.evidence,
           action: anomaly.action,
-        },
-        ipAddress: null,
-        createdAt: anomaly.detectedAt,
+        }),
       },
     });
   } catch (err) {

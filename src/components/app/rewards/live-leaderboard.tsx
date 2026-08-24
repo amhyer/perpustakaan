@@ -76,46 +76,42 @@ export function LiveLeaderboard({
   }, [currentUserId, topN]);
 
   // Listen to real-time events
-  const { addEventListener } = useEventStream();
+  const handlersRef = useRef<Record<string, (data: any) => void>>({});
 
-  useEffect(() => {
-    const unsubEarn = addEventListener("reward:points-earned", (data: any) => {
-      // Flash animation
-      if (data.memberId === currentUserId) {
-        setRecentChanges((prev) => new Set(prev).add(data.memberId));
-        setTimeout(() => {
-          setRecentChanges((prev) => {
-            const next = new Set(prev);
-            next.delete(data.memberId);
-            return next;
-          });
-        }, 2000);
-      }
-      // Throttle: only refetch every 5 seconds
-      const now = Date.now();
-      if (now - lastFetchRef.current > 5000) {
-        lastFetchRef.current = now;
-        fetchLeaderboard(false);
-      }
-    });
+  handlersRef.current["reward:points-earned"] = (data: any) => {
+    // Flash animation
+    if (data.memberId === currentUserId) {
+      setRecentChanges((prev) => new Set(prev).add(data.memberId));
+      setTimeout(() => {
+        setRecentChanges((prev) => {
+          const next = new Set(prev);
+          next.delete(data.memberId);
+          return next;
+        });
+      }, 2000);
+    }
+    // Throttle: only refetch every 5 seconds
+    const now = Date.now();
+    if (now - lastFetchRef.current > 5000) {
+      lastFetchRef.current = now;
+      fetchLeaderboard(false);
+    }
+  };
 
-    const unsubLeaderboard = addEventListener(
-      "reward:leaderboard-updated",
-      (data: any) => {
-        const now = Date.now();
-        if (now - lastFetchRef.current > 5000) {
-          lastFetchRef.current = now;
-          fetchLeaderboard(false);
-        }
-      }
-    );
+  handlersRef.current["reward:leaderboard-updated"] = () => {
+    const now = Date.now();
+    if (now - lastFetchRef.current > 5000) {
+      lastFetchRef.current = now;
+      fetchLeaderboard(false);
+    }
+  };
 
-    return () => {
-      unsubEarn();
-      unsubLeaderboard();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUserId]);
+  useEventStream({
+    handlers: {
+      "reward:points-earned": (data) => handlersRef.current["reward:points-earned"]?.(data),
+      "reward:leaderboard-updated": (data) => handlersRef.current["reward:leaderboard-updated"]?.(data),
+    },
+  });
 
   if (loading) {
     return (

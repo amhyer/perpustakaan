@@ -8,18 +8,22 @@
  * Untuk sekarang, ini sebagai resource catalog yang bisa dipakai manual.
  */
 
-export const locales = ["id", "en"] as const;
+export const locales = ["id", "en", "ar", "zh"] as const;
 export type Locale = (typeof locales)[number];
 export const defaultLocale: Locale = "id";
 
 export const localeNames: Record<Locale, string> = {
   id: "Bahasa Indonesia",
   en: "English",
+  ar: "العربية",
+  zh: "中文",
 };
 
 export const localeFlags: Record<Locale, string> = {
   id: "🇮🇩",
   en: "🇬🇧",
+  ar: "🇸🇦",
+  zh: "🇨🇳",
 };
 
 // ============================================================
@@ -110,6 +114,78 @@ export const messages: Messages = {
     "common.welcome": "Welcome",
     "common.goodbye": "Goodbye",
     "common.thankYou": "Thank You",
+  },
+  ar: {
+    "common.save": "حفظ",
+    "common.cancel": "إلغاء",
+    "common.delete": "حذف",
+    "common.edit": "تعديل",
+    "common.add": "إضافة",
+    "common.search": "بحث",
+    "common.loading": "جاري التحميل...",
+    "common.error": "حدث خطأ",
+    "nav.dashboard": "لوحة التحكم",
+    "nav.catalog": "الفهرس",
+    "nav.members": "الأعضاء",
+    "nav.loans": "القروض",
+    "nav.rooms": "الغرف",
+    "nav.visitors": "الزوار",
+    "nav.assets": "الأصول",
+    "nav.settings": "الإعدادات",
+    "auth.login": "تسجيل الدخول",
+    "auth.logout": "تسجيل الخروج",
+    "auth.email": "البريد الإلكتروني",
+    "auth.password": "كلمة المرور",
+    "book.title": "العنوان",
+    "book.author": "المؤلف",
+    "book.available": "متاح",
+    "book.borrowed": "مستعار",
+    "loan.borrow": "استعارة",
+    "loan.return": "إرجاع",
+    "loan.dueDate": "تاريخ الاستحقاق",
+    "loan.renew": "تجديد",
+    "member.name": "الاسم",
+    "member.number": "رقم العضوية",
+    "member.status": "الحالة",
+    "common.welcome": "مرحباً",
+    "common.goodbye": "مع السلامة",
+    "common.thankYou": "شكراً لك",
+  },
+  zh: {
+    "common.save": "保存",
+    "common.cancel": "取消",
+    "common.delete": "删除",
+    "common.edit": "编辑",
+    "common.add": "添加",
+    "common.search": "搜索",
+    "common.loading": "加载中...",
+    "common.error": "发生错误",
+    "nav.dashboard": "仪表板",
+    "nav.catalog": "目录",
+    "nav.members": "成员",
+    "nav.loans": "借阅",
+    "nav.rooms": "房间",
+    "nav.visitors": "访客",
+    "nav.assets": "资产",
+    "nav.settings": "设置",
+    "auth.login": "登录",
+    "auth.logout": "退出",
+    "auth.email": "邮箱",
+    "auth.password": "密码",
+    "book.title": "标题",
+    "book.author": "作者",
+    "book.available": "可借",
+    "book.borrowed": "已借出",
+    "loan.borrow": "借书",
+    "loan.return": "还书",
+    "loan.dueDate": "到期日",
+    "loan.renew": "续借",
+    "member.name": "姓名",
+    "member.number": "会员号",
+    "member.status": "状态",
+    "common.welcome": "欢迎",
+    "common.goodbye": "再见",
+    "common.thankYou": "谢谢",
   },
 };
 

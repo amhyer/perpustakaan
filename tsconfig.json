@@ -41,6 +41,9 @@
     "stories",
     "tests",
     "mobile",
-    "e2e-evidence"
+    "e2e-evidence",
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.test.tsx"
   ]
 }

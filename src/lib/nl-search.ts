@@ -450,7 +450,7 @@ export async function nlSearch(
           id: book.id,
           title: book.title,
           author: book.author,
-          description: book.description,
+          description: book.synopsis,
           category: book.category,
         },
         parsed

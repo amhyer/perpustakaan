@@ -68,7 +68,9 @@ export type ViewKey =
   // Reading Challenge
   | "reading-challenges"
   // Inter-Library Loan
-  | "inter-library";
+  | "inter-library"
+  // Customizable dashboard
+  | "customizable-dashboard";
 
 /**
  * Resolve default dashboard berdasar role + preferensi user.

@@ -131,61 +131,57 @@ export function ActivityFeed({
   }, [scope, maxItems]);
 
   // Listen to real-time events
-  const { addEventListener } = useEventStream();
+  const handlersRef = useRef<Record<string, (data: any) => void>>({});
 
-  useEffect(() => {
-    const unsubPoints = addEventListener("reward:points-earned", (data: any) => {
-      const newItem: ActivityItem = {
-        id: `live-${Date.now()}`,
-        type: "POINTS_EARNED",
-        icon: "Award",
-        title: `+${data.amount} poin`,
-        description: data.description || "",
-        points: data.amount,
-        timestamp: new Date().toISOString(),
-      };
-      setActivities((prev) => [newItem, ...prev].slice(0, maxItems));
-      setNewCount((c) => c + 1);
-    });
-
-    const unsubRedemption = addEventListener(
-      "reward:claim-pending",
-      (data: any) => {
-        const newItem: ActivityItem = {
-          id: `live-${Date.now()}`,
-          type: "REDEMPTION_CLAIMED",
-          icon: "Gift",
-          title: `Klaim ${data.rewardName}`,
-          description: `${data.pointsSpent} poin`,
-          rewardName: data.rewardName,
-          timestamp: new Date().toISOString(),
-        };
-        setActivities((prev) => [newItem, ...prev].slice(0, maxItems));
-        setNewCount((c) => c + 1);
-      }
-    );
-
-    const unsubApproved = addEventListener("reward:claim-approved", (data: any) => {
-      const newItem: ActivityItem = {
-        id: `live-${Date.now()}`,
-        type: "REDEMPTION_APPROVED",
-        icon: "CheckCircle",
-        title: `Klaim disetujui: ${data.rewardName}`,
-        description: `Kode: ${data.pickupCode}`,
-        rewardName: data.rewardName,
-        timestamp: new Date().toISOString(),
-      };
-      setActivities((prev) => [newItem, ...prev].slice(0, maxItems));
-      setNewCount((c) => c + 1);
-    });
-
-    return () => {
-      unsubPoints();
-      unsubRedemption();
-      unsubApproved();
+  handlersRef.current["reward:points-earned"] = (data: any) => {
+    const newItem: ActivityItem = {
+      id: `live-${Date.now()}`,
+      type: "POINTS_EARNED",
+      icon: "Award",
+      title: `+${data.amount} poin`,
+      description: data.description || "",
+      points: data.amount,
+      timestamp: new Date().toISOString(),
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [maxItems]);
+    setActivities((prev) => [newItem, ...prev].slice(0, maxItems));
+    setNewCount((c) => c + 1);
+  };
+
+  handlersRef.current["reward:claim-pending"] = (data: any) => {
+    const newItem: ActivityItem = {
+      id: `live-${Date.now()}`,
+      type: "REDEMPTION_CLAIMED",
+      icon: "Gift",
+      title: `Klaim ${data.rewardName}`,
+      description: `${data.pointsSpent} poin`,
+      rewardName: data.rewardName,
+      timestamp: new Date().toISOString(),
+    };
+    setActivities((prev) => [newItem, ...prev].slice(0, maxItems));
+    setNewCount((c) => c + 1);
+  };
+
+  handlersRef.current["reward:claim-approved"] = (data: any) => {
+    const newItem: ActivityItem = {
+      id: `live-${Date.now()}`,
+      type: "REDEMPTION_APPROVED",
+      icon: "CheckCircle",
+      title: `Klaim disetujui: ${data.rewardName}`,
+      description: `Kode: ${data.pickupCode}`,
+      rewardName: data.rewardName,
+      timestamp: new Date().toISOString(),
+    };
+    setActivities((prev) => [newItem, ...prev].slice(0, maxItems));
+    setNewCount((c) => c + 1);
+  };
+
+  useEventStream({
+    handlers: {
+      "reward:points-earned": (data) => handlersRef.current["reward:points-earned"]?.(data),
+      "reward:claim-pending": (data) => handlersRef.current["reward:claim-pending"]?.(data),
+      "reward:claim-approved": (data) => handlersRef.current["reward:claim-approved"]?.(data),
+    },
+  });
 
   const formatTime = (iso: string) => {
     const date = new Date(iso);

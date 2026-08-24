@@ -56,7 +56,7 @@ const nextConfig: NextConfig = {
 
   // ===== TypeScript =====
   typescript: {
-    ignoreBuildErrors: true, // Sementara skip — mayoritas error di test files & type-only issues
+    ignoreBuildErrors: false,
   },
 
   // ===== React =====

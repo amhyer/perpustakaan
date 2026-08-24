@@ -91,7 +91,7 @@ export function RewardsView() {
       // Refresh data
       await loadRewards();
       // Navigate to my redemptions
-      setView("rewards");
+      setView("my-redemptions");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Klaim gagal");
     } finally {

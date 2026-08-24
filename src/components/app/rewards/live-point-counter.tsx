@@ -49,32 +49,34 @@ export function LivePointCounter({
     fetchBalance(false);
   }, []);
 
-  const { addEventListener } = useEventStream();
+  const handlersRef = useRef<Record<string, (data: any) => void>>({});
 
-  useEffect(() => {
-    const unsub = addEventListener("reward:points-earned", (data: any) => {
-      setPreviousBalance(balance);
-      setBalance(data.newBalance);
-      setDelta(data.amount);
+  handlersRef.current["reward:points-earned"] = (data: any) => {
+    setPreviousBalance(balance);
+    setBalance(data.newBalance);
+    setDelta(data.amount);
 
-      // Show toast
-      if (showToast && data.description) {
-        toast.success(
-          `+${data.amount} poin! ${data.description}`,
-          {
-            description: `Saldo: ${data.newBalance.toLocaleString()} poin`,
-            icon: <Sparkles className="h-4 w-4" />,
-          }
-        );
-      }
+    // Show toast
+    if (showToast && data.description) {
+      toast.success(
+        `+${data.amount} poin! ${data.description}`,
+        {
+          description: `Saldo: ${data.newBalance.toLocaleString()} poin`,
+          icon: <Sparkles className="h-4 w-4" />,
+        }
+      );
+    }
 
-      // Clear delta after animation
-      if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
-      animTimeoutRef.current = setTimeout(() => setDelta(null), 3000);
-    });
+    // Clear delta after animation
+    if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
+    animTimeoutRef.current = setTimeout(() => setDelta(null), 3000);
+  };
 
-    return unsub;
-  }, [showToast, balance]);
+  useEventStream({
+    handlers: {
+      "reward:points-earned": (data) => handlersRef.current["reward:points-earned"]?.(data),
+    },
+  });
 
   if (loading) {
     return (

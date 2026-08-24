@@ -1,0 +1,111 @@
+/**
+ * Chinese locale — 中文支持
+ *
+ * For international schools with Chinese curriculum.
+ *
+ * Enable: NEXT_PUBLIC_LOCALE=zh
+ */
+
+import type { IdLocale } from "./id";
+
+export const zh: IdLocale = {
+  common: {
+    appName: "知识之窗图书馆",
+    tagline: "为每个人打开知识的窗口",
+    save: "保存",
+    cancel: "取消",
+    delete: "删除",
+    edit: "编辑",
+    loading: "加载中...",
+    error: "发生错误",
+    retry: "重试",
+    close: "关闭",
+    confirm: "确认",
+    yes: "是",
+    no: "否",
+    back: "返回",
+    next: "下一步",
+    previous: "上一步",
+    search: "搜索",
+    filter: "筛选",
+    all: "全部",
+    none: "无",
+    total: "总计",
+  },
+  roles: {
+    LIBRARIAN: "图书馆员",
+    PUSTAKAWAN_JUNIOR: "初级图书馆员",
+    TEACHER: "教师",
+    STUDENT: "学生",
+  },
+  dashboard: {
+    welcome: "欢迎，{name}！",
+    typeAccount: "账户类型：{role}",
+    quickActions: "快捷操作",
+    todayActivity: "今日活动",
+    needsAction: "需要操作",
+    noActionNeeded: "一切正常！",
+    popularBooks: "热门图书",
+    topMembers: "最活跃成员",
+    recentLoans: "最近借阅",
+    overdueAlert: "逾期提醒",
+    setAsHome: "设为首页",
+    homeActive: "首页已启用",
+    defaultDashboard: "我的默认仪表板",
+    autoRouteHint: "系统根据角色自动选择仪表板",
+  },
+  books: {
+    totalBooks: "图书总数",
+    available: "可用图书",
+    borrowed: "已借出",
+    overdue: "逾期",
+    noLoans: "暂无借阅记录",
+    bookDetail: "图书详情",
+  },
+  members: {
+    totalMembers: "成员总数",
+    active: "活跃",
+    student: "学生",
+    teacher: "教师",
+    addMember: "添加成员",
+  },
+  loans: {
+    active: "活跃借阅",
+    dueSoon: "本周到期",
+    fine: "罚款",
+    borrow: "借书",
+    return: "还书",
+    renew: "续借",
+    days: "天",
+    bookReturned: "图书归还成功",
+  },
+  errors: {
+    notFound: "未找到",
+    unauthorized: "未授权",
+    networkError: "连接服务器失败",
+    tryAgain: "请重试",
+  },
+  months: {
+    1: "一月",
+    2: "二月",
+    3: "三月",
+    4: "四月",
+    5: "五月",
+    6: "六月",
+    7: "七月",
+    8: "八月",
+    9: "九月",
+    10: "十月",
+    11: "十一月",
+    12: "十二月",
+  },
+  days: {
+    monday: "星期一",
+    tuesday: "星期二",
+    wednesday: "星期三",
+    thursday: "星期四",
+    friday: "星期五",
+    saturday: "星期六",
+    sunday: "星期日",
+  },
+};

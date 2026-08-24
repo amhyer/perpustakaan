@@ -357,7 +357,7 @@ export function CommandPalette() {
 
     // Add recent items to top if no query
     if (!query.trim()) {
-      const recents: CommandItem[] = recentItems
+      const recents = recentItems
         .filter((r) => {
           // Verify item still exists in menu (for deleted views)
           return menuItems.some((m) => m.id === r.key);
@@ -370,7 +370,7 @@ export function CommandPalette() {
           }
           return null;
         })
-        .filter((x): x is CommandItem => x !== null);
+        .filter((x) => x !== null) as CommandItem[];
 
       return {
         recents,
@@ -403,12 +403,11 @@ export function CommandPalette() {
     if (!query.trim() && filtered.recents.length > 0) {
       return [
         ...filtered.recents,
-        // Add "All Menus" section header separator? For now, just show all below recents
         ...filtered.all,
       ];
     }
     return filtered.all;
-  }, [filtered, query]);
+  }, [filtered, query]) as CommandItem[];
 
   // Clamp selectedIdx
   useEffect(() => {

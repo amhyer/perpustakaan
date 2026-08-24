@@ -285,7 +285,6 @@ export async function syncFromDapodik(
   result.durationMs = Date.now() - start;
 
   logger.info("Dapodik sync completed", {
-    mode,
     actor: options.actorId,
     ...result,
   });

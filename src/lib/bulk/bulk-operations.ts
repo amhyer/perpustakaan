@@ -387,12 +387,12 @@ export async function bulkSendNotifications(
 
     result.successful = result_create.count;
     userIds.forEach((uid) => {
-      result.results.push({ id: uid, userId: uid, success: true });
+      result.results.push({ id: uid, success: true });
       result.data!.push({ id: uid, userId: uid });
     });
   } catch (err: any) {
     userIds.forEach((uid) => {
-      result.results.push({ id: uid, userId: uid, success: false, error: err.message });
+      result.results.push({ id: uid, success: false, error: err.message });
       result.failed++;
     });
   }

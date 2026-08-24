@@ -67,7 +67,7 @@ const INTENT_PATTERNS: Array<{
       /^temukan\s+(.+)/i,
     ],
     entityExtractors: [
-      (text) => {
+      (text: string): Record<string, string> => {
         const m = text.match(/(?:cari(?:kan)?\s+(?:buku|novel|komik)\s+)(.+)/i);
         return m ? { topic: m[1].trim() } : {};
       },
@@ -82,7 +82,7 @@ const INTENT_PATTERNS: Array<{
       /^borrow\s+(.+)/i,
     ],
     entityExtractors: [
-      (text) => {
+      (text: string): Record<string, string> => {
         const m = text.match(/(?:pinjam(?:kan)?\s+|borrow\s+)(.+)/i);
         return m ? { bookTitle: m[1].trim() } : {};
       },
@@ -97,7 +97,7 @@ const INTENT_PATTERNS: Array<{
       /^(.+)\s+(?:akan\s+)?dikembalikan/i,
     ],
     entityExtractors: [
-      (text) => {
+      (text: string): Record<string, string> => {
         const m = text.match(/(?:kembalikan|balikin|return\s+)(.+)/i);
         return m ? { bookTitle: m[1].trim() } : {};
       },
@@ -111,7 +111,7 @@ const INTENT_PATTERNS: Array<{
       /^(?:saya\s+)?mau\s+(?:reservasi|pesan)\s+(.+)/i,
     ],
     entityExtractors: [
-      (text) => {
+      (text: string): Record<string, string> => {
         const m = text.match(/(?:reservasi|pesan|booking\s+)(.+)/i);
         return m ? { bookTitle: m[1].trim() } : {};
       },
@@ -150,7 +150,7 @@ const INTENT_PATTERNS: Array<{
       /^(?:buka|tampilkan|pergi\s+ke)\s+(katalog|anggota|peminjaman|profil|pengaturan|dashboard)/i,
     ],
     entityExtractors: [
-      (text) => {
+      (text: string): Record<string, string> => {
         const m = text.match(/(?:buka|tampilkan|pergi\s+ke)\s+(\w+)/i);
         return m ? { menuName: m[1].toLowerCase() } : {};
       },

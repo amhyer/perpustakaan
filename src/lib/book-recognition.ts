@@ -95,7 +95,6 @@ export async function lookupByISBN(isbn: string): Promise<BookMatch | null> {
         { isbn: { contains: cleanISBN } },
       ],
     },
-    include: { authors: { include: { author: true } } },
   });
 
   if (!book) return null;
@@ -103,7 +102,7 @@ export async function lookupByISBN(isbn: string): Promise<BookMatch | null> {
   return {
     bookId: book.id,
     title: book.title,
-    author: book.authors.map((ba) => ba.author.name).join(", ") || "Unknown",
+    author: book.author || "Unknown",
     confidence: 0.95,
     matchType: "ISBN",
   };
@@ -122,7 +121,6 @@ export async function lookupByTitle(
   // Try exact match
   let book = await db.book.findFirst({
     where: { title: { contains: normalized } },
-    include: { authors: { include: { author: true } } },
   });
 
   // Try fuzzy match (first 5 chars)
@@ -130,7 +128,6 @@ export async function lookupByTitle(
     const prefix = normalized.slice(0, 5);
     book = await db.book.findFirst({
       where: { title: { contains: prefix } },
-      include: { authors: { include: { author: true } } },
     });
   }
 
@@ -139,7 +136,7 @@ export async function lookupByTitle(
   return {
     bookId: book.id,
     title: book.title,
-    author: book.authors.map((ba) => ba.author.name).join(", ") || "Unknown",
+    author: book.author || "Unknown",
     confidence: 0.6,
     matchType: "TITLE_OCR",
   };
@@ -158,7 +155,7 @@ export async function lookupByVisualHash(
 
   const allHashes = await db.coverSignature.findMany({
     include: {
-      book: { include: { authors: { include: { author: true } } } },
+      book: true,
     },
   });
 
@@ -180,7 +177,7 @@ export async function lookupByVisualHash(
     bookId: bestMatch.book.id,
     title: bestMatch.book.title,
     author:
-      bestMatch.book.authors.map((ba: any) => ba.author.name).join(", ") ||
+      bestMatch.book.author ||
       "Unknown",
     confidence,
     matchType: "VISUAL_HASH",
@@ -227,7 +224,7 @@ export async function lookupByColors(
 
   const allHashes = await db.coverSignature.findMany({
     include: {
-      book: { include: { authors: { include: { author: true } } } },
+      book: true,
     },
   });
 
@@ -246,7 +243,7 @@ export async function lookupByColors(
     bookId: bestMatch.book.id,
     title: bestMatch.book.title,
     author:
-      bestMatch.book.authors.map((ba: any) => ba.author.name).join(", ") ||
+      bestMatch.book.author ||
       "Unknown",
     confidence: bestMatch.similarity * 0.5, // Colors are weaker signal
     matchType: "COLOR_SIMILARITY",
@@ -384,7 +381,7 @@ export async function markTreasureFound(
     return { success: false, alreadyFound: false, rewardPoints: 0 };
   }
 
-  const found = (hunt.foundBy as string[]) || [];
+  const found: string[] = JSON.parse(hunt.foundBy || "[]");
   if (found.includes(memberId)) {
     return { success: true, alreadyFound: true, rewardPoints: 0 };
   }

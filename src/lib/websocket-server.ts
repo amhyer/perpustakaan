@@ -26,16 +26,16 @@
 import { createServer, IncomingMessage } from "http";
 import { parse as parseUrl } from "url";
 import { logger } from "@/lib/logger";
+import WebSocket from "ws";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const wsModule = require("ws");
 const WebSocketServer = wsModule.WebSocketServer;
-const WebSocket = wsModule.WebSocket;
 type RawData = Buffer | ArrayBuffer | Buffer[];
 
 // ===== Types =====
 
-interface WSClient extends WebSocket {
+interface WSClient {
   id: string;
   userId: string | null;
   memberId: string | null;
@@ -44,6 +44,10 @@ interface WSClient extends WebSocket {
   isAlive: boolean;
   lastPing: number;
   metadata: Map<string, any>;
+  readyState: number;
+  send: (data: string) => void;
+  terminate: () => void;
+  ping: () => void;
 }
 
 interface WSMessage {
@@ -531,7 +535,7 @@ function generateClientId(): string {
   return `c_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-async function handleConnection(ws: WebSocket, req: IncomingMessage) {
+async function handleConnection(ws: any, req: IncomingMessage) {
   const client = ws as WSClient;
   client.id = generateClientId();
   client.userId = null;
@@ -637,7 +641,7 @@ function handleDisconnect(client: WSClient, auth: ChannelAuth | null) {
 
 // ===== Heartbeat =====
 
-function startHeartbeat(wss: WebSocketServer) {
+function startHeartbeat(wss: any) {
   setInterval(() => {
     const now = Date.now();
     for (const client of clients.values()) {

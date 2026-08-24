@@ -11,7 +11,7 @@ interface LazyChartProps {
    * @example
    *   importFn={() => import("./trend-area-chart").then(m => m.TrendAreaChart)}
    */
-  importFn: () => Promise<{ default: React.ComponentType<unknown> }>;
+  importFn: () => Promise<{ default: React.ComponentType<any> }>;
   /**
    * Props untuk di-pass ke chart component
    */
@@ -58,7 +58,7 @@ export function LazyChart({
   className,
 }: LazyChartProps) {
   const [shouldRender, setShouldRender] = useState(false);
-  const [Component, setComponent] = useState<React.ComponentType<unknown> | null>(null);
+  const [Component, setComponent] = useState<React.ComponentType<any> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // IntersectionObserver — hanya load saat visible

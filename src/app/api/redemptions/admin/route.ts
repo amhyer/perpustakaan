@@ -88,7 +88,7 @@ export async function GET(req: Request) {
         insufficientBalance: currentBalance < r.pointsSpent,
         cooldownWarning,
         stockRemaining:
-          rewardFull?.stock === null ? null : (rewardFull.stock ?? 0) - (rewardFull?.stockClaimed ?? 0),
+          rewardFull?.stock === null ? null : (rewardFull?.stock ?? 0) - (rewardFull?.stockClaimed ?? 0),
       };
     })
   );

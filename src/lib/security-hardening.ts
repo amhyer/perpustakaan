@@ -618,8 +618,8 @@ export async function verifyAuditLogIntegrity(
     const log = logs[i];
     const data = {
       action: log.action,
-      resource: log.resource,
-      resourceId: log.resourceId,
+      resource: log.entityType,
+      resourceId: log.entityId,
       userId: log.userId,
       createdAt: log.createdAt.toISOString(),
     };

@@ -171,7 +171,7 @@ export function promise<T>(
     loading: messages.loading,
     success: messages.success as any,
     error: messages.error as any,
-  }) as Promise<T>;
+  }).unwrap() as Promise<T>;
 }
 
 /**

@@ -120,7 +120,7 @@ async function computeLeaderboard(): Promise<LeaderboardSnapshot> {
     booksRead: booksMap.get(b.memberId) || 0,
   }));
 
-  const totalPoints = sorted.reduce((sum, e) => sum + e.balance, 0);
+  const totalPoints = entries.reduce((sum, e) => sum + e.balance, 0);
 
   const snapshot: LeaderboardSnapshot = {
     entries,
@@ -144,7 +144,7 @@ async function computeLeaderboard(): Promise<LeaderboardSnapshot> {
  * Force invalidate cache (misal setelah major operation).
  */
 export function invalidateLeaderboardCache(): void {
-  cache.delete(CACHE_KEY);
+  cache.invalidate(CACHE_KEY);
   pendingDelta = 0;
   logger.info("Leaderboard cache invalidated");
 }

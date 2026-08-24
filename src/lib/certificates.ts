@@ -45,6 +45,8 @@ export interface Certificate {
   recipientMemberNumber: string;
   title: string;
   description: string;
+  emoji: string;
+  color: string;
   achievementDate: Date;
   issuedAt: Date;
   /** SHA-256 hash of certificate content (for verification) */
@@ -294,6 +296,8 @@ export async function issueCertificate(
     recipientMemberNumber: member.memberNumber,
     title: cert.title,
     description: cert.description,
+    emoji: cert.emoji,
+    color: cert.color,
     achievementDate: cert.achievementDate,
     issuedAt: cert.issuedAt,
     verificationHash: cert.verificationHash,
@@ -341,6 +345,8 @@ export async function verifyCertificate(slug: string): Promise<CertificateVerifi
       recipientMemberNumber: cert.member.memberNumber,
       title: cert.title,
       description: cert.description,
+      emoji: cert.emoji,
+      color: cert.color,
       achievementDate: cert.achievementDate,
       issuedAt: cert.issuedAt,
       verificationHash: cert.verificationHash,
@@ -368,6 +374,8 @@ export async function getMemberCertificates(memberId: string): Promise<Certifica
     recipientMemberNumber: cert.member.memberNumber,
     title: cert.title,
     description: cert.description,
+    emoji: cert.emoji,
+    color: cert.color,
     achievementDate: cert.achievementDate,
     issuedAt: cert.issuedAt,
     verificationHash: cert.verificationHash,

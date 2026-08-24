@@ -93,11 +93,11 @@ export async function POST(req: Request) {
       (Date.now() - new Date(loan.dueDate).getTime()) / (1000 * 60 * 60 * 24)
     );
 
-    const message = whatsappTemplates.overdueReminder({
-      memberName: loan.member.fullName,
+    const message = whatsappTemplates.overdueNotice({
+      name: loan.member.fullName,
       bookTitle: loan.bookItem.book.title,
-      dueDate: loan.dueDate.toISOString(),
       daysOverdue,
+      fineAmount: daysOverdue * 500,
     });
 
     const phone = normalizePhone(loan.member.phone);

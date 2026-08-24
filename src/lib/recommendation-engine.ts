@@ -163,6 +163,7 @@ async function computeRecommendations(
       title: true,
       author: true,
       coverImage: true,
+      categoryId: true,
       category: { select: { name: true } },
     },
   });
