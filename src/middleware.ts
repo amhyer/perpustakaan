@@ -18,6 +18,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import { createHmac, timingSafeEqual } from "crypto";
 
 // ===== Config =====
 
@@ -44,8 +45,9 @@ const SECURITY_HEADERS: Record<string, string> = {
 // Content Security Policy
 const CSP_HEADER = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next.js requires unsafe-eval in dev
+  "script-src 'self'",
   "style-src 'self' 'unsafe-inline'", // Tailwind requires unsafe-inline
+  "worker-src 'self' blob: https://cdnjs.cloudflare.com", // pdf.js web worker
   "img-src 'self' data: blob: https:", // Allow cover images
   "font-src 'self' data:",
   "connect-src 'self' https: wss:", // API + WebSocket
@@ -141,11 +143,71 @@ const BOT_PATTERNS = [
   /go-http-client/i,
 ];
 
+// CSRF config
+const CSRF_COOKIE_NAME = "ji_csrf";
+const CSRF_HEADER_NAME = "x-csrf-token";
+const CSRF_EXEMPT_PATHS = [
+  /^\/api\/auth\/login/,
+  /^\/api\/auth\/register/,
+  /^\/api\/events\/stream/,
+  /^\/api\/voice\//,
+  /^\/api\/csrf-token/,
+  /^\/api\/health/,
+];
+
 // Request size limits
 const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_URL_LENGTH = 2048;
 
 // ===== Helpers =====
+
+function getCsrfSecret(): string {
+  return process.env.CSRF_SECRET || process.env.JWT_SECRET || "fallback-secret-change-me";
+}
+
+function verifyCsrfSignature(cookieValue: string): string | null {
+  const dotIndex = cookieValue.lastIndexOf(".");
+  if (dotIndex === -1) return null;
+  const token = cookieValue.substring(0, dotIndex);
+  const signature = cookieValue.substring(dotIndex + 1);
+  const secret = getCsrfSecret();
+  const expected = createHmac("sha256", secret).update(token).digest("hex");
+  if (expected.length !== signature.length) return null;
+  try {
+    if (!timingSafeEqual(Buffer.from(expected), Buffer.from(signature))) return null;
+  } catch {
+    return null;
+  }
+  return token;
+}
+
+/**
+ * Validate CSRF token for mutating API requests.
+ * Double-submit cookie pattern: compare cookie value with header.
+ */
+function validateCsrf(req: NextRequest): boolean {
+  const method = req.method.toUpperCase();
+  if (method === "GET" || method === "HEAD" || method === "OPTIONS") return true;
+
+  const { pathname } = req.nextUrl;
+  if (!pathname.startsWith("/api/")) return true;
+  if (CSRF_EXEMPT_PATHS.some((p) => p.test(pathname))) return true;
+
+  const cookieVal = req.cookies.get(CSRF_COOKIE_NAME)?.value;
+  const headerToken = req.headers.get(CSRF_HEADER_NAME);
+
+  if (!cookieVal || !headerToken) return false;
+
+  const cookieToken = verifyCsrfSignature(cookieVal);
+  if (!cookieToken) return false;
+
+  try {
+    if (cookieToken.length !== headerToken.length) return false;
+    return timingSafeEqual(Buffer.from(cookieToken), Buffer.from(headerToken));
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Get client IP from NextRequest (Edge-compatible).
@@ -172,6 +234,19 @@ export async function middleware(req: NextRequest) {
   // Skip public paths
   if (PUBLIC_PATHS.some((p) => p.test(pathname))) {
     return NextResponse.next();
+  }
+
+  // CSRF validation for mutating API requests
+  if (!validateCsrf(req)) {
+    logger.warn("CSRF validation failed", {
+      pathname,
+      method: req.method,
+      ip: getClientIp(req),
+    });
+    return new NextResponse(
+      JSON.stringify({ error: "CSRF token tidak valid", code: "CSRF_INVALID" }),
+      { status: 403, headers: { "Content-Type": "application/json" } }
+    );
   }
 
   // URL length check (prevent overflow attacks)

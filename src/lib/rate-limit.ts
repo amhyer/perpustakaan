@@ -32,6 +32,7 @@ interface RateLimitResult {
   remaining: number;
   reset: number; // timestamp ms kapan reset
   retryAfter: number; // detik sampai reset
+  limit: number; // batas maksimal dalam window
 }
 
 // In-memory store. Auto-cleanup setiap 5 menit untuk hindari memory leak.
@@ -63,6 +64,7 @@ export function rateLimit({ key, limit, windowMs }: RateLimitOptions): RateLimit
       remaining: limit - 1,
       reset: now + windowMs,
       retryAfter: 0,
+      limit,
     };
   }
 
@@ -76,21 +78,35 @@ export function rateLimit({ key, limit, windowMs }: RateLimitOptions): RateLimit
     remaining: Math.max(0, limit - entry.count),
     reset: entry.resetAt,
     retryAfter: Math.ceil((entry.resetAt - now) / 1000),
+    limit,
   };
 }
 
 /**
  * Helper: ambil identifier dari request (IP address).
- * Mengakomodasi reverse proxy (Caddy) — cek X-Forwarded-For dulu.
+ *
+ * SECURITY: X-Forwarded-For hanya dipercaya jika TRUST_PROXY=true.
+ * Tanpa env ini, header bisa di-spoof oleh client untuk bypass rate limit
+ * (mis. brute-force login dari IP berbeda-beda). X-Real-IP juga tidak
+ * dipercaya kecuali Anda yakin reverse proxy selalu menimpa header ini.
+ * Set TRUST_PROXY=true hanya jika reverse proxy (Caddy/Nginx) yang Anda
+ * kendalikan selalu menimpa header ini dan client tidak bisa mengirimnya langsung.
  */
 export function getClientIdentifier(req: Request): string {
-  const forwarded = req.headers.get("x-forwarded-for");
-  if (forwarded) {
-    // Ambil IP pertama (client asli)
-    return forwarded.split(",")[0].trim();
+  if (process.env.TRUST_PROXY === "true") {
+    // Trusted: proxy menjamin X-Forwarded-For akurat
+    const forwarded = req.headers.get("x-forwarded-for");
+    if (forwarded) {
+      return forwarded.split(",")[0].trim();
+    }
   }
-  const real = req.headers.get("x-real-ip");
-  if (real) return real;
+  // Tidak trust header proxy — gunakan identitas lokal atau fallback.
+  // X-Real-Ip juga bisa di-spoof, hanya gunakan jika proxy yang Anda kendalikan
+  // secara eksplisit menimpa header ini. Secara default, abaikan.
+  if (process.env.TRUST_PROXY === "true") {
+    const real = req.headers.get("x-real-ip");
+    if (real) return real;
+  }
   return "unknown";
 }
 
@@ -107,13 +123,30 @@ export function rateLimitResponse(result: RateLimitResult, message?: string) {
       status: 429,
       headers: {
         "Content-Type": "application/json",
-        "Retry-After": String(result.retryAfter),
-        "X-RateLimit-Limit": String(result.retryAfter), // opsional, client-side
-        "X-RateLimit-Remaining": "0",
-        "X-RateLimit-Reset": String(Math.floor(result.reset / 1000)),
+        ...rateLimitHeaders(result, { "Retry-After": String(result.retryAfter) }),
       },
     }
   );
+}
+
+/**
+ * Rate limit headers untuk disuntikkan ke response (baik 200 maupun 429).
+ * Berguna untuk endpoint sensitif agar client tahu sisa kuota.
+ *
+ * Usage:
+ *   const headers = rateLimitHeaders(result);
+ *   return NextResponse.json(data, { headers });
+ */
+export function rateLimitHeaders(
+  result: RateLimitResult,
+  extra?: Record<string, string>
+): Record<string, string> {
+  return {
+    "X-RateLimit-Limit": String(result.limit),
+    "X-RateLimit-Remaining": String(result.remaining),
+    "X-RateLimit-Reset": String(Math.floor(result.reset / 1000)),
+    ...extra,
+  };
 }
 
 // Preset configurations untuk endpoint sensitif

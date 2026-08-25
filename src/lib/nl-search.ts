@@ -396,11 +396,22 @@ export function scoreBook(
 /**
  * Highlight matched text with mark tag.
  */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function highlightText(text: string, query: string): string {
-  if (!query) return text;
+  if (!query) return escapeHtml(text);
   const idx = text.toLowerCase().indexOf(query.toLowerCase());
-  if (idx === -1) return text;
-  return text.slice(0, idx) + "»" + text.slice(idx, idx + query.length) + "«" + text.slice(idx + query.length);
+  if (idx === -1) return escapeHtml(text);
+  const before = text.slice(0, idx);
+  const match = text.slice(idx, idx + query.length);
+  const after = text.slice(idx + query.length);
+  return escapeHtml(before) + "»" + escapeHtml(match) + "«" + escapeHtml(after);
 }
 
 // ===== Database Search =====

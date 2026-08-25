@@ -8,6 +8,7 @@ import {
   rateLimit,
   getClientIdentifier,
   rateLimitResponse,
+  rateLimitHeaders,
   RATE_LIMITS,
 } from "../rate-limit";
 
@@ -70,18 +71,45 @@ describe("rateLimit", () => {
 });
 
 describe("getClientIdentifier", () => {
-  it("mengambil IP dari X-Forwarded-For", () => {
+  const origEnv = process.env;
+
+  beforeEach(() => {
+    process.env = { ...origEnv };
+    delete process.env.TRUST_PROXY;
+  });
+
+  afterEach(() => {
+    process.env = origEnv;
+  });
+
+  it("mengambil IP dari X-Forwarded-For jika TRUST_PROXY=true", () => {
+    process.env.TRUST_PROXY = "true";
     const req = new Request("http://localhost", {
       headers: { "x-forwarded-for": "192.168.1.1, 10.0.0.1" },
     });
     expect(getClientIdentifier(req)).toBe("192.168.1.1");
   });
 
-  it("fallback ke X-Real-IP jika tidak ada forwarded", () => {
+  it("mengabaikan X-Forwarded-For jika TRUST_PROXY tidak di-set", () => {
+    const req = new Request("http://localhost", {
+      headers: { "x-forwarded-for": "192.168.1.1, 10.0.0.1" },
+    });
+    expect(getClientIdentifier(req)).toBe("unknown");
+  });
+
+  it("fallback ke X-Real-IP jika TRUST_PROXY=true dan tidak ada forwarded", () => {
+    process.env.TRUST_PROXY = "true";
     const req = new Request("http://localhost", {
       headers: { "x-real-ip": "10.0.0.5" },
     });
     expect(getClientIdentifier(req)).toBe("10.0.0.5");
+  });
+
+  it("mengabaikan X-Real-IP jika TRUST_PROXY tidak di-set", () => {
+    const req = new Request("http://localhost", {
+      headers: { "x-real-ip": "10.0.0.5" },
+    });
+    expect(getClientIdentifier(req)).toBe("unknown");
   });
 
   it("return 'unknown' jika tidak ada IP header", () => {
@@ -90,6 +118,7 @@ describe("getClientIdentifier", () => {
   });
 
   it("trim whitespace dari IP", () => {
+    process.env.TRUST_PROXY = "true";
     const req = new Request("http://localhost", {
       headers: { "x-forwarded-for": "  192.168.1.1  , 10.0.0.1" },
     });
@@ -99,20 +128,38 @@ describe("getClientIdentifier", () => {
 
 describe("rateLimitResponse", () => {
   it("return response 429 dengan header yang benar", () => {
-    const res = rateLimitResponse({ success: false, remaining: 0, reset: Date.now() + 5000, retryAfter: 5 });
+    const res = rateLimitResponse({ success: false, remaining: 0, reset: Date.now() + 5000, retryAfter: 5, limit: 10 });
     expect(res.status).toBe(429);
     expect(res.headers.get("Retry-After")).toBe("5");
     expect(res.headers.get("X-RateLimit-Remaining")).toBe("0");
+    expect(res.headers.get("X-RateLimit-Limit")).toBe("10");
   });
 
   it("body berisi error message", async () => {
     const res = rateLimitResponse(
-      { success: false, remaining: 0, reset: Date.now() + 5000, retryAfter: 5 },
+      { success: false, remaining: 0, reset: Date.now() + 5000, retryAfter: 5, limit: 10 },
       "Custom error"
     );
     const body = await res.json();
     expect(body.error).toBe("Custom error");
     expect(body.retryAfter).toBe(5);
+  });
+});
+
+describe("rateLimitHeaders", () => {
+  it("return header object dengan field yang benar", () => {
+    const result = rateLimit({ key: "headers-test", limit: 10, windowMs: 60_000 });
+    const headers = rateLimitHeaders(result);
+    expect(headers["X-RateLimit-Limit"]).toBe("10");
+    expect(headers["X-RateLimit-Remaining"]).toBe("9");
+    expect(headers["X-RateLimit-Reset"]).toBeDefined();
+  });
+
+  it("merge extra headers", () => {
+    const result = rateLimit({ key: "headers-extra", limit: 5, windowMs: 60_000 });
+    const headers = rateLimitHeaders(result, { "Retry-After": "30" });
+    expect(headers["Retry-After"]).toBe("30");
+    expect(headers["X-RateLimit-Limit"]).toBe("5");
   });
 });
 

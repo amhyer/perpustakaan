@@ -3,7 +3,11 @@ import { db } from "@/lib/db";
 import { createSessionToken, setSessionCookie, verifyPassword, getOrCreateUserPreference } from "@/lib/auth";
 import { rateLimit, getClientIdentifier, rateLimitResponse, RATE_LIMITS } from "@/lib/rate-limit";
 import { createTempToken } from "@/lib/temp-token";
+import { generateCsrfToken, signCsrfToken } from "@/lib/csrf";
 import crypto from "crypto";
+
+const CSRF_COOKIE_NAME = "ji_csrf";
+const CSRF_SECRET = process.env.CSRF_SECRET || process.env.JWT_SECRET || "fallback-secret-change-me";
 
 export async function POST(req: Request) {
   // Rate limit by IP: max 5 attempt / menit (anti brute-force)
@@ -90,7 +94,7 @@ export async function POST(req: Request) {
     // Ambil default dashboard preference (Sprint 4 — Fix #9)
     const pref = await getOrCreateUserPreference(user.id);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       id: user.id,
       email: user.email,
       name: user.name,
@@ -107,6 +111,19 @@ export async function POST(req: Request) {
         : null,
       defaultDashboard: pref.defaultDashboard,
     });
+
+    // Set CSRF cookie for double-submit pattern
+    const csrfToken = generateCsrfToken();
+    const csrfSignature = signCsrfToken(csrfToken, CSRF_SECRET);
+    response.cookies.set(CSRF_COOKIE_NAME, `${csrfToken}.${csrfSignature}`, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: 60 * 60 * 24,
+    });
+
+    return response;
   } catch {
     return NextResponse.json({ error: "Terjadi kesalahan server" }, { status: 500 });
   }
