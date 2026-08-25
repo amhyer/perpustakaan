@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { eventBus, EVENTS } from "../event-bus";
+import { eventBus, EVENTS } from "@/lib/event-bus";
 
 describe("EventBus", () => {
   beforeEach(() => {

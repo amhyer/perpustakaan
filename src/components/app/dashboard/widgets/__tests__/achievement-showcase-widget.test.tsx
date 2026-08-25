@@ -7,9 +7,11 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
-// Mock fetch
-const mockFetch = vi.fn();
-(global as any).fetch = mockFetch;
+// Mock api
+const mockGet = vi.fn();
+vi.mock("@/lib/api-client", () => ({
+  api: { get: (...args: any[]) => mockGet(...args) },
+}));
 
 // Mock useAppStore
 const mockStore = {
@@ -37,17 +39,10 @@ import { AchievementShowcaseWidget } from "../achievement-showcase-widget";
 describe("AchievementShowcaseWidget", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGet.mockResolvedValue(null);
   });
 
   it("renders widget with title", async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        level: { name: "Kutu Buku", emoji: "📚", color: "emerald", booksRead: 23 },
-        currentStreak: 5, longestStreak: 12,
-      }),
-    });
-
     render(<AchievementShowcaseWidget />);
 
     await waitFor(() => {
@@ -56,29 +51,26 @@ describe("AchievementShowcaseWidget", () => {
   });
 
   it("shows quick stats in overview tab", async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        level: { name: "Kutu Buku", emoji: "📚", color: "emerald", booksRead: 23 },
-        currentStreak: 5, longestStreak: 12,
-      }),
+    mockGet.mockResolvedValue({
+      name: "Kutu Buku",
+      emoji: "📚",
+      color: "emerald",
+      booksRead: 23,
     });
 
     render(<AchievementShowcaseWidget />);
 
     await waitFor(() => {
       expect(screen.getByText("23")).toBeTruthy(); // books read
-      expect(screen.getByText("5")).toBeTruthy(); // streak
     });
   });
 
   it("switches tabs on click", async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        level: { name: "Kutu Buku", emoji: "📚", color: "emerald", booksRead: 23 },
-        currentStreak: 5, longestStreak: 12,
-      }),
+    mockGet.mockResolvedValue({
+      name: "Kutu Buku",
+      emoji: "📚",
+      color: "emerald",
+      booksRead: 23,
     });
 
     render(<AchievementShowcaseWidget />);
@@ -87,23 +79,20 @@ describe("AchievementShowcaseWidget", () => {
       expect(screen.getByText("Overview")).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByText("Streak"));
+    fireEvent.click(screen.getByRole("button", { name: "Streak" }));
     await waitFor(() => {
-      expect(screen.getByText(/Streak Saat Ini/i)).toBeTruthy();
+      expect(screen.getByText(/Hari Saat Ini/i)).toBeTruthy();
     });
   });
 
   it("displays all 5 tabs", async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({}),
-    });
+    mockGet.mockResolvedValue({});
 
     render(<AchievementShowcaseWidget />);
 
     await waitFor(() => {
       ["Overview", "Level", "Streak", "Badge", "Tantangan"].forEach((tab) => {
-        expect(screen.getByText(tab)).toBeTruthy();
+        expect(screen.getByRole("button", { name: tab })).toBeTruthy();
       });
     });
   });

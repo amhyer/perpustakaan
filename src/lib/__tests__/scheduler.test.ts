@@ -14,6 +14,13 @@ vi.mock("../db", () => ({
     setting: {
       findUnique: vi.fn(),
     },
+    loan: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
+    notification: {
+      findFirst: vi.fn().mockResolvedValue(null),
+      findMany: vi.fn().mockResolvedValue([]),
+    },
   },
 }));
 

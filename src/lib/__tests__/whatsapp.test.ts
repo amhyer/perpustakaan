@@ -29,9 +29,8 @@ describe("normalizePhone", () => {
   });
 
   it("handle format dengan country code lain (bukan ID)", () => {
-    // 1 (US) tidak dimulai dengan 0/+/6/8, jadi ditambah 62 → ini bug potensial
-    // Tapi untuk test, asumsi semua user Indonesia
-    expect(normalizePhone("+1234567890")).toBe("621234567890"); // fallback prepend 62
+    // Non-Indonesian numbers (starting with 1) are returned as-is (digits only)
+    expect(normalizePhone("+1234567890")).toBe("1234567890");
   });
 });
 
@@ -72,7 +71,8 @@ describe("whatsappTemplates", () => {
       });
       expect(msg).toContain("Andini");
       expect(msg).toContain("5 hari");
-      expect(msg).toContain("Rp 5.000");
+      // Intl.NumberFormat id-ID uses non-breaking space (U+00A0) between Rp and digits
+      expect(msg).toMatch(/Rp[\s\u00a0]5\.000/);
     });
 
     it("format Rupiah tanpa desimal", () => {

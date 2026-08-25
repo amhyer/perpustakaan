@@ -38,13 +38,11 @@ const FONNTE_API_URL = "https://api.fonnte.com/send";
  * - 62 812... → 62812...
  */
 export function normalizePhone(phone: string): string {
-  // Hapus semua karakter non-digit kecuali +
-  let cleaned = phone.replace(/[^\d+]/g, "");
+  // Hapus semua karakter non-digit
+  let cleaned = phone.replace(/\D/g, "");
 
-  // Ganti +62 atau 62 di awal
-  if (cleaned.startsWith("+62")) {
-    cleaned = "62" + cleaned.slice(3);
-  } else if (cleaned.startsWith("62")) {
+  // Ganti 62 di awal
+  if (cleaned.startsWith("62")) {
     // sudah benar
   } else if (cleaned.startsWith("0")) {
     cleaned = "62" + cleaned.slice(1);

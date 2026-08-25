@@ -124,10 +124,11 @@ describe("POST /api/bulk/loans/return", () => {
     expect(body.successful).toBe(3);
     expect(body.failed).toBe(0);
     expect(mockLogAudit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: "BULK_RETURN_LOANS",
-        userId: "u1",
-      })
+      "u1",
+      "BULK_RETURN_LOANS",
+      "Loan",
+      "bulk",
+      expect.any(String)
     );
   });
 
@@ -212,6 +213,7 @@ describe("POST /api/bulk/reservations/approve", () => {
     expect(body.success).toBe(true);
     expect(mockBulkApproveReservations).toHaveBeenCalledWith(
       ["r1", "r2"],
+      true,
       expect.objectContaining({ userId: "u1" })
     );
     expect(mockLogAudit).toHaveBeenCalled();
@@ -296,7 +298,11 @@ describe("POST /api/bulk/notifications/send", () => {
     const body = await res.json();
     expect(body.successful).toBe(3);
     expect(mockLogAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "BULK_SEND_NOTIFICATIONS" })
+      "u1",
+      "BULK_SEND_NOTIFICATIONS",
+      "Notification",
+      "bulk",
+      expect.any(String)
     );
   });
 
@@ -455,11 +461,11 @@ describe("GET /api/export", () => {
 
     await exportRoute(makeGet("http://localhost/api/export?type=books"));
     expect(mockLogAudit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: "EXPORT_DATA",
-        resource: "books",
-        changes: expect.objectContaining({ rowCount: 5 }),
-      })
+      "u1",
+      "EXPORT_DATA",
+      "books",
+      "export",
+      expect.any(String)
     );
   });
 

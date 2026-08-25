@@ -26,9 +26,11 @@ describe("LazyChart", () => {
       unobserve: vi.fn(),
     };
 
-    (globalThis as unknown as { IntersectionObserver: unknown }).IntersectionObserver = vi
+    (globalThis as any).IntersectionObserver = vi
       .fn()
-      .mockImplementation((_cb: IntersectionObserverCallback) => mockObserver);
+      .mockImplementation(function () {
+        return mockObserver;
+      });
   });
 
   afterEach(() => {

@@ -10,8 +10,8 @@ vi.mock("../db", () => ({
   db: {
     loginAttempt: { count: vi.fn(), findFirst: vi.fn(), findMany: vi.fn() },
     auditLog: { count: vi.fn(), create: vi.fn() },
-    twoFactorAuth: { findUnique: vi.fn() },
-    session: { count: vi.fn() },
+    twoFactorSecret: { findUnique: vi.fn() },
+    activeSession: { count: vi.fn() },
   },
 }));
 
@@ -231,14 +231,14 @@ describe("anomaly-detection: data exfiltration", () => {
 describe("anomaly-detection: security score", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(db.twoFactorAuth.findUnique).mockResolvedValue(null);
+    vi.mocked(db.twoFactorSecret.findUnique).mockResolvedValue(null);
     vi.mocked(db.loginAttempt.count).mockResolvedValue(0);
-    vi.mocked(db.session.count).mockResolvedValue(1);
+    vi.mocked(db.activeSession.count).mockResolvedValue(1);
     vi.mocked(db.loginAttempt.findFirst).mockResolvedValue(null);
   });
 
   it("returns high score with 2FA enabled", async () => {
-    vi.mocked(db.twoFactorAuth.findUnique).mockResolvedValue({
+    vi.mocked(db.twoFactorSecret.findUnique).mockResolvedValue({
       enabled: true,
     } as any);
     const result = await calculateSecurityScore("u1");
@@ -260,7 +260,7 @@ describe("anomaly-detection: security score", () => {
   });
 
   it("deducts for too many sessions", async () => {
-    vi.mocked(db.session.count).mockResolvedValue(5);
+    vi.mocked(db.activeSession.count).mockResolvedValue(5);
     const result = await calculateSecurityScore("u1");
     expect(result.factors.some((f) => f.label.includes("sesi aktif"))).toBe(true);
   });
@@ -270,7 +270,7 @@ describe("anomaly-detection: security score", () => {
     vi.mocked(db.loginAttempt.count)
       .mockResolvedValueOnce(0)   // 2FA query
       .mockResolvedValueOnce(10); // failed logins
-    vi.mocked(db.session.count).mockResolvedValue(5);
+    vi.mocked(db.activeSession.count).mockResolvedValue(5);
     const result = await calculateSecurityScore("u1");
     expect(["medium", "high", "critical"]).toContain(result.riskLevel);
   });
@@ -282,9 +282,7 @@ describe("anomaly-detection: combined checks", () => {
   });
 
   it("runs all checks and returns anomalies", async () => {
-    vi.mocked(db.loginAttempt.count)
-      .mockResolvedValueOnce(8)  // failed login burst
-      .mockResolvedValueOnce(50); // login history count
+    vi.mocked(db.loginAttempt.count).mockResolvedValue(8);
     vi.mocked(db.loginAttempt.findFirst).mockResolvedValue(null);
     vi.mocked(db.loginAttempt.findMany).mockResolvedValue(
       Array.from({ length: 50 }, () => ({ createdAt: new Date() })) as any
@@ -338,7 +336,8 @@ describe("anomaly-detection: logAnomaly", () => {
       expect.objectContaining({
         data: expect.objectContaining({
           action: "ANOMALY_DETECTED",
-          resource: "FAILED_LOGIN_BURST",
+          entityType: "FAILED_LOGIN_BURST",
+          userId: "u1",
         }),
       })
     );

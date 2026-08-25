@@ -198,9 +198,9 @@ describe("smart-notifications: pure functions", () => {
     });
 
     it("respects quiet hours when enabled", async () => {
-      // Mock Date to 23:00
+      // Mock Date to 22:00 UTC = 06:00 UTC+8 (within quiet hours 22-07)
       vi.useFakeTimers();
-      vi.setSystemTime(new Date("2024-06-15T23:00:00Z"));
+      vi.setSystemTime(new Date("2024-06-15T22:00:00Z"));
 
       const prefs: SmartNotificationPreferences = {
         ...DEFAULT_PREFERENCES,

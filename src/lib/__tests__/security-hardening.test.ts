@@ -8,8 +8,8 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 
 vi.mock("../db", () => ({
   db: {
-    session: { findUnique: vi.fn(), count: vi.fn() },
-    twoFactorAuth: { findUnique: vi.fn() },
+    activeSession: { findUnique: vi.fn(), count: vi.fn() },
+    twoFactorSecret: { findUnique: vi.fn() },
     loginAttempt: { count: vi.fn(), create: vi.fn() },
     bruteForceState: { findUnique: vi.fn(), upsert: vi.fn(), update: vi.fn(), deleteMany: vi.fn() },
     deviceFingerprint: { findMany: vi.fn(), create: vi.fn() },
@@ -92,60 +92,60 @@ describe("security-hardening: session security", () => {
   });
 
   it("returns 0 for missing session", async () => {
-    vi.mocked(db.session.findUnique).mockResolvedValue(null);
+    vi.mocked(db.activeSession.findUnique).mockResolvedValue(null);
     const result = await scoreSessionSecurity("s1", "u1");
     expect(result.securityScore).toBe(0);
   });
 
   it("deducts for old session (>1 week)", async () => {
-    vi.mocked(db.session.findUnique).mockResolvedValue({
+    vi.mocked(db.activeSession.findUnique).mockResolvedValue({
       id: "s1",
       userId: "u1",
       createdAt: new Date(Date.now() - 200 * 60 * 60 * 1000), // 200h ago
       expiresAt: new Date(Date.now() + 1000),
     } as any);
-    vi.mocked(db.twoFactorAuth.findUnique).mockResolvedValue({ enabled: true } as any);
+    vi.mocked(db.twoFactorSecret.findUnique).mockResolvedValue({ enabled: true } as any);
     vi.mocked(db.loginAttempt.count).mockResolvedValue(0);
-    vi.mocked(db.session.count).mockResolvedValue(1);
+    vi.mocked(db.activeSession.count).mockResolvedValue(1);
 
     const result = await scoreSessionSecurity("s1", "u1");
     expect(result.riskFactors.some((f) => f.factor === "OLD_SESSION")).toBe(true);
   });
 
   it("deducts for missing 2FA", async () => {
-    vi.mocked(db.session.findUnique).mockResolvedValue({
+    vi.mocked(db.activeSession.findUnique).mockResolvedValue({
       id: "s1",
       userId: "u1",
       createdAt: new Date(),
       expiresAt: new Date(),
     } as any);
-    vi.mocked(db.twoFactorAuth.findUnique).mockResolvedValue(null);
+    vi.mocked(db.twoFactorSecret.findUnique).mockResolvedValue(null);
     vi.mocked(db.loginAttempt.count).mockResolvedValue(0);
-    vi.mocked(db.session.count).mockResolvedValue(1);
+    vi.mocked(db.activeSession.count).mockResolvedValue(1);
 
     const result = await scoreSessionSecurity("s1", "u1");
     expect(result.riskFactors.some((f) => f.factor === "NO_2FA")).toBe(true);
   });
 
   it("deducts for multiple active sessions", async () => {
-    vi.mocked(db.session.findUnique).mockResolvedValue({
+    vi.mocked(db.activeSession.findUnique).mockResolvedValue({
       id: "s1", userId: "u1", createdAt: new Date(), expiresAt: new Date(),
     } as any);
-    vi.mocked(db.twoFactorAuth.findUnique).mockResolvedValue({ enabled: true } as any);
+    vi.mocked(db.twoFactorSecret.findUnique).mockResolvedValue({ enabled: true } as any);
     vi.mocked(db.loginAttempt.count).mockResolvedValue(0);
-    vi.mocked(db.session.count).mockResolvedValue(5);
+    vi.mocked(db.activeSession.count).mockResolvedValue(5);
 
     const result = await scoreSessionSecurity("s1", "u1");
     expect(result.riskFactors.some((f) => f.factor === "MULTIPLE_SESSIONS")).toBe(true);
   });
 
   it("returns recommendations", async () => {
-    vi.mocked(db.session.findUnique).mockResolvedValue({
+    vi.mocked(db.activeSession.findUnique).mockResolvedValue({
       id: "s1", userId: "u1", createdAt: new Date(), expiresAt: new Date(),
     } as any);
-    vi.mocked(db.twoFactorAuth.findUnique).mockResolvedValue(null);
+    vi.mocked(db.twoFactorSecret.findUnique).mockResolvedValue(null);
     vi.mocked(db.loginAttempt.count).mockResolvedValue(0);
-    vi.mocked(db.session.count).mockResolvedValue(1);
+    vi.mocked(db.activeSession.count).mockResolvedValue(1);
 
     const result = await scoreSessionSecurity("s1", "u1");
     expect(result.recommendations.length).toBeGreaterThan(0);

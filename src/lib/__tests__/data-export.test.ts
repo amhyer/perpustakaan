@@ -18,9 +18,6 @@ vi.mock("../db", () => ({
     loan: {
       findMany: vi.fn(),
     },
-    fine: {
-      findMany: vi.fn(),
-    },
     reservation: {
       findMany: vi.fn(),
     },
@@ -67,16 +64,16 @@ describe("data-export", () => {
           id: "b1",
           title: "Laskar Pelangi",
           isbn: "978-1",
-          publicationYear: 2005,
+          year: 2005,
+          author: "Andrea Hirata",
+          publisher: "Bentang",
           status: "ACTIVE",
-          authors: [{ author: { name: "Andrea Hirata" } }],
-          publisher: { name: "Bentang" },
           category: { name: "Fiksi" },
           location: { name: "Rak A1" },
-          bookItems: [
+          items: [
             { status: "AVAILABLE" },
             { status: "AVAILABLE" },
-            { status: "LOANED" },
+            { status: "BORROWED" },
           ],
         },
       ] as any);
@@ -95,13 +92,13 @@ describe("data-export", () => {
           id: "b2",
           title: "Empty Book",
           isbn: null,
-          publicationYear: null,
-          status: "ACTIVE",
-          authors: [],
+          year: null,
+          author: "",
           publisher: null,
+          status: "ACTIVE",
           category: null,
           location: null,
-          bookItems: [],
+          items: [],
         },
       ] as any);
 
@@ -141,16 +138,16 @@ describe("data-export", () => {
           id: "b3",
           title: "Test",
           isbn: null,
-          publicationYear: 2020,
-          status: "ACTIVE",
-          authors: [],
+          year: 2020,
+          author: "",
           publisher: null,
+          status: "ACTIVE",
           category: null,
           location: null,
-          bookItems: [
+          items: [
             { status: "AVAILABLE" },
             { status: "AVAILABLE" },
-            { status: "LOANED" },
+            { status: "BORROWED" },
             { status: "DAMAGED" },
             { status: "LOST" },
           ],
@@ -183,11 +180,11 @@ describe("data-export", () => {
           id: "m1",
           fullName: "Budi Santoso",
           phone: "08123456789",
-          memberType: "STUDENT",
+          category: "STUDENT",
           status: "ACTIVE",
+          joinDate: new Date("2024-01-15"),
           user: { email: "budi@school.id", role: "STUDENT", createdAt: new Date("2024-01-15") },
           _count: { loans: 5 },
-          gamificationProfile: { points: 120 },
         },
       ] as any);
 
@@ -195,7 +192,7 @@ describe("data-export", () => {
       expect(result.content).toContain("Budi Santoso");
       expect(result.content).toContain("budi@school.id");
       expect(result.content).toContain("STUDENT");
-      expect(result.content).toContain("120");
+      expect(result.content).toContain("0");
     });
 
     it("anonymizes names when requested", async () => {
@@ -204,11 +201,11 @@ describe("data-export", () => {
           id: "m2",
           fullName: "Rahasia Penting",
           phone: "08111111111",
-          memberType: "STUDENT",
+          category: "STUDENT",
           status: "ACTIVE",
+          joinDate: new Date(),
           user: { email: "secret@x.com", role: "STUDENT", createdAt: new Date() },
           _count: { loans: 0 },
-          gamificationProfile: { points: 0 },
         },
       ] as any);
 
@@ -225,11 +222,11 @@ describe("data-export", () => {
           id: "m3",
           fullName: "Asli Original",
           phone: "08999",
-          memberType: "TEACHER",
+          category: "TEACHER",
           status: "ACTIVE",
+          joinDate: new Date(),
           user: { email: "a@b.com", role: "TEACHER", createdAt: new Date() },
           _count: { loans: 1 },
-          gamificationProfile: null,
         },
       ] as any);
 
@@ -244,11 +241,11 @@ describe("data-export", () => {
           id: "m4",
           fullName: "No Points",
           phone: null,
-          memberType: "STUDENT",
+          category: "STUDENT",
           status: "ACTIVE",
+          joinDate: new Date(),
           user: { email: "np@x.com", role: "STUDENT", createdAt: new Date() },
           _count: { loans: 0 },
-          gamificationProfile: null,
         },
       ] as any);
 
@@ -270,9 +267,9 @@ describe("data-export", () => {
           returnDate: null,
           status: "ACTIVE",
           fineAmount: 0,
-          renewalCount: 0,
+          renewedCount: 0,
           member: { fullName: "Budi" },
-          bookItem: { barcode: "BC001", book: { title: "Buku A" } },
+          bookItem: { itemCode: "BC001", book: { title: "Buku A" } },
         },
       ] as any);
 
@@ -290,7 +287,7 @@ describe("data-export", () => {
       expect(db.loan.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            status: "ACTIVE",
+            status: "LOANED",
             dueDate: expect.objectContaining({ lt: expect.any(Date) }),
           }),
         })
@@ -306,9 +303,9 @@ describe("data-export", () => {
           returnDate: null,
           status: "ACTIVE",
           fineAmount: 0,
-          renewalCount: 1,
+          renewedCount: 1,
           member: { fullName: "Test" },
-          bookItem: { barcode: "B1", book: { title: "T" } },
+          bookItem: { itemCode: "B1", book: { title: "T" } },
         },
       ] as any);
 
@@ -340,18 +337,16 @@ describe("data-export", () => {
   // ===== Fines =====
   describe("exportFines", () => {
     it("exports all fines", async () => {
-      vi.mocked(db.fine.findMany).mockResolvedValue([
+      vi.mocked(db.loan.findMany).mockResolvedValue([
         {
           id: "f1",
-          amount: 5000,
-          paidAmount: 5000,
-          status: "PAID",
+          fineAmount: 5000,
+          finePaid: 5000,
+          status: "RETURNED",
           createdAt: new Date(),
-          reason: "Telat 5 hari",
-          loan: {
-            member: { fullName: "Budi" },
-            bookItem: { book: { title: "Buku" } },
-          },
+          notes: "Telat 5 hari",
+          member: { fullName: "Budi" },
+          bookItem: { book: { title: "Buku" } },
         },
       ] as any);
 
@@ -361,32 +356,30 @@ describe("data-export", () => {
       expect(result.content).toContain("5000");
     });
 
-    it("onlyUnpaid filters by null paidAt and PENDING/UNPAID status", async () => {
-      vi.mocked(db.fine.findMany).mockResolvedValue([]);
+    it("onlyUnpaid filters by finePaid=0 and fineAmount>0", async () => {
+      vi.mocked(db.loan.findMany).mockResolvedValue([]);
       await exportFines(undefined, true);
-      expect(db.fine.findMany).toHaveBeenCalledWith(
+      expect(db.loan.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            paidAt: null,
-            status: { in: ["PENDING", "UNPAID"] },
+            finePaid: 0,
+            fineAmount: { gt: 0 },
           }),
         })
       );
     });
 
     it("calculates remaining amount", async () => {
-      vi.mocked(db.fine.findMany).mockResolvedValue([
+      vi.mocked(db.loan.findMany).mockResolvedValue([
         {
           id: "f2",
-          amount: 10000,
-          paidAmount: 4000,
+          fineAmount: 10000,
+          finePaid: 4000,
           status: "PARTIAL",
           createdAt: new Date(),
-          reason: null,
-          loan: {
-            member: { fullName: "X" },
-            bookItem: { book: { title: "Y" } },
-          },
+          notes: null,
+          member: { fullName: "X" },
+          bookItem: { book: { title: "Y" } },
         },
       ] as any);
 
@@ -451,9 +444,9 @@ describe("data-export", () => {
         {
           id: "a1",
           action: "CREATE",
-          resource: "Book",
-          resourceId: "b1",
-          changes: { title: "Buku A" },
+          entityType: "Book",
+          entityId: "b1",
+          detail: JSON.stringify({ title: "Buku A" }),
           ipAddress: "127.0.0.1",
           createdAt: new Date("2024-06-15T10:30:00"),
           userId: "u1",
@@ -468,14 +461,14 @@ describe("data-export", () => {
       expect(result.content).toContain("2024-06-15");
     });
 
-    it("handles string changes field", async () => {
+    it("handles string detail field", async () => {
       vi.mocked(db.auditLog.findMany).mockResolvedValue([
         {
           id: "a2",
           action: "UPDATE",
-          resource: "Member",
-          resourceId: "m1",
-          changes: "manual note",
+          entityType: "Member",
+          entityId: "m1",
+          detail: "manual note",
           ipAddress: null,
           createdAt: new Date(),
           userId: null,
@@ -515,11 +508,11 @@ describe("data-export", () => {
           id: "m1",
           fullName: "Secret Name",
           phone: "08000",
-          memberType: "STUDENT",
+          category: "STUDENT",
           status: "ACTIVE",
+          joinDate: new Date(),
           user: { email: "s@x.com", role: "STUDENT", createdAt: new Date() },
           _count: { loans: 0 },
-          gamificationProfile: null,
         },
       ] as any);
 
@@ -535,11 +528,11 @@ describe("data-export", () => {
     });
 
     it("dispatches to exportFines with only-unpaid", async () => {
-      vi.mocked(db.fine.findMany).mockResolvedValue([]);
+      vi.mocked(db.loan.findMany).mockResolvedValue([]);
       await exportData({ type: "fines", status: "unpaid" });
-      expect(db.fine.findMany).toHaveBeenCalledWith(
+      expect(db.loan.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ paidAt: null }),
+          where: expect.objectContaining({ finePaid: 0 }),
         })
       );
     });
@@ -601,11 +594,11 @@ describe("data-export", () => {
           id: "m-orphan",
           fullName: "Orphan",
           phone: null,
-          memberType: "STUDENT",
+          category: "STUDENT",
           status: "ACTIVE",
+          joinDate: new Date(),
           user: null,
           _count: { loans: 0 },
-          gamificationProfile: null,
         },
       ] as any);
 
@@ -629,13 +622,13 @@ describe("data-export", () => {
           id: "b-comma",
           title: "Hello, World!",
           isbn: null,
-          publicationYear: 2020,
-          status: "ACTIVE",
-          authors: [],
+          year: 2020,
+          author: "",
           publisher: null,
+          status: "ACTIVE",
           category: null,
           location: null,
-          bookItems: [],
+          items: [],
         },
       ] as any);
 

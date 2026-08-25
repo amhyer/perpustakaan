@@ -15,7 +15,7 @@
  * - Export history (last 10)
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
   Download,
@@ -188,9 +188,9 @@ export function DataExportView() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Load history on mount
-  if (typeof window !== "undefined" && history.length === 0) {
+  useEffect(() => {
     setHistory(getExportHistory());
-  }
+  }, []);
 
   if (user?.role !== "LIBRARIAN" && user?.role !== "PUSTAKAWAN_JUNIOR") {
     return (

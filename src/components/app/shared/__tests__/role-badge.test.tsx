@@ -65,8 +65,7 @@ describe("RoleBadge", () => {
       <RoleBadge user={makeUser("STUDENT")} showIcon={false} />
     );
     // Icon tidak dirender sama sekali
-    const iconContainer = container.querySelector("svg")?.parentElement;
-    expect(iconContainer).toBeNull();
+    expect(container.querySelector("svg")).toBeNull();
   });
 
   it("applies className override", () => {

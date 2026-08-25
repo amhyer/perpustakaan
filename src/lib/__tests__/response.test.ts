@@ -10,7 +10,7 @@ describe("ok", () => {
     const res = ok({ data: { id: 1 } });
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toContain("application/json");
-    expect(await res.json()).toEqual({ data: { id: 1 } });
+    expect(await res.json()).toEqual({ id: 1 });
   });
 
   it("custom status", async () => {

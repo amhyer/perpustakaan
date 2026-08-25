@@ -13,7 +13,9 @@ import { describe, it, expect, vi } from "vitest";
 vi.mock("sonner", () => ({
   toast: {
     custom: vi.fn().mockReturnValue("toast-id"),
-    promise: vi.fn().mockImplementation((p) => p),
+    promise: vi.fn().mockImplementation((p) => ({
+      unwrap: () => p,
+    })),
     dismiss: vi.fn(),
     success: vi.fn().mockReturnValue("toast-id"),
     error: vi.fn().mockReturnValue("toast-id"),
