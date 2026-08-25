@@ -83,7 +83,7 @@ export async function GET(req: Request) {
       orderBy: { _count: { bookId: "desc" } },
       take: 5,
     });
-    const topBookIds = topBooksRaw.map((p) => p.bookId);
+    const topBookIds = topBooksRaw.map((p) => p.bookId).filter((id): id is string => id !== null);
     const topBooksData = await db.book.findMany({
       where: { id: { in: topBookIds } },
       select: { id: true, title: true, author: true, coverColor: true, coverImage: true },

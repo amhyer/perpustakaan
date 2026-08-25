@@ -15,6 +15,7 @@
  */
 
 import { useEffect, useState, useCallback } from "react";
+import { toast } from "sonner";
 import {
   Link2,
   CheckCircle2,
@@ -511,11 +512,11 @@ function BlockDetailView({ block }: { block: BlockDetails }) {
               fetch(`/api/blockchain/events/${block.events[0].id}`)
                 .then((r) => r.json())
                 .then((data) => {
-                  alert(
-                    data.valid
-                      ? `✓ Event verified in block #${data.blockIndex}`
-                      : `✗ Verification failed: ${data.reason}`
-                  );
+                  if (data.valid) {
+                    toast.success(`Event verified in block #${data.blockIndex}`);
+                  } else {
+                    toast.error(`Verification failed: ${data.reason}`);
+                  }
                 });
             }
           }}

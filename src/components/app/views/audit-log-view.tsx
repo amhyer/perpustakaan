@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   ScrollText,
   Search,
@@ -138,7 +139,7 @@ export function AuditLogView() {
       const res = await fetch(`/api/export?${params.toString()}`);
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Export gagal" }));
-        alert(`Export gagal: ${err.error || res.statusText}`);
+        toast.error(`Export gagal: ${err.error || res.statusText}`);
         return;
       }
       const blob = await res.blob();
@@ -154,7 +155,7 @@ export function AuditLogView() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err: any) {
-      alert(`Export error: ${err.message}`);
+      toast.error(`Export error: ${err.message}`);
     } finally {
       setExporting(false);
     }

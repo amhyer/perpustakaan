@@ -30,7 +30,7 @@ export async function PUT(_req: Request, { params }: { params: Promise<{ id: str
 
     // Cek reservasi: jika ada antrean, tidak boleh perpanjang
     const reservations = await db.reservation.count({
-      where: { bookId: loan.bookId, status: "PENDING" },
+      where: { bookId: loan.bookId ?? loan.bookItem.bookId, status: "PENDING" },
     });
     if (reservations > 0) {
       return NextResponse.json({ error: "Tidak dapat diperpanjang: ada anggota lain yang mengantre buku ini" }, { status: 400 });

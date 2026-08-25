@@ -17,31 +17,51 @@ enum BookSource {
 
 // ===== Users & Auth =====
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  name         String
-  role         String   @default("STUDENT") // LIBRARIAN | TEACHER | STUDENT
-  member       Member?
-  preference   UserPreference?
-  announcements Announcement[]
-  proposals     BookProposal[]     @relation("ProposalReviewer")
-  notifications Notification[]
-  auditLogs    AuditLog[]
-  transfers    BookTransfer[]
-  twoFactor     TwoFactorSecret?
-  passwordResetTokens PasswordResetToken[]
-  activeSessions     ActiveSession[]
+  id                             String                     @id @default(cuid())
+  email                          String                     @unique
+  passwordHash                   String
+  name                           String
+  role                           String                     @default("STUDENT") // LIBRARIAN | TEACHER | STUDENT
+  member                         Member?
+  preference                     UserPreference?
+  announcements                  Announcement[]
+  proposals                      BookProposal[]             @relation("ProposalReviewer")
+  notifications                  Notification[]
+  auditLogs                      AuditLog[]
+  transfers                      BookTransfer[]
+  twoFactor                      TwoFactorSecret?
+  passwordResetTokens            PasswordResetToken[]
+  activeSessions                 ActiveSession[]
   // Reward System relations
-  pointTransactionsAwarded PointTransaction[] @relation("PointAdjuster")
-  rewardsCreated           Reward[]            @relation("RewardCreator")
-  redemptionsApproved      RewardRedemption[]  @relation("RewardApprover")
-  redemptionsDelivered     RewardRedemption[]  @relation("RewardDeliverer")
-  donationsApproved        Donation[]          @relation("DonationApprover")
+  pointTransactionsAwarded       PointTransaction[]         @relation("PointAdjuster")
+  rewardsCreated                 Reward[]                   @relation("RewardCreator")
+  redemptionsApproved            RewardRedemption[]         @relation("RewardApprover")
+  redemptionsDelivered           RewardRedemption[]         @relation("RewardDeliverer")
+  donationsApproved              Donation[]                 @relation("DonationApprover")
   // Push notification
-  pushSubscriptions        PushSubscription[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  pushSubscriptions              PushSubscription[]
+  // Condition logs reported by this user
+  conditionLogsReported          ConditionLog[]
+  // Stocktaking sessions created by this user
+  stocktakingSessionsCreated     StocktakingSession[]
+  // API keys created by this user
+  apiKeysCreated                 ApiKey[]
+  // Error logs by this user
+  errorLogs                      ErrorLog[]                 @relation("ErrorLogUser")
+  // Error logs resolved by this user
+  errorLogsResolved              ErrorLog[]                 @relation("ErrorLogResolver")
+  // Book of the Week set by this user
+  bookOfWeeksSet                 BookOfTheWeek[]
+  // Curriculum recommendations added by this user
+  curriculumRecommendationsAdded CurriculumRecommendation[]
+  // Reading assignments assigned by this user
+  readingAssignmentsCreated      ReadingAssignment[]
+  // Chat conversations by this user
+  chatConversations              ChatConversation[]
+  // Audit log archives by this user
+  auditLogArchives               AuditLogArchive[]
+  createdAt                      DateTime                   @default(now())
+  updatedAt                      DateTime                   @updatedAt
 }
 
 // ===== User Preferences (Sprint 4 — Fix #9) =====
@@ -60,64 +80,64 @@ model UserPreference {
 
 // ===== Members =====
 model Member {
-  id           String   @id @default(cuid())
-  userId       String   @unique
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  memberNumber String   @unique // Nomor Anggota Perpustakaan
-  fullName     String
-  category     String   @default("STUDENT") // LIBRARIAN | TEACHER | STUDENT
-  status       String   @default("ACTIVE")  // ACTIVE | INACTIVE
-  gender       String?  // L | P
-  birthDate    DateTime?
-  phone        String?
-  address      String?
-  photo        String?  // URL or base64
-  classGrade   String?  // untuk siswa: kelas, untuk guru: mata pelajaran
-  joinDate     DateTime @default(now())
-  expiryDate   DateTime?
+  id                      String                   @id @default(cuid())
+  userId                  String                   @unique
+  user                    User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberNumber            String                   @unique // Nomor Anggota Perpustakaan
+  fullName                String
+  category                String                   @default("STUDENT") // LIBRARIAN | TEACHER | STUDENT
+  status                  String                   @default("ACTIVE") // ACTIVE | INACTIVE
+  gender                  String? // L | P
+  birthDate               DateTime?
+  phone                   String?
+  address                 String?
+  photo                   String? // URL or base64
+  classGrade              String? // untuk siswa: kelas, untuk guru: mata pelajaran
+  joinDate                DateTime                 @default(now())
+  expiryDate              DateTime?
   // Gamifikasi (Tahap 8A) — target baca tahunan
-  readingGoalTarget Int?
-  readingGoalSetAt  DateTime?
-  loans        Loan[]
-  reservations Reservation[]
-  wishlists    Wishlist[]
-  proposals     BookProposal[]
-  reviews       BookReview[]
-  roomBookings RoomBooking[]
-  visitors     Visitor[]
-  assetLoans   AssetLoan[]
+  readingGoalTarget       Int?
+  readingGoalSetAt        DateTime?
+  loans                   Loan[]
+  reservations            Reservation[]
+  wishlists               Wishlist[]
+  proposals               BookProposal[]
+  reviews                 BookReview[]
+  roomBookings            RoomBooking[]
+  visitors                Visitor[]
+  assetLoans              AssetLoan[]
   // Reward System relations
-  pointTransactions PointTransaction[]
-  redemptions       RewardRedemption[]
-  recommendations   Recommendation[]
+  pointTransactions       PointTransaction[]
+  redemptions             RewardRedemption[]
+  recommendations         Recommendation[]
   // IoT RFID relations
-  rfidCards    RFIDCard[]
+  rfidCards               RFIDCard[]
   // New features relations
-  bookListingsSold    BookListing[] @relation("BookListingSeller")
-  bookListingsBought  BookListing[] @relation("BookListingBuyer")
-  readingProgress     ReadingProgress[]
-  cardPrintQueue      CardPrintQueue[]
-  libraryAttendance   LibraryAttendance[]
+  bookListingsSold        BookListing[]            @relation("BookListingSeller")
+  bookListingsBought      BookListing[]            @relation("BookListingBuyer")
+  readingProgress         ReadingProgress[]
+  cardPrintQueue          CardPrintQueue[]
+  libraryAttendance       LibraryAttendance[]
   challengeParticipations ChallengeParticipant[]
   // Social reading relations
-  readingLists        ReadingList[]
-  readingListLikes    ReadingListLike[]
-  readingListFollows  ReadingListFollow[]
-  readingListComments ReadingListComment[]
+  readingLists            ReadingList[]
+  readingListLikes        ReadingListLike[]
+  readingListFollows      ReadingListFollow[]
+  readingListComments     ReadingListComment[]
   // Book club relations
-  bookClubMemberships    BookClubMember[]
-  bookClubDiscussions    BookClubDiscussion[]
+  bookClubMemberships     BookClubMember[]
+  bookClubDiscussions     BookClubDiscussion[]
   bookClubDiscussionLikes BookClubDiscussionLike[]
-  clubsCreated           BookClub[]             @relation("ClubCreator")
+  clubsCreated            BookClub[]               @relation("ClubCreator")
   // Donation & exchange relations
-  donations        Donation[]
-  exchangeOffers   ExchangeOffer[]           @relation("Offerer")
+  donations               Donation[]
+  exchangeOffers          ExchangeOffer[]          @relation("Offerer")
   // Gamification
-  gamificationProfile GamificationProfile?
+  gamificationProfile     GamificationProfile?
   // Certificate relations
-  certificates     Certificate[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  certificates            Certificate[]
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
 
   @@index([category, status])
   @@index([status, expiryDate])
@@ -126,66 +146,67 @@ model Member {
 
 // ===== Categories (GMD / Klasifikasi) =====
 model Category {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  code        String   @unique // kode klasifikasi mirip Dewey sederhana
+  id          String     @id @default(cuid())
+  name        String     @unique
+  code        String     @unique // kode klasifikasi mirip Dewey sederhana
   description String?
   books       Book[]
   donations   Donation[]
-  createdAt   DateTime @default(now())
+  createdAt   DateTime   @default(now())
 }
 
 // ===== Locations / Rak =====
 model Location {
-  id              String   @id @default(cuid())
-  name            String   @unique // mis. "Rak A - Fiksi"
-  code            String   @unique // mis. "A-01"
-  description     String?
-  books           Book[]
-  transfersFrom   BookTransfer[] @relation("FromLocation")
-  transfersTo     BookTransfer[] @relation("ToLocation")
-  assets          Asset[]
-  createdAt       DateTime @default(now())
+  id            String         @id @default(cuid())
+  name          String         @unique // mis. "Rak A - Fiksi"
+  code          String         @unique // mis. "A-01"
+  description   String?
+  books         Book[]
+  transfersFrom BookTransfer[] @relation("FromLocation")
+  transfersTo   BookTransfer[] @relation("ToLocation")
+  assets        Asset[]
+  createdAt     DateTime       @default(now())
 }
 
 // ===== Books (Bibliografi) =====
 model Book {
-  id          String   @id @default(cuid())
-  title       String
-  author      String
-  publisher   String?
-  isbn        String?
-  year        Int?
-  pages       Int?
-  synopsis    String?
-  coverImage  String?  // URL gambar cover
-  coverColor  String   @default("#1e3a5f") // warna gradient untuk cover placeholder
-  language    String   @default("Indonesia")
-  subject     String?  // mata pelajaran / subjek
-  source      BookSource @default(MANUAL) // MANUAL | SIBI
-  sourceUrl   String?  // tautan file digital asal (mis. PDF SIBI)
-  sibiId      String?  @unique // id dari SIBI, null kalau source=MANUAL
-  importedAt  DateTime? // waktu impor dari SIBI, null kalau source=MANUAL
-  categoryId  String?
-  category    Category? @relation(fields: [categoryId], references: [id])
-  locationId  String?
-  location    Location? @relation(fields: [locationId], references: [id])
-  items       BookItem[]
-  recommendations Recommendation[]
-  reservations Reservation[]
-  wishlists   Wishlist[]
-  attachments BookAttachment[]
-  reviews     BookReview[]
+  id                        String                     @id @default(cuid())
+  title                     String
+  author                    String
+  publisher                 String?
+  isbn                      String?
+  year                      Int?
+  pages                     Int?
+  synopsis                  String?
+  coverImage                String? // URL gambar cover
+  coverColor                String                     @default("#1e3a5f") // warna gradient untuk cover placeholder
+  language                  String                     @default("Indonesia")
+  subject                   String? // mata pelajaran / subjek
+  source                    BookSource                 @default(MANUAL) // MANUAL | SIBI
+  sourceUrl                 String? // tautan file digital asal (mis. PDF SIBI)
+  sibiId                    String?                    @unique // id dari SIBI, null kalau source=MANUAL
+  importedAt                DateTime? // waktu impor dari SIBI, null kalau source=MANUAL
+  categoryId                String?
+  category                  Category?                  @relation(fields: [categoryId], references: [id])
+  locationId                String?
+  location                  Location?                  @relation(fields: [locationId], references: [id])
+  items                     BookItem[]
+  loans                     Loan[]
+  recommendations           Recommendation[]
+  reservations              Reservation[]
+  wishlists                 Wishlist[]
+  attachments               BookAttachment[]
+  reviews                   BookReview[]
   curriculumRecommendations CurriculumRecommendation[]
-  bookOfWeek  BookOfTheWeek[]
-  readingListItems    ReadingListItem[]
-  readingSchedules    ReadingSchedule[]
-  readingAssignments  ReadingAssignment[]
-  coverSignature      CoverSignature?
-  arTreasureHunts     ARTreasureHunt[]
-  bookClubCurrentBooks BookClub[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  bookOfWeek                BookOfTheWeek[]
+  readingListItems          ReadingListItem[]
+  readingSchedules          ReadingSchedule[]
+  readingAssignments        ReadingAssignment[]
+  coverSignature            CoverSignature?
+  arTreasureHunts           ARTreasureHunt[]
+  bookClubCurrentBooks      BookClub[]
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
 
   @@index([categoryId])
   @@index([locationId])
@@ -194,37 +215,41 @@ model Book {
 
 // ===== Book Items (Eksemplar) =====
 model BookItem {
-  id          String   @id @default(cuid())
-  bookId      String
-  book        Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
-  itemCode    String   @unique // kode barcode unik per eksemplar
-  status      String   @default("AVAILABLE") // AVAILABLE | BORROWED | DAMAGED | LOST | RESERVED
-  condition   String   @default("BAIK") // BAIK | RUSAK_RINGAN | RUSAK_BERAT
-  loans       Loan[]
+  id               String            @id @default(cuid())
+  bookId           String
+  book             Book              @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  itemCode         String            @unique // kode barcode unik per eksemplar
+  status           String            @default("AVAILABLE") // AVAILABLE | BORROWED | DAMAGED | LOST | RESERVED
+  condition        String            @default("BAIK") // BAIK | RUSAK_RINGAN | RUSAK_BERAT
+  loans            Loan[]
   stocktakingScans StocktakingScan[]
-  conditionLogs ConditionLog[]
-  transfers   BookTransfer[]
-  rfidTag     BookItemTag?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  conditionLogs    ConditionLog[]
+  transfers        BookTransfer[]
+  rfidTag          BookItemTag?
+  rfidEvents       RFIDEvent[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
   @@index([bookId])
   @@index([status])
+  @@index([status, bookId])
 }
 
 // ===== Condition Log (Riwayat Kondisi Eksemplar) =====
 model ConditionLog {
-  id               String    @id @default(cuid())
-  bookItemId       String
-  bookItem         BookItem  @relation(fields: [bookItemId], references: [id], onDelete: Cascade)
+  id                String   @id @default(cuid())
+  bookItemId        String
+  bookItem          BookItem @relation(fields: [bookItemId], references: [id], onDelete: Cascade)
   previousCondition String?
-  newCondition     String
-  previousStatus   String?
-  newStatus        String?
-  reason           String?
-  reportedById     String    // userId of the librarian
-  loanId           String?   // linked to active loan if relevant
-  createdAt        DateTime  @default(now())
+  newCondition      String
+  previousStatus    String?
+  newStatus         String?
+  reason            String?
+  reportedById      String? // userId of the librarian
+  reportedBy        User?    @relation(fields: [reportedById], references: [id], onDelete: SetNull)
+  loanId            String? // linked to active loan if relevant
+  loan              Loan?    @relation(fields: [loanId], references: [id], onDelete: SetNull)
+  createdAt         DateTime @default(now())
 
   @@index([bookItemId])
   @@index([loanId])
@@ -232,24 +257,28 @@ model ConditionLog {
 
 // ===== Loans (Sirkulasi) =====
 model Loan {
-  id           String    @id @default(cuid())
-  memberId     String
-  member       Member    @relation(fields: [memberId], references: [id])
-  bookItemId   String
-  bookItem     BookItem  @relation(fields: [bookItemId], references: [id])
-  bookId       String    // denormalized for easy queries
-  loanDate     DateTime  @default(now())
-  dueDate      DateTime
-  returnDate   DateTime?
-  status       String    @default("LOANED") // LOANED | RETURNED | OVERDUE
-  fineAmount   Int       @default(0) // dalam Rupiah
-  finePaid     Int       @default(0)
-  renewedCount Int       @default(0)
-  notes        String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id            String         @id @default(cuid())
+  memberId      String
+  member        Member         @relation(fields: [memberId], references: [id])
+  bookItemId    String
+  bookItem      BookItem       @relation(fields: [bookItemId], references: [id])
+  bookId        String? // denormalized for easy queries
+  book          Book?          @relation(fields: [bookId], references: [id], onDelete: SetNull)
+  loanDate      DateTime       @default(now())
+  dueDate       DateTime
+  returnDate    DateTime?
+  status        String         @default("LOANED") // LOANED | RETURNED | OVERDUE
+  fineAmount    Int            @default(0) // dalam Rupiah
+  finePaid      Int            @default(0)
+  renewedCount  Int            @default(0)
+  notes         String?
+  conditionLogs ConditionLog[]
+  rfidEvents    RFIDEvent[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@index([memberId])
+  @@index([bookId])
   @@index([status])
   @@index([dueDate])
   @@index([status, dueDate])
@@ -260,18 +289,18 @@ model Loan {
 
 // ===== Reservations / Booking =====
 model Reservation {
-  id          String   @id @default(cuid())
-  memberId    String
-  member      Member   @relation(fields: [memberId], references: [id])
-  bookId      String
-  book        Book     @relation(fields: [bookId], references: [id])
-  status      String   @default("PENDING") // PENDING | READY | FULFILLED | CANCELLED | EXPIRED
-  queueOrder  Int      @default(1)
-  reservedAt  DateTime @default(now())
-  expiresAt   DateTime?
-  note        String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String    @id @default(cuid())
+  memberId   String
+  member     Member    @relation(fields: [memberId], references: [id])
+  bookId     String
+  book       Book      @relation(fields: [bookId], references: [id])
+  status     String    @default("PENDING") // PENDING | READY | FULFILLED | CANCELLED | EXPIRED
+  queueOrder Int       @default(1)
+  reservedAt DateTime  @default(now())
+  expiresAt  DateTime?
+  note       String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   @@index([memberId])
   @@index([bookId])
@@ -293,36 +322,36 @@ model Wishlist {
 
 // ===== Book Proposals (Usulan Koleksi) =====
 model BookProposal {
-  id           String    @id @default(cuid())
-  memberId     String
-  member       Member    @relation(fields: [memberId], references: [id])
-  title        String
-  author       String?
-  publisher    String?
-  isbn         String?
-  reason       String?
-  status       String    @default("PENDING") // PENDING | APPROVED | REJECTED
-  reviewedBy   String?
-  reviewer     User?     @relation("ProposalReviewer", fields: [reviewedBy], references: [id])
-  reviewNote   String?
-  reviewedAt   DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id         String    @id @default(cuid())
+  memberId   String
+  member     Member    @relation(fields: [memberId], references: [id])
+  title      String
+  author     String?
+  publisher  String?
+  isbn       String?
+  reason     String?
+  status     String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  reviewedBy String?
+  reviewer   User?     @relation("ProposalReviewer", fields: [reviewedBy], references: [id])
+  reviewNote String?
+  reviewedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   @@index([status])
 }
 
 // ===== Announcements / Pengumuman =====
 model Announcement {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   title       String
   content     String
   authorId    String?
-  author      User?     @relation(fields: [authorId], references: [id])
-  isPinned    Boolean   @default(false)
-  publishedAt DateTime  @default(now())
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  author      User?    @relation(fields: [authorId], references: [id])
+  isPinned    Boolean  @default(false)
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([isPinned, publishedAt])
   @@index([publishedAt])
@@ -389,37 +418,38 @@ model Author {
 // File digital terlampir per buku (PDF, gambar, audio — TANPA video).
 // Reuse UPLOAD_DIR infrastruktur. Batas 15MB per file, disk Render 1GB.
 model BookAttachment {
-  id             String   @id @default(cuid())
-  bookId         String
-  book           Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
-  fileName       String   // nama file asli saat di-upload
-  fileUrl        String   // path relatif untuk akses (mis. /uploads/attachments/xxx.pdf)
-  fileType       String   // MIME type (application/pdf, image/jpeg, audio/mpeg)
-  fileSizeBytes  Int
-  uploadedAt     DateTime @default(now())
+  id            String   @id @default(cuid())
+  bookId        String
+  book          Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  fileName      String // nama file asli saat di-upload
+  fileUrl       String // path relatif untuk akses (mis. /uploads/attachments/xxx.pdf)
+  fileType      String // MIME type (application/pdf, image/jpeg, audio/mpeg)
+  fileSizeBytes Int
+  uploadedAt    DateTime @default(now())
 
   @@index([bookId])
 }
 
 // ===== Stock Opname (Urutan 11 — Tahap 15-A) =====
 model StocktakingSession {
-  id            String             @id @default(cuid())
-  startedAt     DateTime           @default(now())
+  id            String            @id @default(cuid())
+  startedAt     DateTime          @default(now())
   endedAt       DateTime?
   note          String?
-  status        String             @default("ONGOING") // ONGOING | COMPLETED
-  createdById   String
+  status        String            @default("ONGOING") // ONGOING | COMPLETED
+  createdById   String?
+  createdBy     User?             @relation(fields: [createdById], references: [id], onDelete: SetNull)
   expectedCount Int
   scans         StocktakingScan[]
 }
 
 model StocktakingScan {
-  id         String            @id @default(cuid())
+  id         String             @id @default(cuid())
   sessionId  String
   session    StocktakingSession @relation(fields: [sessionId], references: [id])
   bookItemId String
-  bookItem   BookItem          @relation(fields: [bookItemId], references: [id])
-  scannedAt  DateTime          @default(now())
+  bookItem   BookItem           @relation(fields: [bookItemId], references: [id])
+  scannedAt  DateTime           @default(now())
 
   @@unique([sessionId, bookItemId])
   @@index([sessionId])
@@ -437,8 +467,8 @@ model AuditLog {
   createdAt  DateTime @default(now())
 
   // Blockchain inclusion (nullable - block not sealed yet)
-  blockId    String?
-  block      AuditBlock? @relation("AuditLogBlock", fields: [blockId], references: [id])
+  blockId String?
+  block   AuditBlock? @relation("AuditLogBlock", fields: [blockId], references: [id])
 
   @@index([userId])
   @@index([entityType, entityId])
@@ -452,7 +482,7 @@ model BookReview {
   book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
   memberId  String
   member    Member   @relation(fields: [memberId], references: [id])
-  rating    Int      // 1-5
+  rating    Int // 1-5
   review    String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -462,17 +492,17 @@ model BookReview {
 }
 
 model BookTransfer {
-  id              String   @id @default(cuid())
-  bookItemId      String
-  bookItem        BookItem @relation(fields: [bookItemId], references: [id])
-  fromLocationId  String?
-  fromLocation    Location? @relation("FromLocation", fields: [fromLocationId], references: [id])
-  toLocationId    String
-  toLocation      Location @relation("ToLocation", fields: [toLocationId], references: [id])
-  reason          String?
-  userId          String
-  user            User     @relation(fields: [userId], references: [id])
-  createdAt       DateTime @default(now())
+  id             String    @id @default(cuid())
+  bookItemId     String
+  bookItem       BookItem  @relation(fields: [bookItemId], references: [id])
+  fromLocationId String?
+  fromLocation   Location? @relation("FromLocation", fields: [fromLocationId], references: [id])
+  toLocationId   String
+  toLocation     Location  @relation("ToLocation", fields: [toLocationId], references: [id])
+  reason         String?
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  createdAt      DateTime  @default(now())
 
   @@index([bookItemId])
   @@index([fromLocationId])
@@ -483,25 +513,25 @@ model BookTransfer {
 
 // ===== Two-Factor Authentication (Tahap 17 - Critical Fix) =====
 model TwoFactorSecret {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  secret      String   // TOTP secret (base32)
-  enabled     Boolean  @default(false)
-  backupCodes String?  // JSON array of hashed backup codes
-  createdAt   DateTime @default(now())
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secret      String // TOTP secret (base32)
+  enabled     Boolean   @default(false)
+  backupCodes String? // JSON array of hashed backup codes
+  createdAt   DateTime  @default(now())
   enabledAt   DateTime?
 }
 
 // ===== Password Reset Token (Tahap 17 - Critical Fix) =====
 model PasswordResetToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token     String   @unique // hashed token
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique // hashed token
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([userId])
   @@index([expiresAt])
@@ -526,32 +556,32 @@ model ActiveSession {
 
 // ===== Library Room (Tahap 18 - Operasional) =====
 model LibraryRoom {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  type        String   // READING | DISCUSSION | AV | COMPUTER | OTHER
+  id          String        @id @default(cuid())
+  name        String        @unique
+  type        String // READING | DISCUSSION | AV | COMPUTER | OTHER
   capacity    Int
   description String?
-  isActive    Boolean  @default(true)
+  isActive    Boolean       @default(true)
   bookings    RoomBooking[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 model RoomBooking {
-  id        String   @id @default(cuid())
-  roomId    String
-  room      LibraryRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  memberId  String?
-  member    Member?  @relation(fields: [memberId], references: [id])
-  bookerName String  // untuk walk-in / non-member
+  id          String      @id @default(cuid())
+  roomId      String
+  room        LibraryRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  memberId    String?
+  member      Member?     @relation(fields: [memberId], references: [id])
+  bookerName  String // untuk walk-in / non-member
   bookerPhone String?
-  startTime DateTime
-  endTime   DateTime
-  purpose   String?
-  status    String   @default("BOOKED") // BOOKED | CHECKED_IN | COMPLETED | CANCELLED
-  notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  startTime   DateTime
+  endTime     DateTime
+  purpose     String?
+  status      String      @default("BOOKED") // BOOKED | CHECKED_IN | COMPLETED | CANCELLED
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   @@index([roomId])
   @@index([startTime, endTime])
@@ -560,14 +590,14 @@ model RoomBooking {
 
 // ===== Visitor / Buku Tamu (Tahap 19 - Pelayanan) =====
 model Visitor {
-  id         String   @id @default(cuid())
-  memberId   String?
-  member     Member?  @relation(fields: [memberId], references: [id])
-  name       String   // nama untuk non-member
-  purpose    String?  // baca, pinjam, diskusi, tugas, dll
-  checkIn    DateTime @default(now())
-  checkOut   DateTime?
-  notes      String?
+  id       String    @id @default(cuid())
+  memberId String?
+  member   Member?   @relation(fields: [memberId], references: [id])
+  name     String // nama untuk non-member
+  purpose  String? // baca, pinjam, diskusi, tugas, dll
+  checkIn  DateTime  @default(now())
+  checkOut DateTime?
+  notes    String?
 
   @@index([memberId])
   @@index([checkIn])
@@ -576,20 +606,20 @@ model Visitor {
 // ===== Asset (Tahap 20 - Operasional) =====
 // Aset non-buku: proyektor, laptop, mikrofon, dll.
 model Asset {
-  id            String   @id @default(cuid())
-  name          String
-  category      String   // AV | IT | FURNITURE | OTHER
-  serialNumber  String?  @unique
-  brand         String?
-  model         String?
-  condition     String   @default("BAIK") // BAIK | RUSAK_RINGAN | RUSAK_BERAT
-  status        String   @default("AVAILABLE") // AVAILABLE | BORROWED | MAINTENANCE | LOST
-  locationId    String?
-  location      Location? @relation(fields: [locationId], references: [id])
-  notes         String?
-  loans         AssetLoan[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String      @id @default(cuid())
+  name         String
+  category     String // AV | IT | FURNITURE | OTHER
+  serialNumber String?     @unique
+  brand        String?
+  model        String?
+  condition    String      @default("BAIK") // BAIK | RUSAK_RINGAN | RUSAK_BERAT
+  status       String      @default("AVAILABLE") // AVAILABLE | BORROWED | MAINTENANCE | LOST
+  locationId   String?
+  location     Location?   @relation(fields: [locationId], references: [id])
+  notes        String?
+  loans        AssetLoan[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
   @@index([category])
   @@index([status])
@@ -616,16 +646,16 @@ model AssetLoan {
 
 // ===== Email Log (Tahap 21 - Komunikasi) =====
 model EmailLog {
-  id         String   @id @default(cuid())
-  to         String
-  subject    String
-  body       String
-  category   String   // REMINDER | OVERDUE | ANNOUNCEMENT | WELCOME | RESET_PASSWORD | OTHER
-  status     String   @default("PENDING") // PENDING | SENT | FAILED
-  errorMsg   String?
-  sentAt     DateTime?
-  relatedId  String?  // e.g. loan id, announcement id
-  createdAt  DateTime @default(now())
+  id        String    @id @default(cuid())
+  to        String
+  subject   String
+  body      String
+  category  String // REMINDER | OVERDUE | ANNOUNCEMENT | WELCOME | RESET_PASSWORD | OTHER
+  status    String    @default("PENDING") // PENDING | SENT | FAILED
+  errorMsg  String?
+  sentAt    DateTime?
+  relatedId String? // e.g. loan id, announcement id
+  createdAt DateTime  @default(now())
 
   @@index([to])
   @@index([status])
@@ -636,15 +666,15 @@ model EmailLog {
 
 // ===== WhatsApp Log (Tahap 21 - Komunikasi) =====
 model WhatsAppLog {
-  id         String   @id @default(cuid())
-  phone      String
-  message    String
-  category   String   // REMINDER | OVERDUE | ANNOUNCEMENT | WELCOME | RESET_PASSWORD | OTHER
-  status     String   @default("PENDING") // PENDING | SENT | FAILED
-  errorMsg   String?
-  sentAt     DateTime?
-  relatedId  String?
-  createdAt  DateTime @default(now())
+  id        String    @id @default(cuid())
+  phone     String
+  message   String
+  category  String // REMINDER | OVERDUE | ANNOUNCEMENT | WELCOME | RESET_PASSWORD | OTHER
+  status    String    @default("PENDING") // PENDING | SENT | FAILED
+  errorMsg  String?
+  sentAt    DateTime?
+  relatedId String?
+  createdAt DateTime  @default(now())
 
   @@index([phone])
   @@index([status])
@@ -655,16 +685,17 @@ model WhatsAppLog {
 
 // ===== API Key (Tahap 22 - Integrasi) =====
 model ApiKey {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   name        String
-  keyHash     String   @unique // hashed API key
-  prefix      String   // first 8 chars (unhashed) for display
-  scopes      String   // JSON array of scopes: ["read:books", "write:loans", ...]
-  isActive    Boolean  @default(true)
+  keyHash     String    @unique // hashed API key
+  prefix      String // first 8 chars (unhashed) for display
+  scopes      String // JSON array of scopes: ["read:books", "write:loans", ...]
+  isActive    Boolean   @default(true)
   lastUsedAt  DateTime?
   expiresAt   DateTime?
-  createdById String
-  createdAt   DateTime @default(now())
+  createdById String?
+  createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
 
   @@index([keyHash])
   @@index([isActive])
@@ -673,7 +704,8 @@ model ApiKey {
 // ===== Audit Log Archive (Tahap 17 - retention policy) =====
 model AuditLogArchive {
   id         String   @id
-  userId     String
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   action     String
   entityType String
   entityId   String?
@@ -687,21 +719,23 @@ model AuditLogArchive {
 
 // ===== Error Log (Tahap 17 - Error Tracking) =====
 model ErrorLog {
-  id         String   @id @default(cuid())
-  message    String
-  stack      String?
-  level      String   @default("ERROR") // DEBUG | INFO | WARN | ERROR | FATAL
-  userId     String?
-  url        String?
-  method     String?
-  statusCode Int?
-  userAgent  String?
-  ip         String?
-  context    String?  // JSON
-  resolved   Boolean  @default(false)
-  resolvedAt DateTime?
-  resolvedBy String?
-  createdAt  DateTime @default(now())
+  id             String    @id @default(cuid())
+  message        String
+  stack          String?
+  level          String    @default("ERROR") // DEBUG | INFO | WARN | ERROR | FATAL
+  userId         String?
+  user           User?     @relation("ErrorLogUser", fields: [userId], references: [id], onDelete: SetNull)
+  url            String?
+  method         String?
+  statusCode     Int?
+  userAgent      String?
+  ip             String?
+  context        String? // JSON
+  resolved       Boolean   @default(false)
+  resolvedAt     DateTime?
+  resolvedBy     String?
+  resolvedByUser User?     @relation("ErrorLogResolver", fields: [resolvedBy], references: [id], onDelete: SetNull)
+  createdAt      DateTime  @default(now())
 
   @@index([level])
   @@index([userId])
@@ -716,34 +750,34 @@ model ErrorLog {
 /// Aturan poin yang bisa dikonfigurasi pustakawan.
 /// Setiap event (loan returned, review, badge earned) memicu rule ini.
 model PointRule {
-  id          String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // Identifikasi rule
-  code        String   @unique // LOAN_RETURNED, STREAK_7, REVIEW_5STAR, dll
+  code        String  @unique // LOAN_RETURNED, STREAK_7, REVIEW_5STAR, dll
   name        String
   description String?
 
   // Konfigurasi poin
-  points      Int      // 10 poin per trigger
-  role        String   @default("STUDENT") // STUDENT | TEACHER | BOTH
+  points Int // 10 poin per trigger
+  role   String @default("STUDENT") // STUDENT | TEACHER | BOTH
 
   // Pembatasan
-  isActive    Boolean  @default(true)
-  maxPerDay   Int?     // null = unlimited
-  maxPerMonth Int?     // null = unlimited
-  cooldownHours Int?   // null = no cooldown
+  isActive      Boolean @default(true)
+  maxPerDay     Int? // null = unlimited
+  maxPerMonth   Int? // null = unlimited
+  cooldownHours Int? // null = no cooldown
 
   // Periode aktif (untuk event khusus, misal "Marathon Juni")
-  validFrom   DateTime?
-  validUntil  DateTime?
+  validFrom  DateTime?
+  validUntil DateTime?
 
   // Anti-cheat: minimal durasi baca & halaman
-  minLoanDays    Int?  // null = no min, mis. 2 (tidak dapat poin kalau pinjam <2 hari)
-  minBookPages   Int?  // null = no min, mis. 50 (buku tipis tidak dapat poin)
-  requireReview  Boolean @default(false) // Harus tulis review untuk dapat poin
+  minLoanDays   Int? // null = no min, mis. 2 (tidak dapat poin kalau pinjam <2 hari)
+  minBookPages  Int? // null = no min, mis. 50 (buku tipis tidak dapat poin)
+  requireReview Boolean @default(false) // Harus tulis review untuk dapat poin
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   transactions PointTransaction[]
 
@@ -754,43 +788,43 @@ model PointRule {
 /// Buku besar (ledger) semua transaksi poin.
 /// Setiap perubahan poin (masuk/keluar) di-log untuk audit & transparansi.
 model PointTransaction {
-  id          String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  memberId    String
-  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   // Tipe transaksi
-  type        String   // EARN | REDEEM | ADJUST_UP | ADJUST_DOWN | EXPIRE
+  type String // EARN | REDEEM | ADJUST_UP | ADJUST_DOWN | EXPIRE
 
   // Sumber (untuk EARN)
-  source      String?  // LOAN_RETURNED | STREAK | REVIEW | RATING | BADGE | MANUAL | EARLY_RETURN | ON_TIME_RETURN
-  sourceId    String?  // ID dari Loan/Review/Badge (opsional)
+  source   String? // LOAN_RETURNED | STREAK | REVIEW | RATING | BADGE | MANUAL | EARLY_RETURN | ON_TIME_RETURN
+  sourceId String? // ID dari Loan/Review/Badge (opsional)
 
   // Rule config yang trigger
   pointsConfigId String?
   pointsConfig   PointRule? @relation(fields: [pointsConfigId], references: [id])
 
   // Nominal
-  amount      Int      // +50 (earn) atau -200 (redeem). Selalu positif.
-  balanceAfter Int     // snapshot saldo setelah transaksi (running balance)
+  amount       Int // +50 (earn) atau -200 (redeem). Selalu positif.
+  balanceAfter Int // snapshot saldo setelah transaksi (running balance)
 
   // Untuk REDEEM — link ke Reward & Redemption
-  rewardId    String?
-  reward      Reward?  @relation(fields: [rewardId], references: [id])
+  rewardId     String?
+  reward       Reward?           @relation(fields: [rewardId], references: [id])
   redemptionId String?
-  redemption  RewardRedemption? @relation(fields: [redemptionId], references: [id])
+  redemption   RewardRedemption? @relation(fields: [redemptionId], references: [id])
 
   // Metadata
-  description String?  // "Selesai baca 'Laskar Pelangi'"
+  description String? // "Selesai baca 'Laskar Pelangi'"
 
   // Untuk MANUAL: pustakawan yang kasih
   awardedById String?
-  awardedBy   User?    @relation("PointAdjuster", fields: [awardedById], references: [id])
+  awardedBy   User?   @relation("PointAdjuster", fields: [awardedById], references: [id])
 
   // Untuk EXPIRE: tanggal poin tsb jadi invalid
-  expiresAt   DateTime?
+  expiresAt DateTime?
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([memberId, createdAt])
   @@index([type, createdAt])
@@ -802,31 +836,31 @@ model PointTransaction {
 /// Katalog hadiah yang dikelola pustakawan.
 /// Siswa/guru klaim dari sini, pustakawan approve & serahkan.
 model Reward {
-  id          String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // Info dasar
   name        String
   description String?
-  imageUrl    String?  // Foto hadiah (upload atau URL)
-  category    String   // BOOK | STATIONERY | VOUCHER | GIFT_CARD | PRIVILEGE | CERTIFICATE | CUSTOM
+  imageUrl    String? // Foto hadiah (upload atau URL)
+  category    String // BOOK | STATIONERY | VOUCHER | GIFT_CARD | PRIVILEGE | CERTIFICATE | CUSTOM
 
   // Biaya & syarat
-  pointCost   Int      // 200 poin
-  minRole     String   @default("STUDENT") // STUDENT | TEACHER (siapa yang boleh)
+  pointCost Int // 200 poin
+  minRole   String @default("STUDENT") // STUDENT | TEACHER (siapa yang boleh)
 
   // Stok
-  stock       Int?     // null = unlimited
-  stockClaimed Int     @default(0)
+  stock        Int? // null = unlimited
+  stockClaimed Int  @default(0)
 
   // Aturan klaim
   requiresApproval Boolean @default(false) // Hadiah mahal perlu approval pustakawan
-  maxPerMember     Int?    // null = unlimited, atau max klaim per siswa
-  cooldownDays     Int?    // null = no cooldown, atau min jarak antar klaim
+  maxPerMember     Int? // null = unlimited, atau max klaim per siswa
+  cooldownDays     Int? // null = no cooldown, atau min jarak antar klaim
 
   // Tampilan
-  isActive    Boolean  @default(true)
-  isFeatured  Boolean  @default(false) // Tampil di "Highlighted"
-  sortOrder   Int      @default(0)     // Urutan tampil (asc)
+  isActive   Boolean @default(true)
+  isFeatured Boolean @default(false) // Tampil di "Highlighted"
+  sortOrder  Int     @default(0) // Urutan tampil (asc)
 
   // Audit
   createdById String
@@ -835,7 +869,7 @@ model Reward {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  redemptions RewardRedemption[]
+  redemptions  RewardRedemption[]
   transactions PointTransaction[]
 
   @@index([isActive, isFeatured])
@@ -847,42 +881,42 @@ model Reward {
 /// Histori klaim hadiah oleh member.
 /// Flow: PENDING → APPROVED → DELIVERED (atau CANCELLED/REJECTED).
 model RewardRedemption {
-  id          String   @id @default(cuid())
-  memberId    String
-  member      Member   @relation(fields: [memberId], references: [id])
-  rewardId    String
-  reward      Reward   @relation(fields: [rewardId], references: [id])
+  id       String @id @default(cuid())
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id])
+  rewardId String
+  reward   Reward @relation(fields: [rewardId], references: [id])
 
   // Snapshot (untuk audit, kalau hadiah diedit/hapus history tetap valid)
-  rewardName  String
+  rewardName     String
   rewardCategory String
-  pointsSpent Int
+  pointsSpent    Int
 
   // Status flow
-  status      String   @default("PENDING")
+  status String @default("PENDING")
   // PENDING → APPROVED → DELIVERED (happy path)
   // PENDING → REJECTED (pustakawan tolak, poin di-refund)
   // PENDING | APPROVED → CANCELLED (siswa batalkan sebelum disetujui)
 
   // Approval
-  approvedById String?
-  approvedBy   User?    @relation("RewardApprover", fields: [approvedById], references: [id])
-  approvedAt  DateTime?
+  approvedById    String?
+  approvedBy      User?     @relation("RewardApprover", fields: [approvedById], references: [id])
+  approvedAt      DateTime?
   rejectionReason String?
 
   // Pengambilan
-  pickupCode  String   @unique @default(cuid()) // Kode untuk scan saat ambil
-  deliveredAt DateTime?
+  pickupCode    String    @unique @default(cuid()) // Kode untuk scan saat ambil
+  deliveredAt   DateTime?
   deliveredById String?
-  deliveredBy   User?    @relation("RewardDeliverer", fields: [deliveredById], references: [id])
+  deliveredBy   User?     @relation("RewardDeliverer", fields: [deliveredById], references: [id])
   deliveryNotes String?
 
   // Catatan
-  memberNote  String?  // Catatan dari siswa saat klaim (misal ukuran, warna)
-  staffNote   String?  // Catatan internal pustakawan
+  memberNote String? // Catatan dari siswa saat klaim (misal ukuran, warna)
+  staffNote  String? // Catatan internal pustakawan
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   transactions PointTransaction[]
 
@@ -909,30 +943,30 @@ model RewardRedemption {
 /// - "leaderboard_reset_mode" = "RESET" — saldo di-reset ke 0 setelah archive
 /// - "leaderboard_reset_mode" = "CARRYOVER" — saldo tetap, no archive (legacy)
 model SemesterArchive {
-  id            String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // Identifikasi periode
-  periodName    String   // "Ganjil 2025/2026" atau "Genap 2025/2026"
-  periodType    String   // "ODD" (Ganjil) | "EVEN" (Genap) | "CUSTOM"
-  startDate     DateTime
-  endDate       DateTime
+  periodName String // "Ganjil 2025/2026" atau "Genap 2025/2026"
+  periodType String // "ODD" (Ganjil) | "EVEN" (Genap) | "CUSTOM"
+  startDate  DateTime
+  endDate    DateTime
 
   // Hasil ranking (snapshot, immutable)
   // Format JSON: [{ rank, memberId, memberName, memberNumber, totalPoints, booksRead }]
-  rankings      String   // JSON array
+  rankings String // JSON array
 
   // Metadata
-  totalMembers  Int      // Berapa member yang ikut ranking
-  totalPoints   Int      // Total poin beredar di periode ini
-  archivedAt    DateTime @default(now())
-  archivedBy    String   // "auto-cron" | "manual:<userId>"
+  totalMembers Int // Berapa member yang ikut ranking
+  totalPoints  Int // Total poin beredar di periode ini
+  archivedAt   DateTime @default(now())
+  archivedBy   String // "auto-cron" | "manual:<userId>"
 
   // Audit
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
+  @@unique([periodName, periodType])
   @@index([periodType, startDate])
   @@index([archivedAt])
-  @@unique([periodName, periodType])
 }
 
 /// =========================================================================
@@ -943,20 +977,20 @@ model SemesterArchive {
 /// Saat ada event (loan overdue, klaim disetujui, dll), server kirim
 /// push via web-push library ke semua subscription yang match.
 model PushSubscription {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Subscription details (dari Push API)
-  endpoint  String   @unique
+  endpoint String @unique
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  keys      String   // JSON string of p256dh + auth keys
+  keys     String // JSON string of p256dh + auth keys
 
   // Device info
   userAgent String?
 
   // Status
-  isActive  Boolean  @default(true)
+  isActive   Boolean   @default(true)
   lastUsedAt DateTime?
 
   createdAt DateTime @default(now())
@@ -973,21 +1007,21 @@ model PushSubscription {
 /// Setiap user di-assign ke satu variant ("control" atau "treatment") untuk
 /// experiment tertentu. Berguna untuk testing catalog baru, copy, dll.
 model ExperimentAssignment {
-  id            String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // Identifikasi experiment
-  experimentKey String   // "reward_catalog_v2", "point_multiplier_oct"
-  variant       String   // "control" | "treatment_a" | "treatment_b"
+  experimentKey String // "reward_catalog_v2", "point_multiplier_oct"
+  variant       String // "control" | "treatment_a" | "treatment_b"
 
   // Subject
-  memberId      String?
-  userId        String?
-  classGrade    String?  // untuk cluster experiment by kelas
+  memberId   String?
+  userId     String?
+  classGrade String? // untuk cluster experiment by kelas
 
   // Metadata
-  assignedAt    DateTime @default(now())
+  assignedAt DateTime @default(now())
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  metadata      String?  // JSON additional data
+  metadata   String? // JSON additional data
 
   @@unique([experimentKey, memberId])
   @@index([experimentKey, variant])
@@ -1004,17 +1038,17 @@ model ExperimentAssignment {
 ///
 /// Re-compute setiap 6 jam via cron.
 model Recommendation {
-  id        String   @id @default(cuid())
-  memberId  String
-  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   // Recommendation result
-  bookId    String
-  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
-  score     Float    // 0-1, higher = more recommended
-  reason    String   // "Karena kamu sering pinjam fiksi", "Trending di kelasmu"
+  bookId String
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  score  Float // 0-1, higher = more recommended
+  reason String // "Karena kamu sering pinjam fiksi", "Trending di kelasmu"
 
-  rank      Int      // 1-N, top N recommendations
+  rank        Int // 1-N, top N recommendations
   generatedAt DateTime @default(now())
 
   @@unique([memberId, bookId])
@@ -1028,30 +1062,30 @@ model Recommendation {
 /// Untuk mengirim digest mingguan / bulanan ke siswa via WhatsApp/email.
 /// Disimpan sebagai record supaya bisa di-track statusnya.
 model NotificationSchedule {
-  id            String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // Schedule metadata
-  name          String   // "Weekly Digest", "Monthly Summary", dll
-  type          String   // "WEEKLY" | "MONTHLY" | "CUSTOM"
-  channel       String   // "EMAIL" | "WHATSAPP" | "BOTH"
-  targetRole    String   // "STUDENT" | "TEACHER" | "ALL"
+  name       String // "Weekly Digest", "Monthly Summary", dll
+  type       String // "WEEKLY" | "MONTHLY" | "CUSTOM"
+  channel    String // "EMAIL" | "WHATSAPP" | "BOTH"
+  targetRole String // "STUDENT" | "TEACHER" | "ALL"
 
   // Schedule
-  dayOfWeek     Int?     // 0-6 (Sunday-Saturday) for WEEKLY
-  dayOfMonth    Int?     // 1-31 for MONTHLY
-  hour          Int      @default(8)  // 0-23
+  dayOfWeek  Int? // 0-6 (Sunday-Saturday) for WEEKLY
+  dayOfMonth Int? // 1-31 for MONTHLY
+  hour       Int  @default(8) // 0-23
 
   // Template
-  templateKey   String   // Key di whatsappTemplates / emailTemplates
-  enabled       Boolean  @default(true)
+  templateKey String // Key di whatsappTemplates / emailTemplates
+  enabled     Boolean @default(true)
 
   // Last run
   lastRunAt     DateTime?
-  lastRunStatus String?  // "success" | "partial" | "failed"
-  lastRunCount  Int?     // Berapa orang dikirimi
+  lastRunStatus String? // "success" | "partial" | "failed"
+  lastRunCount  Int? // Berapa orang dikirimi
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([enabled, type])
 }
@@ -1075,37 +1109,38 @@ model NotificationSchedule {
 /// Sesi percakapan antara user dan AI assistant.
 /// 1 user bisa punya banyak conversation (history).
 model ChatConversation {
-  id          String        @id @default(cuid())
+  id String @id @default(cuid())
 
   // User
-  userId      String
+  userId   String?
+  user     User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
   // Optional: link ke member (kalau user adalah student/teacher)
-  memberId    String?
+  memberId String?
 
   // Metadata sesi
-  title       String        // "Cari buku novel" (auto-generated dari pesan pertama)
-  channel     String        @default("WEB") // WEB | MOBILE | KIOSK
-  locale      String        @default("id")  // "id" | "en" | "ar"
+  title   String // "Cari buku novel" (auto-generated dari pesan pertama)
+  channel String @default("WEB") // WEB | MOBILE | KIOSK
+  locale  String @default("id") // "id" | "en" | "ar"
 
   // Status
-  isActive    Boolean       @default(true)
-  escalated   Boolean       @default(false) // Di-escalate ke pustakawan?
+  isActive    Boolean   @default(true)
+  escalated   Boolean   @default(false) // Di-escalate ke pustakawan?
   escalatedAt DateTime?
   closedAt    DateTime?
 
   // Statistik
-  messageCount Int          @default(0)
-  userRating   Int?         // 1-5, feedback dari user
-  userFeedback String?      // Komentar feedback
+  messageCount Int     @default(0)
+  userRating   Int? // 1-5, feedback dari user
+  userFeedback String? // Komentar feedback
 
   // Token tracking (untuk cost monitoring)
-  totalTokens  Int          @default(0)
+  totalTokens Int @default(0)
 
   // Relations
-  messages     ChatMessage[]
+  messages ChatMessage[]
 
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId, createdAt])
   @@index([memberId, createdAt])
@@ -1117,34 +1152,34 @@ model ChatConversation {
 /// "user" = pesan dari user, "assistant" = balasan AI, "system" = system prompt,
 /// "tool" = hasil function call (untuk advanced usage).
 model ChatMessage {
-  id              String          @id @default(cuid())
+  id String @id @default(cuid())
 
-  conversationId  String
-  conversation    ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId String
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   // Isi
-  role            String          // "user" | "assistant" | "system" | "tool"
-  content         String
+  role    String // "user" | "assistant" | "system" | "tool"
+  content String
 
   // Intent classification (untuk assistant messages)
-  intent          String?         // "book_search" | "loan_status" | "points_info" | "faq" | "general"
-  confidence      Float?          // 0-1, hasil classification
+  intent     String? // "book_search" | "loan_status" | "points_info" | "faq" | "general"
+  confidence Float? // 0-1, hasil classification
 
   // AI metadata
-  provider        String?         // "openai" | "anthropic" | "google" | "mock"
-  model           String?         // "gpt-4o-mini" | "claude-3-5-haiku" | "gemini-1.5-flash"
-  tokens          Int?            // Total tokens used
-  latencyMs       Int?            // Response time
+  provider  String? // "openai" | "anthropic" | "google" | "mock"
+  model     String? // "gpt-4o-mini" | "claude-3-5-haiku" | "gemini-1.5-flash"
+  tokens    Int? // Total tokens used
+  latencyMs Int? // Response time
 
   // Cited sources (untuk RAG)
-  sources         String?         // JSON array of {bookId, bookTitle, score}
-  suggestedActions String?        // JSON array of {action, label, params}
+  sources          String? // JSON array of {bookId, bookTitle, score}
+  suggestedActions String? // JSON array of {action, label, params}
 
   // Feedback
-  isHelpful       Boolean?        // User feedback (thumbs up/down)
-  feedbackNote    String?
+  isHelpful    Boolean? // User feedback (thumbs up/down)
+  feedbackNote String?
 
-  createdAt       DateTime        @default(now())
+  createdAt DateTime @default(now())
 
   @@index([conversationId, createdAt])
   @@index([intent])
@@ -1154,24 +1189,24 @@ model ChatMessage {
 /// FAQ cache — untuk pertanyaan yang sering ditanya.
 /// Cached response supaya hemat token & lebih cepat.
 model ChatFAQ {
-  id          String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // Pertanyaan & jawaban
-  question    String   @unique // Pattern / exact question
-  answer      String   // Response template
-  category    String   // "hours" | "membership" | "loan_rules" | "points" | "general"
-  locale      String   @default("id")
+  question String @unique // Pattern / exact question
+  answer   String // Response template
+  category String // "hours" | "membership" | "loan_rules" | "points" | "general"
+  locale   String @default("id")
 
   // Tracking
-  hitCount    Int      @default(0)
-  lastHitAt   DateTime?
-  isActive    Boolean  @default(true)
+  hitCount  Int       @default(0)
+  lastHitAt DateTime?
+  isActive  Boolean   @default(true)
 
   // Variasi pertanyaan (JSON array of alternative phrasings)
-  variations  String?  // ["kapan buka", "jam berapa", "jam operasional"]
+  variations String? // ["kapan buka", "jam berapa", "jam operasional"]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([category, isActive])
   @@index([locale, isActive])
@@ -1195,33 +1230,33 @@ model ChatFAQ {
 
 /// Setiap kartu RFID yang digunakan. Satu kartu per member.
 model RFIDCard {
-  id          String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // UID dari RFID reader (unique per kartu)
-  uid         String   @unique // "A1:B2:C3:D4" format
+  uid String @unique // "A1:B2:C3:D4" format
 
   // Owner
-  memberId    String
-  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   // Card metadata
-  cardType    String   @default("MEMBER") // MEMBER | STAFF | VISITOR
-  issuedAt    DateTime @default(now())
-  expiresAt   DateTime?
-  isActive    Boolean  @default(true)
+  cardType  String    @default("MEMBER") // MEMBER | STAFF | VISITOR
+  issuedAt  DateTime  @default(now())
+  expiresAt DateTime?
+  isActive  Boolean   @default(true)
 
   // Usage tracking
-  lastUsedAt  DateTime?
-  usageCount  Int      @default(0)
+  lastUsedAt DateTime?
+  usageCount Int       @default(0)
 
   // Notes (alasan deactivate, dll)
-  notes       String?
+  notes String?
 
   // Relations
-  events      RFIDEvent[]
+  events RFIDEvent[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([memberId, isActive])
   @@index([uid, isActive])
@@ -1230,20 +1265,20 @@ model RFIDCard {
 /// RFID reader hardware yang terdaftar.
 /// Bisa physical (terhubung via USB/serial → server) atau virtual (testing).
 model RFIDReader {
-  id          String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // Identifikasi reader
-  code        String   @unique // "READER-ENTRANCE-01", "READER-DESK-01"
-  name        String
-  location    String?  // "Pintu masuk", "Meja sirkulasi", "Exit gate"
+  code     String  @unique // "READER-ENTRANCE-01", "READER-DESK-01"
+  name     String
+  location String? // "Pintu masuk", "Meja sirkulasi", "Exit gate"
 
   // Hardware info
-  model       String?  // "RC522", "PN532", "Simulator"
-  firmware    String?
+  model    String? // "RC522", "PN532", "Simulator"
+  firmware String?
 
   // Konfigurasi
-  type        String   @default("CHECKIN") // CHECKIN | CHECKOUT | BOTH | EXIT
-  isActive    Boolean  @default(true)
+  type     String  @default("CHECKIN") // CHECKIN | CHECKOUT | BOTH | EXIT
+  isActive Boolean @default(true)
 
   // Beep settings
   beepOnSuccess Boolean @default(true)
@@ -1252,17 +1287,17 @@ model RFIDReader {
 
   // Status monitoring
   lastSeenAt   DateTime?
-  isOnline     Boolean  @default(false)
-  batteryLevel Int?     // 0-100, null kalau wired
+  isOnline     Boolean   @default(false)
+  batteryLevel Int? // 0-100, null kalau wired
 
   // API key untuk authenticate reader → server
-  apiKeyHash   String?  @unique
+  apiKeyHash String? @unique
 
   // Relations
-  events       RFIDEvent[]
+  events RFIDEvent[]
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([code, isActive])
   @@index([isOnline])
@@ -1271,39 +1306,41 @@ model RFIDReader {
 /// Setiap tap/ scan event dari reader.
 /// Immutable log untuk audit & analytics.
 model RFIDEvent {
-  id          String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // Hardware
-  readerId    String
-  reader      RFIDReader @relation(fields: [readerId], references: [id])
+  readerId String
+  reader   RFIDReader @relation(fields: [readerId], references: [id])
 
   // Kartu yang di-tap
-  cardId      String?
-  card        RFIDCard?  @relation(fields: [cardId], references: [id])
-  uid         String   // UID yang di-scan (untuk forensics)
+  cardId String?
+  card   RFIDCard? @relation(fields: [cardId], references: [id])
+  uid    String // UID yang di-scan (untuk forensics)
 
   // Event type
-  eventType   String   // CHECKIN | CHECKOUT | CHECKOUT_BOOK | UNKNOWN_CARD | ERROR
+  eventType String // CHECKIN | CHECKOUT | CHECKOUT_BOOK | UNKNOWN_CARD | ERROR
 
   // Result
-  status      String   @default("OK") // OK | DENIED | ERROR | DUPLICATE
-  memberId    String?  // resolved member
-  message     String?  // human-readable message
+  status   String  @default("OK") // OK | DENIED | ERROR | DUPLICATE
+  memberId String? // resolved member
+  message  String? // human-readable message
 
   // Book context (untuk CHECKOUT_BOOK)
-  bookItemId  String?
-  loanId      String?
+  bookItemId String?
+  bookItem   BookItem? @relation(fields: [bookItemId], references: [id], onDelete: SetNull)
+  loanId     String?
+  loan       Loan?     @relation(fields: [loanId], references: [id], onDelete: SetNull)
 
   // Anti-duplicate
-  isDebounced Boolean  @default(false) // duplicate within 2s window
+  isDebounced Boolean @default(false) // duplicate within 2s window
 
   // Timing
-  scannedAt   DateTime  // waktu tap (from reader)
-  receivedAt  DateTime @default(now()) // waktu server terima
+  scannedAt   DateTime // waktu tap (from reader)
+  receivedAt  DateTime  @default(now()) // waktu server terima
   processedAt DateTime?
 
   // Raw data (untuk debugging)
-  rawData     String?  // JSON: signal strength, sector data, etc
+  rawData String? // JSON: signal strength, sector data, etc
 
   @@index([scannedAt])
   @@index([memberId, scannedAt])
@@ -1314,18 +1351,18 @@ model RFIDEvent {
 /// RFID-tagged book items.
 /// Setiap eksemplar bisa punya tag RFID (biasanya贴在 dalam buku).
 model BookItemTag {
-  id          String   @id @default(cuid())
-  bookItemId  String   @unique
-  bookItem    BookItem @relation(fields: [bookItemId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  bookItemId String   @unique
+  bookItem   BookItem @relation(fields: [bookItemId], references: [id], onDelete: Cascade)
 
   // Tag UID (unique per buku)
-  tagUid      String   @unique
+  tagUid String @unique
 
-  isActive    Boolean  @default(true)
+  isActive      Boolean   @default(true)
   lastScannedAt DateTime?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([tagUid, isActive])
 }
@@ -1353,35 +1390,35 @@ model BookItemTag {
 
 /// Audit block dalam chain. Immutable setelah created.
 model AuditBlock {
-  id            String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // Block position
-  index         Int      @unique // 0, 1, 2, 3, ...
-  timestamp     DateTime // when block was sealed
+  index     Int      @unique // 0, 1, 2, 3, ...
+  timestamp DateTime // when block was sealed
 
   // Chain linkage
-  previousHash  String   // hash of previous block (genesis = "0")
-  hash          String   @unique // this block's hash
-  merkleRoot    String   // root of merkle tree of audit logs in this block
+  previousHash String // hash of previous block (genesis = "0")
+  hash         String @unique // this block's hash
+  merkleRoot   String // root of merkle tree of audit logs in this block
 
   // Block content
-  eventCount    Int      // number of audit events in this block
-  firstEventId  String?  // first audit log id in this block
-  lastEventId   String?  // last audit log id in this block
+  eventCount   Int // number of audit events in this block
+  firstEventId String? // first audit log id in this block
+  lastEventId  String? // last audit log id in this block
 
   // Proof of work (optional, simplified - just a counter)
-  nonce         Int      @default(0)
-  difficulty    Int      @default(0) // number of leading zeros required
+  nonce      Int @default(0)
+  difficulty Int @default(0) // number of leading zeros required
 
   // Metadata
-  sealedBy      String?  // userId of who sealed the block
-  sealReason    String?  // "AUTO_INTERVAL" | "MANUAL" | "BATCH_SIZE"
-  size          Int      @default(0) // bytes
+  sealedBy   String? // userId of who sealed the block
+  sealReason String? // "AUTO_INTERVAL" | "MANUAL" | "BATCH_SIZE"
+  size       Int     @default(0) // bytes
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
   // Relations - audit events in this block
-  events        AuditLog[] @relation("AuditLogBlock")
+  events AuditLog[] @relation("AuditLogBlock")
 
   @@index([index])
   @@index([timestamp])
@@ -1391,16 +1428,16 @@ model AuditBlock {
 /// Extend AuditLog untuk track blockchain inclusion.
 /// Setiap audit log di-link ke block setelah block sealed.
 model AuditLogBlockchain {
-  id          String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  auditLogId  String   @unique
-  blockId     String
+  auditLogId String @unique
+  blockId    String
 
   // Verification data
-  merkleProof String   // JSON array of sibling hashes
-  leafHash    String   // hash of this specific audit log
+  merkleProof String // JSON array of sibling hashes
+  leafHash    String // hash of this specific audit log
 
-  sealedAt    DateTime @default(now())
+  sealedAt DateTime @default(now())
 
   @@index([blockId])
   @@index([auditLogId])
@@ -1408,27 +1445,27 @@ model AuditLogBlockchain {
 
 // ===== Reading Lists (Sosial Reading) - Tier 2 #6 =====
 model ReadingList {
-  id          String   @id @default(cuid())
-  memberId    String
-  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   title       String
   description String?
-  category    String   @default("CUSTOM") // THEMED | RECOMMENDED | GENRE | ACADEMIC | BEGINNER | ADVANCED | CUSTOM
-  visibility  String   @default("PUBLIC") // PUBLIC | PRIVATE | FOLLOWERS_ONLY
+  category    String  @default("CUSTOM") // THEMED | RECOMMENDED | GENRE | ACADEMIC | BEGINNER | ADVANCED | CUSTOM
+  visibility  String  @default("PUBLIC") // PUBLIC | PRIVATE | FOLLOWERS_ONLY
 
   // Display
-  coverColor  String   @default("#3b82f6")
-  coverEmoji  String   @default("📚")
-  tags        String   @default("[]") // JSON array
+  coverColor String @default("#3b82f6")
+  coverEmoji String @default("📚")
+  tags       String @default("[]") // JSON array
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  items       ReadingListItem[]
-  likes       ReadingListLike[]
-  follows     ReadingListFollow[]
-  comments    ReadingListComment[]
+  items    ReadingListItem[]
+  likes    ReadingListLike[]
+  follows  ReadingListFollow[]
+  comments ReadingListComment[]
 
   @@index([memberId])
   @@index([visibility, category])
@@ -1436,91 +1473,91 @@ model ReadingList {
 }
 
 model ReadingListItem {
-  id        String   @id @default(cuid())
-  listId    String
-  list      ReadingList @relation(fields: [listId], references: [id], onDelete: Cascade)
-  bookId    String
-  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
-  position  Int      @default(0)
-  addedAt   DateTime @default(now())
+  id       String      @id @default(cuid())
+  listId   String
+  list     ReadingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  bookId   String
+  book     Book        @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  position Int         @default(0)
+  addedAt  DateTime    @default(now())
 
   @@unique([listId, bookId])
   @@index([listId, position])
 }
 
 model ReadingListLike {
-  id        String   @id @default(cuid())
+  id        String      @id @default(cuid())
   listId    String
   list      ReadingList @relation(fields: [listId], references: [id], onDelete: Cascade)
   memberId  String
-  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  member    Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
 
   @@unique([listId, memberId])
   @@index([listId])
 }
 
 model ReadingListFollow {
-  id        String   @id @default(cuid())
+  id        String      @id @default(cuid())
   listId    String
   list      ReadingList @relation(fields: [listId], references: [id], onDelete: Cascade)
   memberId  String
-  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  member    Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
 
   @@unique([listId, memberId])
   @@index([memberId])
 }
 
 model ReadingListComment {
-  id        String   @id @default(cuid())
+  id        String      @id @default(cuid())
   listId    String
   list      ReadingList @relation(fields: [listId], references: [id], onDelete: Cascade)
   memberId  String
-  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  member    Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
   comment   String
-  createdAt DateTime @default(now())
+  createdAt DateTime    @default(now())
 
   @@index([listId, createdAt])
 }
 
 // ===== Book Clubs (Sosial Reading) - Tier 2 #6 =====
 model BookClub {
-  id              String   @id @default(cuid())
-  name            String
-  description     String
-  coverEmoji      String   @default("📚")
-  coverColor      String   @default("#3b82f6")
-  visibility      String   @default("PUBLIC") // PUBLIC | PRIVATE | INVITE_ONLY
-  currentBookId   String?
-  currentBook     Book?    @relation(fields: [currentBookId], references: [id])
+  id            String  @id @default(cuid())
+  name          String
+  description   String
+  coverEmoji    String  @default("📚")
+  coverColor    String  @default("#3b82f6")
+  visibility    String  @default("PUBLIC") // PUBLIC | PRIVATE | INVITE_ONLY
+  currentBookId String?
+  currentBook   Book?   @relation(fields: [currentBookId], references: [id])
 
-  createdById     String
-  createdBy       Member   @relation("ClubCreator", fields: [createdById], references: [id])
+  createdById String
+  createdBy   Member @relation("ClubCreator", fields: [createdById], references: [id])
 
-  tags            String   @default("[]") // JSON array
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  tags      String   @default("[]") // JSON array
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  members         BookClubMember[]
-  discussions     BookClubDiscussion[]
-  schedules       ReadingSchedule[]
+  members     BookClubMember[]
+  discussions BookClubDiscussion[]
+  schedules   ReadingSchedule[]
 
   @@index([visibility, createdAt])
   @@index([currentBookId])
 }
 
 model BookClubMember {
-  id           String   @id @default(cuid())
-  clubId       String
-  club         BookClub @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  memberId     String
-  member       Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  id       String   @id @default(cuid())
+  clubId   String
+  club     BookClub @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  memberId String
+  member   Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
-  role         String   @default("MEMBER") // OWNER | MODERATOR | MEMBER
-  status       String   @default("ACTIVE") // ACTIVE | PENDING | BANNED
-  progress     Int      @default(0) // 0-100
-  joinedAt     DateTime @default(now())
+  role         String    @default("MEMBER") // OWNER | MODERATOR | MEMBER
+  status       String    @default("ACTIVE") // ACTIVE | PENDING | BANNED
+  progress     Int       @default(0) // 0-100
+  joinedAt     DateTime  @default(now())
   lastActiveAt DateTime?
 
   @@unique([clubId, memberId])
@@ -1529,100 +1566,100 @@ model BookClubMember {
 }
 
 model BookClubDiscussion {
-  id          String   @id @default(cuid())
-  clubId      String
-  club        BookClub @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  memberId    String
-  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  id       String   @id @default(cuid())
+  clubId   String
+  club     BookClub @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  memberId String
+  member   Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
-  content     String
-  parentId    String?
-  parent      BookClubDiscussion? @relation("Replies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies     BookClubDiscussion[] @relation("Replies")
+  content  String
+  parentId String?
+  parent   BookClubDiscussion?  @relation("Replies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  BookClubDiscussion[] @relation("Replies")
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  likes       BookClubDiscussionLike[]
+  likes BookClubDiscussionLike[]
 
   @@index([clubId, createdAt])
   @@index([parentId])
 }
 
 model BookClubDiscussionLike {
-  id            String   @id @default(cuid())
-  discussionId  String
-  discussion    BookClubDiscussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
-  memberId      String
-  member        Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  createdAt     DateTime @default(now())
+  id           String             @id @default(cuid())
+  discussionId String
+  discussion   BookClubDiscussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  memberId     String
+  member       Member             @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdAt    DateTime           @default(now())
 
   @@unique([discussionId, memberId])
 }
 
 model ReadingSchedule {
-  id              String   @id @default(cuid())
-  clubId          String
-  club            BookClub @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  bookId          String
-  book            Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  id     String   @id @default(cuid())
+  clubId String
+  club   BookClub @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  bookId String
+  book   Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
-  startDate       DateTime
-  endDate         DateTime
-  chapterRange    String   // "Ch 1-5"
-  targetProgress  Int      // 0-100
-  description     String
+  startDate      DateTime
+  endDate        DateTime
+  chapterRange   String // "Ch 1-5"
+  targetProgress Int // 0-100
+  description    String
 
-  createdAt       DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([clubId, startDate])
 }
 
 // ===== Donations & Book Exchange (Tier 4 #16) =====
 model Donation {
-  id              String   @id @default(cuid())
-  type            String   // DONATION | EXCHANGE
-  title           String
-  author          String
-  isbn            String?
-  condition       String   // NEW | LIKE_NEW | GOOD | FAIR | POOR
-  description     String?
-  categoryId      String?
-  category        Category? @relation(fields: [categoryId], references: [id])
-  images          String   @default("[]") // JSON array of URLs
+  id          String    @id @default(cuid())
+  type        String // DONATION | EXCHANGE
+  title       String
+  author      String
+  isbn        String?
+  condition   String // NEW | LIKE_NEW | GOOD | FAIR | POOR
+  description String?
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  images      String    @default("[]") // JSON array of URLs
 
-  status          String   @default("PENDING") // PENDING | APPROVED | REJECTED | RECEIVED | CANCELLED
-  donorId         String
-  donor           Member   @relation(fields: [donorId], references: [id], onDelete: Cascade)
+  status  String @default("PENDING") // PENDING | APPROVED | REJECTED | RECEIVED | CANCELLED
+  donorId String
+  donor   Member @relation(fields: [donorId], references: [id], onDelete: Cascade)
 
-  approvedById    String?
-  approvedBy      User?    @relation("DonationApprover", fields: [approvedById], references: [id])
-  rewardPoints    Int      @default(0)
+  approvedById String?
+  approvedBy   User?   @relation("DonationApprover", fields: [approvedById], references: [id])
+  rewardPoints Int     @default(0)
 
   rejectionReason String?
   receivedAt      DateTime?
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  offers          ExchangeOffer[]
+  offers ExchangeOffer[]
 
   @@index([type, status])
   @@index([donorId, createdAt])
 }
 
 model ExchangeOffer {
-  id                String   @id @default(cuid())
-  listingId         String
-  listing           Donation @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  offererId         String
-  offerer           Member   @relation("Offerer", fields: [offererId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Donation @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  offererId String
+  offerer   Member   @relation("Offerer", fields: [offererId], references: [id], onDelete: Cascade)
 
-  offererBookTitle  String
-  message           String
-  status            String   @default("PENDING") // PENDING | ACCEPTED | REJECTED | CANCELLED
+  offererBookTitle String
+  message          String
+  status           String @default("PENDING") // PENDING | ACCEPTED | REJECTED | CANCELLED
 
-  createdAt         DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([listingId, status])
   @@index([offererId, createdAt])
@@ -1630,22 +1667,22 @@ model ExchangeOffer {
 
 // ===== Certificates (Sprint S - Tier 4 #15) =====
 model Certificate {
-  id              String   @id @default(cuid())
-  type            String   // BOOKS_10, BOOKS_25, etc.
-  memberId        String
-  member          Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  type     String // BOOKS_10, BOOKS_25, etc.
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
-  title           String
-  description     String
-  emoji           String
-  color           String
+  title       String
+  description String
+  emoji       String
+  color       String
 
-  metadata        String   @default("{}") // JSON: booksRead, streak, level, etc.
+  metadata String @default("{}") // JSON: booksRead, streak, level, etc.
 
-  verificationHash String  @unique // SHA-256 hash of content
-  slug            String   @unique // URL slug for verification
-  achievementDate DateTime
-  issuedAt        DateTime @default(now())
+  verificationHash String   @unique // SHA-256 hash of content
+  slug             String   @unique // URL slug for verification
+  achievementDate  DateTime
+  issuedAt         DateTime @default(now())
 
   @@index([memberId, type])
   @@index([issuedAt])
@@ -1653,33 +1690,33 @@ model Certificate {
 
 // ===== AR Book Discovery (Sprint T - Tier 4 #13) =====
 model CoverSignature {
-  id              String   @id @default(cuid())
-  bookId          String   @unique
-  book            Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  bookId String @unique
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
-  perceptualHash  String   // 16-char hex dHash
-  dominantColors  String   // JSON array of 5 hex colors
-  aspectRatio     Float    @default(0.66) // width/height
+  perceptualHash String // 16-char hex dHash
+  dominantColors String // JSON array of 5 hex colors
+  aspectRatio    Float  @default(0.66) // width/height
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([perceptualHash])
 }
 
 model ARTreasureHunt {
-  id            String   @id @default(cuid())
-  bookId        String
-  book          Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  bookId String
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
-  name          String
-  description   String
-  hint          String
-  rewardPoints  Int      @default(50)
-  expiresAt     DateTime
-  foundBy       String   @default("[]") // JSON array of member IDs
+  name         String
+  description  String
+  hint         String
+  rewardPoints Int      @default(50)
+  expiresAt    DateTime
+  foundBy      String   @default("[]") // JSON array of member IDs
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([expiresAt])
   @@index([bookId])
@@ -1687,22 +1724,22 @@ model ARTreasureHunt {
 
 // ===== Security Hardening (Sprint T - Tier 3 #11 lanjutan) =====
 model BruteForceState {
-  userId            String   @id
-  failedAttempts    Int      @default(0)
-  lastAttemptAt     DateTime
-  lockedUntil       DateTime?
-  progressiveDelayMs Int     @default(0)
+  userId             String    @id
+  failedAttempts     Int       @default(0)
+  lastAttemptAt      DateTime
+  lockedUntil        DateTime?
+  progressiveDelayMs Int       @default(0)
 
   @@index([lockedUntil])
 }
 
 model DeviceFingerprint {
-  id               String   @id @default(cuid())
-  userId           String
-  fingerprintHash  String
-  deviceName       String
-  lastUsedAt       DateTime @default(now())
-  createdAt        DateTime @default(now())
+  id              String   @id @default(cuid())
+  userId          String
+  fingerprintHash String
+  deviceName      String
+  lastUsedAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
 
   @@unique([userId, fingerprintHash])
   @@index([userId, lastUsedAt])
@@ -1710,40 +1747,42 @@ model DeviceFingerprint {
 
 // ===== 1. Class Reading Program =====
 model ReadingAssignment {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  bookId      String
-  book        Book     @relation(fields: [bookId], references: [id])
-  classGrade  String   // "10-A", "11-B", etc
-  subject     String?  // "Bahasa Indonesia", "IPA", etc
-  assignedBy  String   // userId of teacher
-  dueDate     DateTime
-  isActive    Boolean  @default(true)
+  id             String   @id @default(cuid())
+  title          String
+  description    String?
+  bookId         String
+  book           Book     @relation(fields: [bookId], references: [id])
+  classGrade     String // "10-A", "11-B", etc
+  subject        String? // "Bahasa Indonesia", "IPA", etc
+  assignedBy     String? // userId of teacher
+  assignedByUser User?    @relation(fields: [assignedBy], references: [id], onDelete: SetNull)
+  dueDate        DateTime
+  isActive       Boolean  @default(true)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  progress    ReadingProgress[]
+  progress ReadingProgress[]
+
   @@index([classGrade])
   @@index([assignedBy])
 }
 
 model ReadingProgress {
-  id             String   @id @default(cuid())
-  assignmentId   String
-  memberId       String
-  status         String   @default("NOT_STARTED") // NOT_STARTED, READING, COMPLETED
-  currentPage    Int      @default(0)
-  totalPages     Int      @default(0)
-  notes          String?
-  completedAt    DateTime?
+  id           String    @id @default(cuid())
+  assignmentId String
+  memberId     String
+  status       String    @default("NOT_STARTED") // NOT_STARTED, READING, COMPLETED
+  currentPage  Int       @default(0)
+  totalPages   Int       @default(0)
+  notes        String?
+  completedAt  DateTime?
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  assignment     ReadingAssignment @relation(fields: [assignmentId], references: [id])
-  member         Member           @relation(fields: [memberId], references: [id])
+  assignment ReadingAssignment @relation(fields: [assignmentId], references: [id])
+  member     Member            @relation(fields: [memberId], references: [id])
 
   @@unique([assignmentId, memberId])
   @@index([memberId])
@@ -1752,41 +1791,44 @@ model ReadingProgress {
 
 // ===== 2. Book Marketplace =====
 model BookListing {
-  id          String   @id @default(cuid())
-  sellerId    String   // memberId
+  id          String  @id @default(cuid())
+  sellerId    String // memberId
   bookTitle   String
   author      String?
   isbn        String?
-  condition   String   // GOOD, FAIR, WORN
-  pricePoints Int      // in poin (not real money)
+  condition   String // GOOD, FAIR, WORN
+  pricePoints Int // in poin (not real money)
   description String?
   coverImage  String?
-  status      String   @default("AVAILABLE") // AVAILABLE, RESERVED, SOLD, REMOVED
+  status      String  @default("AVAILABLE") // AVAILABLE, RESERVED, SOLD, REMOVED
   buyerId     String?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  seller      Member   @relation("BookListingSeller", fields: [sellerId], references: [id])
-  buyer       Member?  @relation("BookListingBuyer", fields: [buyerId], references: [id])
+  seller Member  @relation("BookListingSeller", fields: [sellerId], references: [id])
+  buyer  Member? @relation("BookListingBuyer", fields: [buyerId], references: [id])
 
   @@index([sellerId])
+  @@index([buyerId])
   @@index([status])
 }
 
 // ===== 3. Curriculum Book Recommendation =====
 model CurriculumRecommendation {
-  id          String   @id @default(cuid())
-  subject     String   // "Matematika", "Fisika", "Bahasa Indonesia"
-  classGrade  String   // "10", "11", "12"
+  id          String  @id @default(cuid())
+  subject     String // "Matematika", "Fisika", "Bahasa Indonesia"
+  classGrade  String // "10", "11", "12"
   bookId      String
-  reason      String?  // why this book is recommended
-  isRequired  Boolean  @default(false) // wajib vs recomended
-  addedBy     String   // userId
+  reason      String? // why this book is recommended
+  isRequired  Boolean @default(false) // wajib vs recomended
+  addedBy     String? // userId
+  addedByUser User?   @relation(fields: [addedBy], references: [id], onDelete: SetNull)
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  book        Book     @relation(fields: [bookId], references: [id])
+  book Book @relation(fields: [bookId], references: [id])
+
   @@unique([subject, classGrade, bookId])
   @@index([classGrade])
   @@index([subject])
@@ -1794,33 +1836,34 @@ model CurriculumRecommendation {
 
 // ===== 4. Card Print Queue =====
 model CardPrintQueue {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   memberId    String
-  cardType    String   @default("MEMBER") // MEMBER, GUEST
-  status      String   @default("QUEUED") // QUEUED, PRINTING, COMPLETED, CANCELLED
+  cardType    String    @default("MEMBER") // MEMBER, GUEST
+  status      String    @default("QUEUED") // QUEUED, PRINTING, COMPLETED, CANCELLED
   queueNumber Int
   printedBy   String?
   printedAt   DateTime?
   notes       String?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  member      Member   @relation(fields: [memberId], references: [id])
+  member Member @relation(fields: [memberId], references: [id])
 
+  @@index([memberId])
   @@index([status])
   @@index([queueNumber])
 }
 
 // ===== 6. WhatsApp Overdue Notification =====
 model WhatsAppLog2 {
-  id          String   @id @default(cuid())
-  loanId      String
-  memberId    String
-  phone       String
-  message     String
-  status      String   @default("SENT") // SENT, DELIVERED, FAILED
-  sentAt      DateTime @default(now())
+  id       String   @id @default(cuid())
+  loanId   String
+  memberId String
+  phone    String
+  message  String
+  status   String   @default("SENT") // SENT, DELIVERED, FAILED
+  sentAt   DateTime @default(now())
 
   @@index([loanId])
   @@index([memberId])
@@ -1828,14 +1871,14 @@ model WhatsAppLog2 {
 
 // ===== 7. Library Attendance =====
 model LibraryAttendance {
-  id          String   @id @default(cuid())
-  memberId    String
-  checkIn     DateTime @default(now())
-  checkOut    DateTime?
-  purpose     String?  // "MEMBER", "READING", "STUDY_GROUP", "EVENT"
-  room        String?
+  id       String    @id @default(cuid())
+  memberId String
+  checkIn  DateTime  @default(now())
+  checkOut DateTime?
+  purpose  String? // "MEMBER", "READING", "STUDY_GROUP", "EVENT"
+  room     String?
 
-  member      Member   @relation(fields: [memberId], references: [id])
+  member Member @relation(fields: [memberId], references: [id])
 
   @@index([memberId])
   @@index([checkIn])
@@ -1843,17 +1886,18 @@ model LibraryAttendance {
 
 // ===== 8. Book of the Week =====
 model BookOfTheWeek {
-  id          String   @id @default(cuid())
-  bookId      String
-  reason      String?  // why this book was chosen
-  setBy       String   // userId of librarian
-  weekStart   DateTime
-  weekEnd     DateTime
-  isActive    Boolean  @default(true)
+  id        String   @id @default(cuid())
+  bookId    String
+  reason    String? // why this book was chosen
+  setBy     String? // userId of librarian
+  setByUser User?    @relation(fields: [setBy], references: [id], onDelete: SetNull)
+  weekStart DateTime
+  weekEnd   DateTime
+  isActive  Boolean  @default(true)
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  book        Book     @relation(fields: [bookId], references: [id])
+  book Book @relation(fields: [bookId], references: [id])
 
   @@index([weekStart])
   @@index([isActive])
@@ -1861,36 +1905,37 @@ model BookOfTheWeek {
 
 // ===== 9. Monthly Reading Challenge =====
 model MonthlyChallenge {
-  id          String   @id @default(cuid())
-  title       String
-  description String
-  month       Int      // 1-12
-  year        Int
-  goalType    String   // "BOOKS_COUNT", "PAGES_COUNT", "STREAK"
-  goalValue   Int      // e.g. 3 books, 100 pages, 7-day streak
+  id           String  @id @default(cuid())
+  title        String
+  description  String
+  month        Int // 1-12
+  year         Int
+  goalType     String // "BOOKS_COUNT", "PAGES_COUNT", "STREAK"
+  goalValue    Int // e.g. 3 books, 100 pages, 7-day streak
   rewardPoints Int     @default(100)
-  badgeName   String?
-  isActive    Boolean  @default(true)
+  badgeName    String?
+  isActive     Boolean @default(true)
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   participants ChallengeParticipant[]
+
   @@unique([month, year])
 }
 
 model ChallengeParticipant {
-  id            String   @id @default(cuid())
-  challengeId   String
-  memberId      String
-  currentValue  Int      @default(0)
-  isCompleted   Boolean  @default(false)
-  completedAt   DateTime?
+  id           String    @id @default(cuid())
+  challengeId  String
+  memberId     String
+  currentValue Int       @default(0)
+  isCompleted  Boolean   @default(false)
+  completedAt  DateTime?
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  challenge     MonthlyChallenge @relation(fields: [challengeId], references: [id])
-  member        Member           @relation(fields: [memberId], references: [id])
+  challenge MonthlyChallenge @relation(fields: [challengeId], references: [id])
+  member    Member           @relation(fields: [memberId], references: [id])
 
   @@unique([challengeId, memberId])
   @@index([memberId])
@@ -1898,36 +1943,36 @@ model ChallengeParticipant {
 
 // ===== 10. Inter-Library Loan =====
 model SchoolLibrary {
-  id          String   @id @default(cuid())
-  name        String
-  address     String?
-  phone       String?
-  email       String?
-  isActive    Boolean  @default(true)
+  id       String  @id @default(cuid())
+  name     String
+  address  String?
+  phone    String?
+  email    String?
+  isActive Boolean @default(true)
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   outgoingLoans InterLibraryLoan[] @relation("FromSchool")
   incomingLoans InterLibraryLoan[] @relation("ToSchool")
 }
 
 model InterLibraryLoan {
-  id              String   @id @default(cuid())
-  fromSchoolId    String
-  toSchoolId      String
-  memberId        String
-  bookTitle       String
-  bookAuthor      String?
-  status          String   @default("REQUESTED") // REQUESTED, APPROVED, SHIPPED, RECEIVED, RETURNED, CANCELLED
-  requestNote     String?
-  dueDate         DateTime?
-  returnedAt      DateTime?
+  id           String    @id @default(cuid())
+  fromSchoolId String
+  toSchoolId   String
+  memberId     String
+  bookTitle    String
+  bookAuthor   String?
+  status       String    @default("REQUESTED") // REQUESTED, APPROVED, SHIPPED, RECEIVED, RETURNED, CANCELLED
+  requestNote  String?
+  dueDate      DateTime?
+  returnedAt   DateTime?
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  fromSchool      SchoolLibrary @relation("FromSchool", fields: [fromSchoolId], references: [id])
-  toSchool        SchoolLibrary @relation("ToSchool", fields: [toSchoolId], references: [id])
+  fromSchool SchoolLibrary @relation("FromSchool", fields: [fromSchoolId], references: [id])
+  toSchool   SchoolLibrary @relation("ToSchool", fields: [toSchoolId], references: [id])
 
   @@index([fromSchoolId])
   @@index([toSchoolId])
@@ -1943,7 +1988,7 @@ model LoginAttempt {
   success   Boolean
   ipAddress String?
   userAgent String?
-  location  String?  // JSON string { lat, lon, city, country }
+  location  String? // JSON string { lat, lon, city, country }
   createdAt DateTime @default(now())
 
   @@index([userId])
@@ -1954,14 +1999,14 @@ model LoginAttempt {
 
 // ===== Gamification Profile =====
 model GamificationProfile {
-  id             String   @id @default(cuid())
-  memberId       String   @unique
-  member         Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  points         Int      @default(0)
-  level          Int      @default(1)
-  badges         String?  // JSON array of earned badge IDs
-  streakDays     Int      @default(0)
+  id             String    @id @default(cuid())
+  memberId       String    @unique
+  member         Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  points         Int       @default(0)
+  level          Int       @default(1)
+  badges         String? // JSON array of earned badge IDs
+  streakDays     Int       @default(0)
   lastActivityAt DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }

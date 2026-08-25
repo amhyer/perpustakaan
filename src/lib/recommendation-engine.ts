@@ -93,7 +93,7 @@ async function computeRecommendations(
     select: { bookId: true },
     distinct: ["bookId"],
   });
-  const userBookIds = new Set(userLoans.map((l) => l.bookId));
+  const userBookIds = new Set(userLoans.map((l) => l.bookId).filter((id): id is string => id !== null));
 
   if (userBookIds.size === 0) {
     // User baru → return top trending books
@@ -115,6 +115,7 @@ async function computeRecommendations(
   // Hitung score per book
   const bookScores = new Map<string, { score: number; users: Set<string> }>();
   for (const loan of similarUsers) {
+    if (!loan.bookId) continue;
     if (!bookScores.has(loan.bookId)) {
       bookScores.set(loan.bookId, { score: 0, users: new Set() });
     }
@@ -228,7 +229,7 @@ async function getTrendingBooks(topN: number): Promise<BookRecommendation[]> {
     take: topN,
   });
 
-  const bookIds = trending.map((t) => t.bookId);
+  const bookIds = trending.map((t) => t.bookId).filter((id): id is string => id !== null);
   const books = await db.book.findMany({
     where: { id: { in: bookIds } },
     select: {
@@ -236,6 +237,7 @@ async function getTrendingBooks(topN: number): Promise<BookRecommendation[]> {
       title: true,
       author: true,
       coverImage: true,
+      categoryId: true,
       category: { select: { name: true } },
     },
   });
@@ -243,17 +245,18 @@ async function getTrendingBooks(topN: number): Promise<BookRecommendation[]> {
   const bookMap = new Map(books.map((b) => [b.id, b]));
 
   return trending.map((t, idx) => {
+    if (!t.bookId) return null;
     const book = bookMap.get(t.bookId);
     return {
       bookId: t.bookId,
       bookTitle: book?.title || "",
       bookAuthor: book?.author || "",
       bookCover: book?.coverImage || null,
-      category: book?.category?.name || null,
-      score: t._count / 50, // Normalized
+      category: book?.category?.name || book?.categoryId || null,
+      score: t._count / 50,
       reason: `Trending #${idx + 1} bulan ini`,
     };
-  });
+  }).filter((r): r is NonNullable<typeof r> => r !== null);
 }
 
 /**

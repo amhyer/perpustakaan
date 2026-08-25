@@ -16,6 +16,7 @@
  */
 
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   Download,
   FileSpreadsheet,
@@ -220,7 +221,7 @@ export function DataExportView() {
       const res = await fetch(`/api/export?${params.toString()}`);
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Export gagal" }));
-        alert(`Export gagal: ${err.error || res.statusText}`);
+        toast.error(`Export gagal: ${err.error || res.statusText}`);
         return;
       }
       const blob = await res.blob();
@@ -251,7 +252,7 @@ export function DataExportView() {
       setSuccessMsg(`✓ Berhasil mengekspor ${rowCount} baris ke ${filename}`);
       setTimeout(() => setSuccessMsg(null), 5000);
     } catch (err: any) {
-      alert(`Export error: ${err.message}`);
+      toast.error(`Export error: ${err.message}`);
     } finally {
       setExporting(false);
     }

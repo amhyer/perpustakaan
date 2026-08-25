@@ -76,8 +76,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     });
 
     // Cek apakah ada reservasi menunggu untuk buku ini
+    const effectiveBookId = loan.bookId ?? loan.bookItem.bookId;
     const nextReservation = await db.reservation.findFirst({
-      where: { bookId: loan.bookId, status: "PENDING" },
+      where: { bookId: effectiveBookId, status: "PENDING" },
       orderBy: { queueOrder: "asc" },
       include: { member: true },
     });
@@ -91,7 +92,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       });
       // Kurangi queue order reservasi lain
       await db.reservation.updateMany({
-        where: { bookId: loan.bookId, status: "PENDING", queueOrder: { gt: nextReservation.queueOrder } },
+        where: { bookId: effectiveBookId, status: "PENDING", queueOrder: { gt: nextReservation.queueOrder } },
         data: { queueOrder: { decrement: 1 } },
       });
       await db.notification.create({

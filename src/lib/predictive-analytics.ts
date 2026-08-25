@@ -347,6 +347,7 @@ export async function predictStockOut(): Promise<StockPrediction[]> {
   // Group by book
   const loansByBook = new Map<string, number>();
   for (const l of loans) {
+    if (!l.bookId) continue;
     loansByBook.set(l.bookId, (loansByBook.get(l.bookId) || 0) + 1);
   }
 

@@ -24,6 +24,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { toast } from "sonner";
 import {
   Radio,
   Play,
@@ -173,11 +174,11 @@ export function RFIDSimulator() {
   const simulateTap = useCallback(
     async (uid: string, bookTagUid?: string) => {
       if (!selectedReader) {
-        alert("Pilih reader dulu");
+        toast.error("Pilih reader dulu");
         return;
       }
       if (!uid) {
-        alert("Pilih kartu atau input UID manual");
+        toast.error("Pilih kartu atau input UID manual");
         return;
       }
 

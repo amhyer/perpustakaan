@@ -166,12 +166,12 @@ export async function GET(req: Request) {
           orderBy: { _count: { bookId: "desc" } },
           take: 50,
         });
-        const bookIds = raw.map((r) => r.bookId);
+        const bookIds = raw.map((r) => r.bookId).filter((id): id is string => id !== null);
         const books = await db.book.findMany({ where: { id: { in: bookIds } } });
         const bookMap = new Map(books.map((b) => [b.id, b]));
         data = raw
           .map((r) => {
-            const b = bookMap.get(r.bookId);
+            const b = r.bookId ? bookMap.get(r.bookId) : undefined;
             return b
               ? {
                   title: b.title,

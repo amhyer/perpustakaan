@@ -98,7 +98,7 @@ export async function GET() {
     orderBy: { _count: { bookId: "desc" } },
     take: 5,
   });
-  const popularBookIds = popularBooksRaw.map((p) => p.bookId);
+  const popularBookIds = popularBooksRaw.map((p) => p.bookId).filter((id): id is string => id !== null);
   const popularBooksData = popularBookIds.length > 0
     ? await db.book.findMany({
         where: { id: { in: popularBookIds } },
@@ -108,7 +108,7 @@ export async function GET() {
   // O(1) lookup via Map instead of O(n*m) Array.find
   const popularBookMap = new Map(popularBooksData.map((b) => [b.id, b]));
   const popularBooks = popularBooksRaw.map((p) => ({
-    ...popularBookMap.get(p.bookId),
+    ...popularBookMap.get(p.bookId ?? ""),
     loanCount: p._count,
   }));
 

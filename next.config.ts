@@ -63,7 +63,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true, // Enable untuk catch bugs di development
 
   // ===== Dev settings =====
-  allowedDevOrigins: ["127.0.0.1", "localhost", "21.0.2.100"],
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
 
   // ===== Experimental features =====
   experimental: {

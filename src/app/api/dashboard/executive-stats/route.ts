@@ -55,7 +55,7 @@ export async function GET() {
     ]);
 
     // Resolve book titles for top books
-    const bookIds = topBooks.map((b) => b.bookId);
+    const bookIds = topBooks.map((b) => b.bookId).filter((id): id is string => id !== null);
     const books = await db.book.findMany({
       where: { id: { in: bookIds } },
       select: { id: true, title: true, author: true, coverColor: true },
@@ -64,8 +64,8 @@ export async function GET() {
 
     const topBooksWithTitles = topBooks.map((b) => ({
       bookId: b.bookId,
-      title: bookMap.get(b.bookId)?.title ?? "Tidak diketahui",
-      author: bookMap.get(b.bookId)?.author ?? "",
+      title: bookMap.get(b.bookId ?? "")?.title ?? "Tidak diketahui",
+      author: bookMap.get(b.bookId ?? "")?.author ?? "",
       loanCount: b._count.id,
     }));
 

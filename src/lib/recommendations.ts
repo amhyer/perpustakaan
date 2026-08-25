@@ -258,7 +258,7 @@ export async function getCollaborativeRecommendations(
     take: limit * 2,
   });
 
-  const bookIds = otherBooks.map((b) => b.bookId);
+  const bookIds = otherBooks.map((b) => b.bookId).filter((id): id is string => id !== null);
   const books = await db.book.findMany({
     where: { id: { in: bookIds } },
   });
@@ -266,6 +266,7 @@ export async function getCollaborativeRecommendations(
 
   return otherBooks
     .map((ob) => {
+      if (!ob.bookId) return null;
       const book = bookMap.get(ob.bookId);
       if (!book) return null;
       return {
