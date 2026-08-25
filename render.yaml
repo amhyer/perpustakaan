@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: perpustakaan-jendela-ilmu
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: |
+      npm install
+      npx prisma generate
+      npx prisma db push --accept-data-loss
+      npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: file:./db/custom.db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: TRUST_PROXY
+        value: "true"
+    healthCheckPath: /api/health
+    autoDeploy: true
