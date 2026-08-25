@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   // ===== Output mode =====
@@ -137,4 +138,11 @@ const nextConfig: NextConfig = {
   // ...(process.env.ANALYZE === "true" ? { webpack: (config) => { ... } } : {}),
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: "upt-spf-sd-negeri-unggulan-mon",
+  project: "javascript-nextjs",
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  disableLogger: true,
+  tunnelRoute: "/api/sentry-tunnel",
+});
