@@ -12,6 +12,11 @@ export async function GET() {
     return NextResponse.json({ error: "Anda belum terdaftar sebagai anggota" }, { status: 400 });
   }
 
-  const result = await computeBadges(user!.member.id);
-  return NextResponse.json(result);
+  try {
+    const result = await computeBadges(user!.member.id);
+    return NextResponse.json(result);
+  } catch (err) {
+    console.error("GET error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

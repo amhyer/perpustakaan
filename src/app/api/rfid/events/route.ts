@@ -11,14 +11,19 @@ export async function GET(req: Request) {
   const { error } = await requireLibrarian();
   if (error) return error;
 
-  const { searchParams } = new URL(req.url);
-  const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10) || 50, 200);
-  const filters = {
-    readerCode: searchParams.get("readerCode") || undefined,
-    eventType: searchParams.get("eventType") || undefined,
-    memberId: searchParams.get("memberId") || undefined,
-  };
+  try {
+    const { searchParams } = new URL(req.url);
+    const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10) || 50, 200);
+    const filters = {
+      readerCode: searchParams.get("readerCode") || undefined,
+      eventType: searchParams.get("eventType") || undefined,
+      memberId: searchParams.get("memberId") || undefined,
+    };
 
-  const events = await getEventLog(limit, filters);
-  return NextResponse.json({ items: events });
+    const events = await getEventLog(limit, filters);
+    return NextResponse.json({ items: events });
+  } catch (err) {
+    console.error("GET rfid/events error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

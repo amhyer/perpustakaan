@@ -10,27 +10,32 @@ export async function GET(req: Request) {
 
   if (!user!.member) return NextResponse.json([]);
 
-  const where = mine === "1" || user!.role !== "LIBRARIAN" ? { memberId: user!.member.id } : {};
-  const wishlists = await db.wishlist.findMany({
-    where,
-    include: {
-      book: {
-        select: {
-          id: true,
-          title: true,
-          author: true,
-          coverColor: true,
-          coverImage: true,
-          source: true,
-          category: { select: { name: true } },
-          items: { select: { id: true, status: true } },
+  try {
+    const where = mine === "1" || user!.role !== "LIBRARIAN" ? { memberId: user!.member.id } : {};
+    const wishlists = await db.wishlist.findMany({
+      where,
+      include: {
+        book: {
+          select: {
+            id: true,
+            title: true,
+            author: true,
+            coverColor: true,
+            coverImage: true,
+            source: true,
+            category: { select: { name: true } },
+            items: { select: { id: true, status: true } },
+          },
         },
+        member: { select: { fullName: true, memberNumber: true } },
       },
-      member: { select: { fullName: true, memberNumber: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
-  return NextResponse.json(wishlists);
+      orderBy: { createdAt: "desc" },
+    });
+    return NextResponse.json(wishlists);
+  } catch (err) {
+    console.error("GET wishlist error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {
@@ -57,6 +62,11 @@ export async function DELETE(req: Request) {
   const bookId = searchParams.get("bookId");
   if (!bookId || !user!.member) return NextResponse.json({ error: "Parameter tidak valid" }, { status: 400 });
 
-  await db.wishlist.deleteMany({ where: { memberId: user!.member.id, bookId } });
-  return NextResponse.json({ success: true });
+  try {
+    await db.wishlist.deleteMany({ where: { memberId: user!.member.id, bookId } });
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("DELETE wishlist error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

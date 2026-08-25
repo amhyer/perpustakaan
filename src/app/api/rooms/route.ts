@@ -11,34 +11,39 @@ export async function GET(req: Request) {
   const { error } = await requireAuth();
   if (error) return error;
 
-  const url = new URL(req.url);
-  const date = url.searchParams.get("date");
+  try {
+    const url = new URL(req.url);
+    const date = url.searchParams.get("date");
 
-  const rooms = await db.libraryRoom.findMany({
-    where: { isActive: true },
-    orderBy: { name: "asc" },
-  });
+    const rooms = await db.libraryRoom.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+    });
 
-  if (!date) return NextResponse.json(rooms);
+    if (!date) return NextResponse.json(rooms);
 
-  // Tambah info booking untuk tanggal tsb
-  const dayStart = new Date(date);
-  const dayEnd = new Date(dayStart.getTime() + 86400000);
+    // Tambah info booking untuk tanggal tsb
+    const dayStart = new Date(date);
+    const dayEnd = new Date(dayStart.getTime() + 86400000);
 
-  const bookings = await db.roomBooking.findMany({
-    where: {
-      startTime: { lt: dayEnd },
-      endTime: { gt: dayStart },
-      status: { in: ["BOOKED", "CHECKED_IN"] },
-    },
-  });
+    const bookings = await db.roomBooking.findMany({
+      where: {
+        startTime: { lt: dayEnd },
+        endTime: { gt: dayStart },
+        status: { in: ["BOOKED", "CHECKED_IN"] },
+      },
+    });
 
-  const withBookings = rooms.map((r) => ({
-    ...r,
-    bookingsOnDate: bookings.filter((b) => b.roomId === r.id),
-  }));
+    const withBookings = rooms.map((r) => ({
+      ...r,
+      bookingsOnDate: bookings.filter((b) => b.roomId === r.id),
+    }));
 
-  return NextResponse.json(withBookings);
+    return NextResponse.json(withBookings);
+  } catch (err) {
+    console.error("GET rooms error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 /**

@@ -13,35 +13,40 @@ export async function GET(req: Request) {
   const { error } = await requireLibrarian();
   if (error) return error;
 
-  const code = new URL(req.url).searchParams.get("code");
-  if (!code) {
-    return NextResponse.json({ error: "code wajib diisi" }, { status: 400 });
-  }
+  try {
+    const code = new URL(req.url).searchParams.get("code");
+    if (!code) {
+      return NextResponse.json({ error: "code wajib diisi" }, { status: 400 });
+    }
 
-  const redemption = await db.rewardRedemption.findUnique({
-    where: { pickupCode: code },
-    include: {
-      member: {
-        select: {
-          id: true,
-          fullName: true,
-          memberNumber: true,
-          category: true,
-          classGrade: true,
-          user: { select: { email: true } },
+    const redemption = await db.rewardRedemption.findUnique({
+      where: { pickupCode: code },
+      include: {
+        member: {
+          select: {
+            id: true,
+            fullName: true,
+            memberNumber: true,
+            category: true,
+            classGrade: true,
+            user: { select: { email: true } },
+          },
         },
+        reward: {
+          select: { id: true, name: true, category: true, pointCost: true, imageUrl: true },
+        },
+        approvedBy: { select: { id: true, name: true } },
       },
-      reward: {
-        select: { id: true, name: true, category: true, pointCost: true, imageUrl: true },
-      },
-      approvedBy: { select: { id: true, name: true } },
-    },
-  });
+    });
 
-  if (!redemption) {
-    logger.info("Pickup code lookup failed", { code });
-    return NextResponse.json({ error: "Kode tidak ditemukan" }, { status: 404 });
+    if (!redemption) {
+      logger.info("Pickup code lookup failed", { code });
+      return NextResponse.json({ error: "Kode tidak ditemukan" }, { status: 404 });
+    }
+
+    return NextResponse.json({ redemption });
+  } catch (err) {
+    console.error("GET error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  return NextResponse.json({ redemption });
 }

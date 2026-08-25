@@ -16,25 +16,30 @@ export async function GET(
     return NextResponse.json({ error: "Hanya member" }, { status: 403 });
   }
 
-  const { key } = await params;
-  const url = new URL(req.url);
-  const wantResults = url.searchParams.get("results") === "true";
+  try {
+    const { key } = await params;
+    const url = new URL(req.url);
+    const wantResults = url.searchParams.get("results") === "true";
 
-  // Pustakawan can view results
-  if (wantResults && (user.role === "LIBRARIAN" || user.role === "PUSTAKAWAN_JUNIOR")) {
-    const results = await getExperimentResults(key);
-    return NextResponse.json(results);
+    // Pustakawan can view results
+    if (wantResults && (user.role === "LIBRARIAN" || user.role === "PUSTAKAWAN_JUNIOR")) {
+      const results = await getExperimentResults(key);
+      return NextResponse.json(results);
+    }
+
+    const assignment = await getAssignment(key, user.member.id);
+    if (!assignment) {
+      return NextResponse.json(
+        { error: "Experiment tidak aktif atau tidak ditemukan" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(assignment);
+  } catch (err) {
+    console.error("GET experiments/[key] error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  const assignment = await getAssignment(key, user.member.id);
-  if (!assignment) {
-    return NextResponse.json(
-      { error: "Experiment tidak aktif atau tidak ditemukan" },
-      { status: 404 }
-    );
-  }
-
-  return NextResponse.json(assignment);
 }
 
 /**
@@ -51,15 +56,20 @@ export async function POST(
     return NextResponse.json({ error: "Hanya member" }, { status: 403 });
   }
 
-  const { key } = await params;
-  const body = await req.json().catch(() => ({}));
-  const { eventName, metadata } = body;
+  try {
+    const { key } = await params;
+    const body = await req.json().catch(() => ({}));
+    const { eventName, metadata } = body;
 
-  if (!eventName) {
-    return NextResponse.json({ error: "eventName wajib" }, { status: 400 });
+    if (!eventName) {
+      return NextResponse.json({ error: "eventName wajib" }, { status: 400 });
+    }
+
+    await trackConversion(key, user.member.id, eventName, metadata);
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("POST experiments/[key] error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  await trackConversion(key, user.member.id, eventName, metadata);
-
-  return NextResponse.json({ success: true });
 }

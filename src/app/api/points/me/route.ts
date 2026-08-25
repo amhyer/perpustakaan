@@ -23,53 +23,58 @@ export async function GET() {
     return NextResponse.json({ error: "Hanya member yang punya poin" }, { status: 403 });
   }
 
-  const memberId = user.member.id;
+  try {
+    const memberId = user.member.id;
 
-  // Saldo
-  const balance = await getBalance(memberId);
+    // Saldo
+    const balance = await getBalance(memberId);
 
-  // Total earned
-  const totalEarned = await db.pointTransaction.aggregate({
-    where: { memberId, type: "EARN" },
-    _sum: { amount: true },
-  });
+    // Total earned
+    const totalEarned = await db.pointTransaction.aggregate({
+      where: { memberId, type: "EARN" },
+      _sum: { amount: true },
+    });
 
-  // Total redeemed
-  const totalRedeemed = await db.pointTransaction.aggregate({
-    where: { memberId, type: "REDEEM" },
-    _sum: { amount: true },
-  });
+    // Total redeemed
+    const totalRedeemed = await db.pointTransaction.aggregate({
+      where: { memberId, type: "REDEEM" },
+      _sum: { amount: true },
+    });
 
-  // Buku selesai tahun ini
-  const yearStart = new Date(new Date().getFullYear(), 0, 1);
-  const booksRead = await db.loan.count({
-    where: {
-      memberId,
-      status: "RETURNED",
-      returnDate: { gte: yearStart },
-    },
-  });
+    // Buku selesai tahun ini
+    const yearStart = new Date(new Date().getFullYear(), 0, 1);
+    const booksRead = await db.loan.count({
+      where: {
+        memberId,
+        status: "RETURNED",
+        returnDate: { gte: yearStart },
+      },
+    });
 
-  // Transaksi terakhir
-  const lastEarn = await db.pointTransaction.findFirst({
-    where: { memberId, type: "EARN" },
-    orderBy: { createdAt: "desc" },
-    select: { amount: true, description: true, createdAt: true },
-  });
+    // Transaksi terakhir
+    const lastEarn = await db.pointTransaction.findFirst({
+      where: { memberId, type: "EARN" },
+      orderBy: { createdAt: "desc" },
+      select: { amount: true, description: true, createdAt: true },
+    });
 
-  // Real streak calculation
-  const currentStreak = await calculateStreak(memberId);
+    // Real streak calculation
+    const currentStreak = await calculateStreak(memberId);
 
-  // Streak history (30 hari terakhir)
-  const streakHistory = await getStreakHistory(memberId, 30);
+    // Streak history (30 hari terakhir)
+    const streakHistory = await getStreakHistory(memberId, 30);
 
-  return NextResponse.json({
-    balance,
-    totalEarned: totalEarned._sum.amount || 0,
-    totalRedeemed: totalRedeemed._sum.amount || 0,
-    booksRead,
-    currentStreak,
-    streakHistory,
-    lastEarn,
-  });
+    return NextResponse.json({
+      balance,
+      totalEarned: totalEarned._sum.amount || 0,
+      totalRedeemed: totalRedeemed._sum.amount || 0,
+      booksRead,
+      currentStreak,
+      streakHistory,
+      lastEarn,
+    });
+  } catch (err) {
+    console.error("GET points/me error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

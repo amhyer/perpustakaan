@@ -24,103 +24,108 @@ export async function POST(
   const { user, error } = await requireLibrarian();
   if (error) return error;
 
-  const { id } = await params;
-  const body = await req.json().catch(() => ({}));
-  const reason = typeof body.reason === "string" ? body.reason.trim() : "";
+  try {
+    const { id } = await params;
+    const body = await req.json().catch(() => ({}));
+    const reason = typeof body.reason === "string" ? body.reason.trim() : "";
 
-  if (!reason || reason.length < 3) {
-    return NextResponse.json(
-      { error: "Alasan penolakan wajib diisi (minimal 3 karakter)" },
-      { status: 400 }
-    );
-  }
-
-  const result = await db.$transaction(async (tx) => {
-    const redemption = await tx.rewardRedemption.findUnique({
-      where: { id },
-    });
-
-    if (!redemption) {
-      return { success: false, reason: "Klaim tidak ditemukan" } as const;
-    }
-    if (redemption.status !== "PENDING") {
-      return { success: false, reason: `Status sudah ${redemption.status}` } as const;
+    if (!reason || reason.length < 3) {
+      return NextResponse.json(
+        { error: "Alasan penolakan wajib diisi (minimal 3 karakter)" },
+        { status: 400 }
+      );
     }
 
-    // Update ke REJECTED
-    const updated = await tx.rewardRedemption.update({
-      where: { id },
-      data: {
-        status: "REJECTED",
-        approvedById: user!.id,
-        approvedAt: new Date(),
-        rejectionReason: reason,
-      },
-    });
+    const result = await db.$transaction(async (tx) => {
+      const redemption = await tx.rewardRedemption.findUnique({
+        where: { id },
+      });
 
-    // Restock: decrement stockClaimed
-    await tx.reward.update({
-      where: { id: redemption.rewardId },
-      data: { stockClaimed: { decrement: 1 } },
-    });
+      if (!redemption) {
+        return { success: false, reason: "Klaim tidak ditemukan" } as const;
+      }
+      if (redemption.status !== "PENDING") {
+        return { success: false, reason: `Status sudah ${redemption.status}` } as const;
+      }
 
-    return { success: true, redemption: updated } as const;
-  });
-
-  if (!result.success) {
-    return NextResponse.json({ error: result.reason }, { status: 400 });
-  }
-
-  // Refund poin ke member (di luar transaction)
-  const refund = await adjustPoints(
-    result.redemption.memberId,
-    result.redemption.pointsSpent,
-    `Refund klaim ditolak: ${result.redemption.rewardName}`,
-    user!.id
-  );
-
-  // Notif ke siswa dengan template
-  const member = await db.member.findUnique({
-    where: { id: result.redemption.memberId },
-    select: { userId: true, fullName: true },
-  });
-  if (member) {
-    await notify({
-      userId: member.userId,
-      title: "Klaim Hadiah Ditolak",
-      message: `Klaim "${result.redemption.rewardName}" ditolak. Alasan: ${reason}. Poin ${result.redemption.pointsSpent} sudah dikembalikan.`,
-      type: "WARNING",
-      relatedId: result.redemption.id,
-      template: {
-        emailKey: "rewardClaimRejected",
-        whatsappKey: "rewardClaimRejected",
-        templateData: {
-          name: member.fullName,
-          rewardName: result.redemption.rewardName,
-          reason,
+      // Update ke REJECTED
+      const updated = await tx.rewardRedemption.update({
+        where: { id },
+        data: {
+          status: "REJECTED",
+          approvedById: user!.id,
+          approvedAt: new Date(),
+          rejectionReason: reason,
         },
-      },
+      });
+
+      // Restock: decrement stockClaimed
+      await tx.reward.update({
+        where: { id: redemption.rewardId },
+        data: { stockClaimed: { decrement: 1 } },
+      });
+
+      return { success: true, redemption: updated } as const;
     });
+
+    if (!result.success) {
+      return NextResponse.json({ error: result.reason }, { status: 400 });
+    }
+
+    // Refund poin ke member (di luar transaction)
+    const refund = await adjustPoints(
+      result.redemption.memberId,
+      result.redemption.pointsSpent,
+      `Refund klaim ditolak: ${result.redemption.rewardName}`,
+      user!.id
+    );
+
+    // Notif ke siswa dengan template
+    const member = await db.member.findUnique({
+      where: { id: result.redemption.memberId },
+      select: { userId: true, fullName: true },
+    });
+    if (member) {
+      await notify({
+        userId: member.userId,
+        title: "Klaim Hadiah Ditolak",
+        message: `Klaim "${result.redemption.rewardName}" ditolak. Alasan: ${reason}. Poin ${result.redemption.pointsSpent} sudah dikembalikan.`,
+        type: "WARNING",
+        relatedId: result.redemption.id,
+        template: {
+          emailKey: "rewardClaimRejected",
+          whatsappKey: "rewardClaimRejected",
+          templateData: {
+            name: member.fullName,
+            rewardName: result.redemption.rewardName,
+            reason,
+          },
+        },
+      });
+    }
+
+    await logAudit(
+      user!.id,
+      "REWARD_REJECT",
+      "RewardRedemption",
+      id,
+      `Tolak klaim: ${reason}. Refund ${result.redemption.pointsSpent} poin.`
+    );
+
+    logger.info("Redemption rejected + refunded", {
+      redemptionId: id,
+      rejectedBy: user!.id,
+      refunded: refund.awarded,
+    });
+
+    return NextResponse.json({
+      success: true,
+      redemption: result.redemption,
+      refunded: refund.awarded,
+      newBalance: refund.newBalance,
+    });
+  } catch (err) {
+    console.error("POST error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  await logAudit(
-    user!.id,
-    "REWARD_REJECT",
-    "RewardRedemption",
-    id,
-    `Tolak klaim: ${reason}. Refund ${result.redemption.pointsSpent} poin.`
-  );
-
-  logger.info("Redemption rejected + refunded", {
-    redemptionId: id,
-    rejectedBy: user!.id,
-    refunded: refund.awarded,
-  });
-
-  return NextResponse.json({
-    success: true,
-    redemption: result.redemption,
-    refunded: refund.awarded,
-    newBalance: refund.newBalance,
-  });
 }

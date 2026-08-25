@@ -14,12 +14,17 @@ export async function GET() {
   if (error) return error;
   if (!user) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
 
-  // Upsert untuk pastikan row selalu ada
-  const pref = await getOrCreateUserPreference(user.id);
+  try {
+    // Upsert untuk pastikan row selalu ada
+    const pref = await getOrCreateUserPreference(user.id);
 
-  return NextResponse.json({
-    defaultDashboard: pref.defaultDashboard,
-  });
+    return NextResponse.json({
+      defaultDashboard: pref.defaultDashboard,
+    });
+  } catch (err) {
+    console.error("GET users/me/preferences error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 /**
@@ -36,49 +41,54 @@ export async function PUT(req: Request) {
   if (error) return error;
   if (!user) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
 
-  const body = await req.json();
-  const updates: Record<string, string> = {};
+  try {
+    const body = await req.json();
+    const updates: Record<string, string> = {};
 
-  if ("defaultDashboard" in body) {
-    const value = body.defaultDashboard;
-    if (typeof value !== "string") {
+    if ("defaultDashboard" in body) {
+      const value = body.defaultDashboard;
+      if (typeof value !== "string") {
+        return NextResponse.json(
+          { error: "defaultDashboard harus berupa string" },
+          { status: 400 }
+        );
+      }
+      if (value !== "default" && !VALID_DASHBOARD_VIEWS.has(value)) {
+        return NextResponse.json(
+          { error: `defaultDashboard tidak valid: ${value}` },
+          { status: 400 }
+        );
+      }
+      // Validasi role-based — siswa/guru tidak boleh pilih dashboard eksekutif
+      if (
+        (user.role === "STUDENT" || user.role === "TEACHER") &&
+        value !== "default" &&
+        value !== "my-dashboard"
+      ) {
+        return NextResponse.json(
+          { error: `Role ${user.role} tidak boleh menggunakan dashboard: ${value}` },
+          { status: 403 }
+        );
+      }
+      updates.defaultDashboard = value;
+    }
+
+    if (Object.keys(updates).length === 0) {
       return NextResponse.json(
-        { error: "defaultDashboard harus berupa string" },
+        { error: "Tidak ada field yang diupdate" },
         { status: 400 }
       );
     }
-    if (value !== "default" && !VALID_DASHBOARD_VIEWS.has(value)) {
-      return NextResponse.json(
-        { error: `defaultDashboard tidak valid: ${value}` },
-        { status: 400 }
-      );
-    }
-    // Validasi role-based — siswa/guru tidak boleh pilih dashboard eksekutif
-    if (
-      (user.role === "STUDENT" || user.role === "TEACHER") &&
-      value !== "default" &&
-      value !== "my-dashboard"
-    ) {
-      return NextResponse.json(
-        { error: `Role ${user.role} tidak boleh menggunakan dashboard: ${value}` },
-        { status: 403 }
-      );
-    }
-    updates.defaultDashboard = value;
+
+    await db.userPreference.upsert({
+      where: { userId: user.id },
+      update: updates,
+      create: { userId: user.id, ...updates },
+    });
+
+    return NextResponse.json({ success: true, ...updates });
+  } catch (err) {
+    console.error("PUT users/me/preferences error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  if (Object.keys(updates).length === 0) {
-    return NextResponse.json(
-      { error: "Tidak ada field yang diupdate" },
-      { status: 400 }
-    );
-  }
-
-  await db.userPreference.upsert({
-    where: { userId: user.id },
-    update: updates,
-    create: { userId: user.id, ...updates },
-  });
-
-  return NextResponse.json({ success: true, ...updates });
 }

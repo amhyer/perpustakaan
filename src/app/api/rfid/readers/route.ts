@@ -9,17 +9,22 @@ export async function GET(req: Request) {
   const { user, error } = await requireLibrarian();
   if (error || !user) return error;
 
-  const { searchParams } = new URL(req.url);
-  const code = searchParams.get("code");
+  try {
+    const { searchParams } = new URL(req.url);
+    const code = searchParams.get("code");
 
-  if (code) {
-    const reader = await getReaderStatus(code);
-    if (!reader) {
-      return NextResponse.json({ error: "Reader not found" }, { status: 404 });
+    if (code) {
+      const reader = await getReaderStatus(code);
+      if (!reader) {
+        return NextResponse.json({ error: "Reader not found" }, { status: 404 });
+      }
+      return NextResponse.json(reader);
     }
-    return NextResponse.json(reader);
-  }
 
-  const readers = await getAllReaders();
-  return NextResponse.json({ items: readers });
+    const readers = await getAllReaders();
+    return NextResponse.json({ items: readers });
+  } catch (err) {
+    console.error("GET rfid/readers error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

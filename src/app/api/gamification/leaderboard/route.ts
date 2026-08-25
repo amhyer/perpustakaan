@@ -8,6 +8,11 @@ export async function GET() {
   const { error } = await requireAuth();
   if (error) return error;
 
-  const result = await getMonthlyLeaderboard(10);
-  return NextResponse.json(result);
+  try {
+    const result = await getMonthlyLeaderboard(10);
+    return NextResponse.json(result);
+  } catch (err) {
+    console.error("GET error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

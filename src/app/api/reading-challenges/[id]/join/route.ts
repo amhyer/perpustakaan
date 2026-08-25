@@ -13,24 +13,30 @@ export async function POST(
   }
 
   const { id } = await params;
-  const challenge = await db.monthlyChallenge.findUnique({ where: { id } });
-  if (!challenge) {
-    return NextResponse.json({ error: "Challenge tidak ditemukan" }, { status: 404 });
-  }
-  if (!challenge.isActive) {
-    return NextResponse.json({ error: "Challenge sudah tidak aktif" }, { status: 400 });
-  }
 
-  const existing = await db.challengeParticipant.findUnique({
-    where: { challengeId_memberId: { challengeId: id, memberId: user.member.id } },
-  });
-  if (existing) {
-    return NextResponse.json({ error: "Sudah bergabung" }, { status: 409 });
+  try {
+    const challenge = await db.monthlyChallenge.findUnique({ where: { id } });
+    if (!challenge) {
+      return NextResponse.json({ error: "Challenge tidak ditemukan" }, { status: 404 });
+    }
+    if (!challenge.isActive) {
+      return NextResponse.json({ error: "Challenge sudah tidak aktif" }, { status: 400 });
+    }
+
+    const existing = await db.challengeParticipant.findUnique({
+      where: { challengeId_memberId: { challengeId: id, memberId: user.member.id } },
+    });
+    if (existing) {
+      return NextResponse.json({ error: "Sudah bergabung" }, { status: 409 });
+    }
+
+    const participant = await db.challengeParticipant.create({
+      data: { challengeId: id, memberId: user.member.id },
+    });
+
+    return NextResponse.json(participant, { status: 201 });
+  } catch (err) {
+    console.error("POST error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  const participant = await db.challengeParticipant.create({
-    data: { challengeId: id, memberId: user.member.id },
-  });
-
-  return NextResponse.json(participant, { status: 201 });
 }

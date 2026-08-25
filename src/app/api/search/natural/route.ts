@@ -34,22 +34,27 @@ export async function GET(req: Request) {
     );
   }
 
-  // Parse query for metadata
-  const parsed = parseQuery(q);
-  const description = describeQuery(parsed);
+  try {
+    // Parse query for metadata
+    const parsed = parseQuery(q);
+    const description = describeQuery(parsed);
 
-  // Search
-  const results = await nlSearch(q, { limit, minScore });
+    // Search
+    const results = await nlSearch(q, { limit, minScore });
 
-  return NextResponse.json({
-    query: q,
-    parsed,
-    description,
-    results,
-    total: results.length,
-    user: {
-      id: user!.id,
-      role: user!.role,
-    },
-  });
+    return NextResponse.json({
+      query: q,
+      parsed,
+      description,
+      results,
+      total: results.length,
+      user: {
+        id: user!.id,
+        role: user!.role,
+      },
+    });
+  } catch (err) {
+    console.error("GET search/natural error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

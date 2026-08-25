@@ -11,20 +11,25 @@ export async function GET() {
   const { error } = await requireFullLibrarian();
   if (error) return error;
 
-  const keys = await db.apiKey.findMany({
-    select: {
-      id: true,
-      name: true,
-      prefix: true,
-      scopes: true,
-      isActive: true,
-      lastUsedAt: true,
-      expiresAt: true,
-      createdAt: true,
-    },
-    orderBy: { createdAt: "desc" },
-  });
-  return NextResponse.json(keys);
+  try {
+    const keys = await db.apiKey.findMany({
+      select: {
+        id: true,
+        name: true,
+        prefix: true,
+        scopes: true,
+        isActive: true,
+        lastUsedAt: true,
+        expiresAt: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    return NextResponse.json(keys);
+  } catch (err) {
+    console.error("GET api-keys error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 /**

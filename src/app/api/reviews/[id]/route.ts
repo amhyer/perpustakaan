@@ -13,21 +13,27 @@ export async function DELETE(
   }
 
   const { id } = await params;
-  const review = await db.bookReview.findUnique({ where: { id } });
-  if (!review) {
-    return NextResponse.json({ error: "Ulasan tidak ditemukan" }, { status: 404 });
+
+  try {
+    const review = await db.bookReview.findUnique({ where: { id } });
+    if (!review) {
+      return NextResponse.json({ error: "Ulasan tidak ditemukan" }, { status: 404 });
+    }
+
+    const isOwner = user.member?.id === review.memberId;
+    const isLibrarian = user.role === "LIBRARIAN";
+
+    if (!isOwner && !isLibrarian) {
+      return NextResponse.json(
+        { error: "Hanya pemilik atau pustakawan yang bisa menghapus ulasan" },
+        { status: 403 }
+      );
+    }
+
+    await db.bookReview.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("DELETE error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  const isOwner = user.member?.id === review.memberId;
-  const isLibrarian = user.role === "LIBRARIAN";
-
-  if (!isOwner && !isLibrarian) {
-    return NextResponse.json(
-      { error: "Hanya pemilik atau pustakawan yang bisa menghapus ulasan" },
-      { status: 403 }
-    );
-  }
-
-  await db.bookReview.delete({ where: { id } });
-  return NextResponse.json({ success: true });
 }

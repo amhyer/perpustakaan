@@ -18,11 +18,16 @@ export async function GET() {
   const { user, error } = await requireAuth();
   if (error) return error;
 
-  // For V1, return defaults. In future, fetch from UserNotificationSettings table.
-  return NextResponse.json({
-    userId: user!.id,
-    preferences: DEFAULT_PREFERENCES,
-  });
+  try {
+    // For V1, return defaults. In future, fetch from UserNotificationSettings table.
+    return NextResponse.json({
+      userId: user!.id,
+      preferences: DEFAULT_PREFERENCES,
+    });
+  } catch (err) {
+    console.error("GET notifications/preferences error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 export async function PUT(req: Request) {

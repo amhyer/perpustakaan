@@ -24,89 +24,94 @@ export async function POST(
   const { user, error } = await requireLibrarian();
   if (error) return error;
 
-  const { id } = await params;
-  const body = await req.json().catch(() => ({}));
-  const notes = typeof body.notes === "string" ? body.notes.slice(0, 500) : undefined;
+  try {
+    const { id } = await params;
+    const body = await req.json().catch(() => ({}));
+    const notes = typeof body.notes === "string" ? body.notes.slice(0, 500) : undefined;
 
-  const result = await db.$transaction(async (tx) => {
-    const redemption = await tx.rewardRedemption.findUnique({
-      where: { id },
-      include: {
-        member: { include: { user: { select: { id: true, email: true } } } },
-        reward: true,
+    const result = await db.$transaction(async (tx) => {
+      const redemption = await tx.rewardRedemption.findUnique({
+        where: { id },
+        include: {
+          member: { include: { user: { select: { id: true, email: true } } } },
+          reward: true,
+        },
+      });
+
+      if (!redemption) {
+        return { success: false, reason: "Klaim tidak ditemukan" } as const;
+      }
+      if (redemption.status !== "PENDING") {
+        return { success: false, reason: `Status sudah ${redemption.status}` } as const;
+      }
+
+      // Update ke APPROVED
+      const updated = await tx.rewardRedemption.update({
+        where: { id },
+        data: {
+          status: "APPROVED",
+          approvedById: user!.id,
+          approvedAt: new Date(),
+          staffNote: notes,
+        },
+        include: {
+          member: { include: { user: { select: { id: true, email: true } } } },
+          reward: true,
+        },
+      });
+
+      return { success: true, redemption: updated } as const;
+    });
+
+    if (!result.success) {
+      return NextResponse.json({ error: result.reason }, { status: 400 });
+    }
+
+    // Notifikasi multi-channel ke siswa
+    await notify({
+      userId: result.redemption.member.user.id,
+      title: "Klaim Hadiah Disetujui!",
+      message: `Klaim "${result.redemption.rewardName}" disetujui. Kode ambil: ${result.redemption.pickupCode}. Tunjukkan kode ini ke pustakawan.`,
+      type: "INFO",
+      relatedId: result.redemption.id,
+      template: {
+        emailKey: "rewardClaimApproved",
+        whatsappKey: "rewardClaimApproved",
+        templateData: {
+          name: result.redemption.member.fullName,
+          rewardName: result.redemption.rewardName,
+          pickupCode: result.redemption.pickupCode,
+        },
       },
     });
 
-    if (!redemption) {
-      return { success: false, reason: "Klaim tidak ditemukan" } as const;
-    }
-    if (redemption.status !== "PENDING") {
-      return { success: false, reason: `Status sudah ${redemption.status}` } as const;
-    }
+    await logAudit(
+      user!.id,
+      "REWARD_APPROVE",
+      "RewardRedemption",
+      id,
+      `Setujui klaim ${result.redemption.rewardName} untuk ${result.redemption.member.fullName}`
+    );
 
-    // Update ke APPROVED
-    const updated = await tx.rewardRedemption.update({
-      where: { id },
-      data: {
-        status: "APPROVED",
-        approvedById: user!.id,
-        approvedAt: new Date(),
-        staffNote: notes,
-      },
-      include: {
-        member: { include: { user: { select: { id: true, email: true } } } },
-        reward: true,
-      },
+    logger.info("Redemption approved", {
+      redemptionId: id,
+      approvedBy: user!.id,
     });
 
-    return { success: true, redemption: updated } as const;
-  });
+    // Publish real-time event supaya student dashboard auto-refresh
+    eventBus.publish(result.redemption.member.user.id, EVENTS.REDEMPTION_APPROVED, {
+      redemptionId: id,
+      rewardName: result.redemption.rewardName,
+      pickupCode: result.redemption.pickupCode,
+    });
 
-  if (!result.success) {
-    return NextResponse.json({ error: result.reason }, { status: 400 });
+    return NextResponse.json({
+      success: true,
+      redemption: result.redemption,
+      pickupCode: result.redemption.pickupCode,
+    });
+  } catch (err) {
+    console.error("POST error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  // Notifikasi multi-channel ke siswa
-  await notify({
-    userId: result.redemption.member.user.id,
-    title: "Klaim Hadiah Disetujui!",
-    message: `Klaim "${result.redemption.rewardName}" disetujui. Kode ambil: ${result.redemption.pickupCode}. Tunjukkan kode ini ke pustakawan.`,
-    type: "INFO",
-    relatedId: result.redemption.id,
-    template: {
-      emailKey: "rewardClaimApproved",
-      whatsappKey: "rewardClaimApproved",
-      templateData: {
-        name: result.redemption.member.fullName,
-        rewardName: result.redemption.rewardName,
-        pickupCode: result.redemption.pickupCode,
-      },
-    },
-  });
-
-  await logAudit(
-    user!.id,
-    "REWARD_APPROVE",
-    "RewardRedemption",
-    id,
-    `Setujui klaim ${result.redemption.rewardName} untuk ${result.redemption.member.fullName}`
-  );
-
-  logger.info("Redemption approved", {
-    redemptionId: id,
-    approvedBy: user!.id,
-  });
-
-  // Publish real-time event supaya student dashboard auto-refresh
-  eventBus.publish(result.redemption.member.user.id, EVENTS.REDEMPTION_APPROVED, {
-    redemptionId: id,
-    rewardName: result.redemption.rewardName,
-    pickupCode: result.redemption.pickupCode,
-  });
-
-  return NextResponse.json({
-    success: true,
-    redemption: result.redemption,
-    pickupCode: result.redemption.pickupCode,
-  });
 }

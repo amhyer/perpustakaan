@@ -7,11 +7,16 @@ export async function GET() {
   const { error } = await requireFullLibrarian();
   if (error) return error;
 
-  const holidays = await db.libraryHoliday.findMany({
-    orderBy: { date: "asc" },
-  });
+  try {
+    const holidays = await db.libraryHoliday.findMany({
+      orderBy: { date: "asc" },
+    });
 
-  return NextResponse.json(holidays);
+    return NextResponse.json(holidays);
+  } catch (err) {
+    console.error("GET holidays error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 // POST /api/holidays — tambah hari libur baru

@@ -8,36 +8,41 @@ export async function GET() {
   const { error } = await requireFullLibrarian();
   if (error) return error;
 
-  // Auto-seed: ambil semua publisher unik dari Book yang non-null
-  const books = await db.book.findMany({
-    where: { publisher: { not: null } },
-    select: { publisher: true },
-    distinct: ["publisher"],
-  });
-  const uniqueNames = books
-    .map((b) => b.publisher as string)
-    .filter((n) => n.trim().length > 0)
-    .map((n) => n.trim());
+  try {
+    // Auto-seed: ambil semua publisher unik dari Book yang non-null
+    const books = await db.book.findMany({
+      where: { publisher: { not: null } },
+      select: { publisher: true },
+      distinct: ["publisher"],
+    });
+    const uniqueNames = books
+      .map((b) => b.publisher as string)
+      .filter((n) => n.trim().length > 0)
+      .map((n) => n.trim());
 
-  // Upsert setiap nama yang belum ada di master Publisher
-  // (gunakan createMany dengan skipDuplicates untuk efisiensi)
-  if (uniqueNames.length > 0) {
-    await db.$transaction(
-      uniqueNames.map((name) =>
-        db.publisher.upsert({
-          where: { name },
-          update: {},
-          create: { name },
-        })
-      )
-    );
+    // Upsert setiap nama yang belum ada di master Publisher
+    // (gunakan createMany dengan skipDuplicates untuk efisiensi)
+    if (uniqueNames.length > 0) {
+      await db.$transaction(
+        uniqueNames.map((name) =>
+          db.publisher.upsert({
+            where: { name },
+            update: {},
+            create: { name },
+          })
+        )
+      );
+    }
+
+    const publishers = await db.publisher.findMany({
+      orderBy: { name: "asc" },
+    });
+
+    return NextResponse.json(publishers);
+  } catch (err) {
+    console.error("GET publishers error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  const publishers = await db.publisher.findMany({
-    orderBy: { name: "asc" },
-  });
-
-  return NextResponse.json(publishers);
 }
 
 // POST /api/publishers — tambah penerbit baru ke master

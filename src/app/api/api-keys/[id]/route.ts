@@ -9,11 +9,17 @@ import { logAudit } from "@/lib/audit";
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { user, error } = await requireFullLibrarian();
   if (error) return error;
-  const { id } = await params;
 
-  await db.apiKey.update({ where: { id }, data: { isActive: false } });
-  await logAudit(user!.id, "SETTING_CHANGE", "ApiKey", id, `Hapus API key`);
-  return NextResponse.json({ success: true });
+  try {
+    const { id } = await params;
+
+    await db.apiKey.update({ where: { id }, data: { isActive: false } });
+    await logAudit(user!.id, "SETTING_CHANGE", "ApiKey", id, `Hapus API key`);
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("DELETE api-keys/[id] error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 /**

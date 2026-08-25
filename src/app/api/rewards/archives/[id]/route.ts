@@ -12,12 +12,17 @@ export async function GET(
   const { error } = await requireLibrarian();
   if (error) return error;
 
-  const { id } = await params;
-  const archive = await getArchiveDetail(id);
+  try {
+    const { id } = await params;
+    const archive = await getArchiveDetail(id);
 
-  if (!archive) {
-    return NextResponse.json({ error: "Archive tidak ditemukan" }, { status: 404 });
+    if (!archive) {
+      return NextResponse.json({ error: "Archive tidak ditemukan" }, { status: 404 });
+    }
+
+    return NextResponse.json({ archive });
+  } catch (err) {
+    console.error("GET rewards/archives/[id] error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  return NextResponse.json({ archive });
 }

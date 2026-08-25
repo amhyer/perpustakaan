@@ -18,37 +18,42 @@ export async function GET(req: Request) {
   const { user, error } = await requireLibrarian();
   if (error) return error;
 
-  const searchParams = new URL(req.url).searchParams;
-  const type = searchParams.get("type") || "leaderboard";
-  const from = searchParams.get("from");
-  const to = searchParams.get("to");
+  try {
+    const searchParams = new URL(req.url).searchParams;
+    const type = searchParams.get("type") || "leaderboard";
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
 
-  let csv = "";
-  let filename = "";
+    let csv = "";
+    let filename = "";
 
-  if (type === "leaderboard") {
-    csv = await generateLeaderboardCSV();
-    filename = `leaderboard-${new Date().toISOString().split("T")[0]}.csv`;
-  } else if (type === "redemptions") {
-    csv = await generateRedemptionsCSV(from, to);
-    filename = `redemptions-${new Date().toISOString().split("T")[0]}.csv`;
-  } else if (type === "transactions") {
-    csv = await generateTransactionsCSV(from, to);
-    filename = `point-transactions-${new Date().toISOString().split("T")[0]}.csv`;
-  } else {
-    return NextResponse.json({ error: "type tidak valid" }, { status: 400 });
+    if (type === "leaderboard") {
+      csv = await generateLeaderboardCSV();
+      filename = `leaderboard-${new Date().toISOString().split("T")[0]}.csv`;
+    } else if (type === "redemptions") {
+      csv = await generateRedemptionsCSV(from, to);
+      filename = `redemptions-${new Date().toISOString().split("T")[0]}.csv`;
+    } else if (type === "transactions") {
+      csv = await generateTransactionsCSV(from, to);
+      filename = `point-transactions-${new Date().toISOString().split("T")[0]}.csv`;
+    } else {
+      return NextResponse.json({ error: "type tidak valid" }, { status: 400 });
+    }
+
+    logger.info("CSV export generated", { type, by: user!.id, rows: csv.split("\n").length - 1 });
+
+    return new NextResponse(csv, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch (err) {
+    console.error("GET rewards/analytics/export error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  logger.info("CSV export generated", { type, by: user!.id, rows: csv.split("\n").length - 1 });
-
-  return new NextResponse(csv, {
-    status: 200,
-    headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="${filename}"`,
-      "Cache-Control": "no-store",
-    },
-  });
 }
 
 // =========================================================================

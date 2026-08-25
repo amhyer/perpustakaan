@@ -8,26 +8,31 @@ import { getCurrentUser } from "@/lib/auth";
  * Auto-handled di getCurrentUser() — single source of truth.
  */
 export async function GET() {
-  const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json({ user: null }, { status: 200 });
-  }
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ user: null }, { status: 200 });
+    }
 
-  return NextResponse.json({
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-    member: user.member
-      ? {
-          id: user.member.id,
-          memberNumber: user.member.memberNumber,
-          fullName: user.member.fullName,
-          category: user.member.category,
-          photo: user.member.photo,
-          classGrade: user.member.classGrade,
-        }
-      : null,
-    defaultDashboard: user.defaultDashboard,
-  });
+    return NextResponse.json({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      member: user.member
+        ? {
+            id: user.member.id,
+            memberNumber: user.member.memberNumber,
+            fullName: user.member.fullName,
+            category: user.member.category,
+            photo: user.member.photo,
+            classGrade: user.member.classGrade,
+          }
+        : null,
+      defaultDashboard: user.defaultDashboard,
+    });
+  } catch (err) {
+    console.error("GET auth/me error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

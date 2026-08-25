@@ -20,87 +20,92 @@ export async function POST(
   const { user, error } = await requireLibrarian();
   if (error) return error;
 
-  const { id } = await params;
-  const body = await req.json().catch(() => ({}));
-  const notes = typeof body.notes === "string" ? body.notes.slice(0, 500) : undefined;
+  try {
+    const { id } = await params;
+    const body = await req.json().catch(() => ({}));
+    const notes = typeof body.notes === "string" ? body.notes.slice(0, 500) : undefined;
 
-  const result = await db.$transaction(async (tx) => {
-    const redemption = await tx.rewardRedemption.findUnique({
-      where: { id },
-    });
+    const result = await db.$transaction(async (tx) => {
+      const redemption = await tx.rewardRedemption.findUnique({
+        where: { id },
+      });
 
-    if (!redemption) {
-      return { success: false, reason: "Klaim tidak ditemukan" } as const;
-    }
-    if (redemption.status !== "APPROVED") {
-      return {
-        success: false,
-        reason: `Status harus APPROVED untuk deliver, sekarang ${redemption.status}`,
-      } as const;
-    }
+      if (!redemption) {
+        return { success: false, reason: "Klaim tidak ditemukan" } as const;
+      }
+      if (redemption.status !== "APPROVED") {
+        return {
+          success: false,
+          reason: `Status harus APPROVED untuk deliver, sekarang ${redemption.status}`,
+        } as const;
+      }
 
-    const updated = await tx.rewardRedemption.update({
-      where: { id },
-      data: {
-        status: "DELIVERED",
-        deliveredAt: new Date(),
-        deliveredById: user!.id,
-        deliveryNotes: notes,
-      },
-    });
-
-    return { success: true, redemption: updated } as const;
-  });
-
-  if (!result.success) {
-    return NextResponse.json({ error: result.reason }, { status: 400 });
-  }
-
-  // Notif ke siswa dengan template
-  const member = await db.member.findUnique({
-    where: { id: result.redemption.memberId },
-    select: { userId: true, fullName: true },
-  });
-  if (member) {
-    await notify({
-      userId: member.userId,
-      title: "Hadiah Sudah Diterima! 🎁",
-      message: `Selamat! Hadiah "${result.redemption.rewardName}" sudah kamu terima. Semoga bermanfaat!`,
-      type: "INFO",
-      relatedId: result.redemption.id,
-      template: {
-        whatsappKey: "rewardDelivered",
-        templateData: {
-          name: member.fullName,
-          rewardName: result.redemption.rewardName,
+      const updated = await tx.rewardRedemption.update({
+        where: { id },
+        data: {
+          status: "DELIVERED",
+          deliveredAt: new Date(),
+          deliveredById: user!.id,
+          deliveryNotes: notes,
         },
-      },
+      });
+
+      return { success: true, redemption: updated } as const;
     });
-  }
 
-  await logAudit(
-    user!.id,
-    "REWARD_DELIVER",
-    "RewardRedemption",
-    id,
-    `Deliver hadiah: ${result.redemption.rewardName} ke ${member?.fullName || "member"}`
-  );
+    if (!result.success) {
+      return NextResponse.json({ error: result.reason }, { status: 400 });
+    }
 
-  logger.info("Redemption delivered", {
-    redemptionId: id,
-    deliveredBy: user!.id,
-  });
+    // Notif ke siswa dengan template
+    const member = await db.member.findUnique({
+      where: { id: result.redemption.memberId },
+      select: { userId: true, fullName: true },
+    });
+    if (member) {
+      await notify({
+        userId: member.userId,
+        title: "Hadiah Sudah Diterima! 🎁",
+        message: `Selamat! Hadiah "${result.redemption.rewardName}" sudah kamu terima. Semoga bermanfaat!`,
+        type: "INFO",
+        relatedId: result.redemption.id,
+        template: {
+          whatsappKey: "rewardDelivered",
+          templateData: {
+            name: member.fullName,
+            rewardName: result.redemption.rewardName,
+          },
+        },
+      });
+    }
 
-  // Publish real-time event
-  if (member?.userId) {
-    eventBus.publish(member.userId, EVENTS.REDEMPTION_DELIVERED, {
+    await logAudit(
+      user!.id,
+      "REWARD_DELIVER",
+      "RewardRedemption",
+      id,
+      `Deliver hadiah: ${result.redemption.rewardName} ke ${member?.fullName || "member"}`
+    );
+
+    logger.info("Redemption delivered", {
       redemptionId: id,
-      rewardName: result.redemption.rewardName,
+      deliveredBy: user!.id,
     });
-  }
 
-  return NextResponse.json({
-    success: true,
-    redemption: result.redemption,
-  });
+    // Publish real-time event
+    if (member?.userId) {
+      eventBus.publish(member.userId, EVENTS.REDEMPTION_DELIVERED, {
+        redemptionId: id,
+        rewardName: result.redemption.rewardName,
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      redemption: result.redemption,
+    });
+  } catch (err) {
+    console.error("POST error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

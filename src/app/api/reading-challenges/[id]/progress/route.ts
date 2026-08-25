@@ -13,31 +13,37 @@ export async function PUT(
   }
 
   const { id } = await params;
-  const body = await req.json();
 
-  const challenge = await db.monthlyChallenge.findUnique({ where: { id } });
-  if (!challenge) {
-    return NextResponse.json({ error: "Challenge tidak ditemukan" }, { status: 404 });
+  try {
+    const body = await req.json();
+
+    const challenge = await db.monthlyChallenge.findUnique({ where: { id } });
+    if (!challenge) {
+      return NextResponse.json({ error: "Challenge tidak ditemukan" }, { status: 404 });
+    }
+
+    const participant = await db.challengeParticipant.findUnique({
+      where: { challengeId_memberId: { challengeId: id, memberId: user.member.id } },
+    });
+    if (!participant) {
+      return NextResponse.json({ error: "Belum bergabung di challenge ini" }, { status: 400 });
+    }
+
+    const newValue = body.currentValue ?? participant.currentValue;
+    const isCompleted = newValue >= challenge.goalValue;
+
+    const updated = await db.challengeParticipant.update({
+      where: { id: participant.id },
+      data: {
+        currentValue: newValue,
+        isCompleted,
+        completedAt: isCompleted && !participant.completedAt ? new Date() : participant.completedAt,
+      },
+    });
+
+    return NextResponse.json(updated);
+  } catch (err) {
+    console.error("PUT error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  const participant = await db.challengeParticipant.findUnique({
-    where: { challengeId_memberId: { challengeId: id, memberId: user.member.id } },
-  });
-  if (!participant) {
-    return NextResponse.json({ error: "Belum bergabung di challenge ini" }, { status: 400 });
-  }
-
-  const newValue = body.currentValue ?? participant.currentValue;
-  const isCompleted = newValue >= challenge.goalValue;
-
-  const updated = await db.challengeParticipant.update({
-    where: { id: participant.id },
-    data: {
-      currentValue: newValue,
-      isCompleted,
-      completedAt: isCompleted && !participant.completedAt ? new Date() : participant.completedAt,
-    },
-  });
-
-  return NextResponse.json(updated);
 }

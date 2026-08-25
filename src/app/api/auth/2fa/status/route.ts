@@ -10,10 +10,15 @@ export async function GET() {
   const { user, error } = await requireRole("LIBRARIAN", "PUSTAKAWAN_JUNIOR");
   if (error) return error;
 
-  const twoFA = await db.twoFactorSecret.findUnique({ where: { userId: user!.id } });
+  try {
+    const twoFA = await db.twoFactorSecret.findUnique({ where: { userId: user!.id } });
 
-  return NextResponse.json({
-    enabled: twoFA?.enabled ?? false,
-    enabledAt: twoFA?.enabledAt?.toISOString() ?? null,
-  });
+    return NextResponse.json({
+      enabled: twoFA?.enabled ?? false,
+      enabledAt: twoFA?.enabledAt?.toISOString() ?? null,
+    });
+  } catch (err) {
+    console.error("GET auth/2fa/status error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

@@ -14,22 +14,27 @@ export async function POST(req: Request) {
   const { error } = await requireLibrarian();
   if (error) return error;
 
-  const body = await req.json();
-  const { csv } = body;
+  try {
+    const body = await req.json();
+    const { csv } = body;
 
-  if (!csv || typeof csv !== "string") {
-    return NextResponse.json({ error: "csv wajib diisi" }, { status: 400 });
+    if (!csv || typeof csv !== "string") {
+      return NextResponse.json({ error: "csv wajib diisi" }, { status: 400 });
+    }
+
+    // Validate
+    const validation = validateDapodikCSV(csv);
+
+    // DRY_RUN
+    const rows = parseDapodikCSV(csv);
+    const dryResult = await syncFromDapodik(rows, { mode: "DRY_RUN" });
+
+    return NextResponse.json({
+      validation,
+      preview: dryResult,
+    });
+  } catch (err) {
+    console.error("POST integrations/dapodik/preview error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  // Validate
-  const validation = validateDapodikCSV(csv);
-
-  // DRY_RUN
-  const rows = parseDapodikCSV(csv);
-  const dryResult = await syncFromDapodik(rows, { mode: "DRY_RUN" });
-
-  return NextResponse.json({
-    validation,
-    preview: dryResult,
-  });
 }

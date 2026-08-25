@@ -12,21 +12,26 @@ export async function GET() {
   const { user, error } = await requireAuth();
   if (error) return error;
 
-  const sessions = await db.activeSession.findMany({
-    where: {
-      userId: user!.id,
-      expiresAt: { gt: new Date() },
-    },
-    orderBy: { lastActive: "desc" },
-  });
+  try {
+    const sessions = await db.activeSession.findMany({
+      where: {
+        userId: user!.id,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { lastActive: "desc" },
+    });
 
-  return NextResponse.json(
-    sessions.map((s) => ({
-      id: s.id,
-      userAgent: s.userAgent,
-      ip: s.ip,
-      lastActive: s.lastActive,
-      createdAt: s.createdAt,
-    }))
-  );
+    return NextResponse.json(
+      sessions.map((s) => ({
+        id: s.id,
+        userAgent: s.userAgent,
+        ip: s.ip,
+        lastActive: s.lastActive,
+        createdAt: s.createdAt,
+      }))
+    );
+  } catch (err) {
+    console.error("GET auth/sessions error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

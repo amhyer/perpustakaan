@@ -14,27 +14,32 @@ export async function GET(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { id } = await params;
+  try {
+    const { id } = await params;
 
-  const session = await db.stocktakingSession.findUnique({
-    where: { id },
-    include: {
-      scans: {
-        include: {
-          bookItem: {
-            include: {
-              book: { select: { id: true, title: true, author: true, coverColor: true } },
+    const session = await db.stocktakingSession.findUnique({
+      where: { id },
+      include: {
+        scans: {
+          include: {
+            bookItem: {
+              include: {
+                book: { select: { id: true, title: true, author: true, coverColor: true } },
+              },
             },
           },
+          orderBy: { scannedAt: "desc" },
         },
-        orderBy: { scannedAt: "desc" },
       },
-    },
-  });
+    });
 
-  if (!session) {
-    return NextResponse.json({ error: "Sesi tidak ditemukan" }, { status: 404 });
+    if (!session) {
+      return NextResponse.json({ error: "Sesi tidak ditemukan" }, { status: 404 });
+    }
+
+    return NextResponse.json(session);
+  } catch (err) {
+    console.error("GET stocktaking/[id] error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  return NextResponse.json(session);
 }

@@ -12,12 +12,17 @@ export async function GET() {
   const { user, error } = await requireFullLibrarian();
   if (error || !user) return error;
 
-  const system = getSystemMetrics();
-  const routes = getAllRouteMetrics();
+  try {
+    const system = getSystemMetrics();
+    const routes = getAllRouteMetrics();
 
-  return NextResponse.json({
-    system,
-    routes: routes.slice(0, 50), // top 50 routes
-    totalRoutes: routes.length,
-  });
+    return NextResponse.json({
+      system,
+      routes: routes.slice(0, 50), // top 50 routes
+      totalRoutes: routes.length,
+    });
+  } catch (err) {
+    console.error("GET admin/metrics error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

@@ -13,18 +13,23 @@ export async function DELETE(
     return NextResponse.json({ error: "Hanya guru/pustakawan yang dapat menghapus rekomendasi" }, { status: 403 });
   }
 
-  const { id } = await params;
+  try {
+    const { id } = await params;
 
-  const existing = await db.curriculumRecommendation.findUnique({
-    where: { id },
-    select: { id: true },
-  });
+    const existing = await db.curriculumRecommendation.findUnique({
+      where: { id },
+      select: { id: true },
+    });
 
-  if (!existing) {
-    return NextResponse.json({ error: "Rekomendasi tidak ditemukan" }, { status: 404 });
+    if (!existing) {
+      return NextResponse.json({ error: "Rekomendasi tidak ditemukan" }, { status: 404 });
+    }
+
+    await db.curriculumRecommendation.delete({ where: { id } });
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("DELETE curriculum-recommendations/[id] error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  await db.curriculumRecommendation.delete({ where: { id } });
-
-  return NextResponse.json({ success: true });
 }

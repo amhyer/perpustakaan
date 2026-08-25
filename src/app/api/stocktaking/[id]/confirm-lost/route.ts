@@ -15,34 +15,39 @@ export async function POST(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { id } = await params;
-  const { bookItemIds } = await req.json();
+  try {
+    const { id } = await params;
+    const { bookItemIds } = await req.json();
 
-  if (!Array.isArray(bookItemIds) || bookItemIds.length === 0) {
-    return NextResponse.json({ error: "bookItemIds wajib diisi" }, { status: 400 });
+    if (!Array.isArray(bookItemIds) || bookItemIds.length === 0) {
+      return NextResponse.json({ error: "bookItemIds wajib diisi" }, { status: 400 });
+    }
+
+    const session = await db.stocktakingSession.findUnique({
+      where: { id },
+      select: { status: true },
+    });
+
+    if (!session) {
+      return NextResponse.json({ error: "Sesi tidak ditemukan" }, { status: 404 });
+    }
+
+    if (session.status !== "ONGOING" && session.status !== "COMPLETED") {
+      return NextResponse.json({ error: "Status sesi tidak valid" }, { status: 409 });
+    }
+
+    // Update only selected items to LOST
+    await db.bookItem.updateMany({
+      where: { id: { in: bookItemIds } },
+      data: { status: ITEM_STATUS.LOST },
+    });
+
+    return NextResponse.json({
+      updated: bookItemIds.length,
+      status: ITEM_STATUS.LOST,
+    });
+  } catch (err) {
+    console.error("POST stocktaking/[id]/confirm-lost error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  const session = await db.stocktakingSession.findUnique({
-    where: { id },
-    select: { status: true },
-  });
-
-  if (!session) {
-    return NextResponse.json({ error: "Sesi tidak ditemukan" }, { status: 404 });
-  }
-
-  if (session.status !== "ONGOING" && session.status !== "COMPLETED") {
-    return NextResponse.json({ error: "Status sesi tidak valid" }, { status: 409 });
-  }
-
-  // Update only selected items to LOST
-  await db.bookItem.updateMany({
-    where: { id: { in: bookItemIds } },
-    data: { status: ITEM_STATUS.LOST },
-  });
-
-  return NextResponse.json({
-    updated: bookItemIds.length,
-    status: ITEM_STATUS.LOST,
-  });
 }

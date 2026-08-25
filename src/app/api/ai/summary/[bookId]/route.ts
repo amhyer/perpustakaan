@@ -17,12 +17,17 @@ export async function GET(
   const { error } = await requireAuth();
   if (error) return error;
 
-  const { bookId } = await params;
+  try {
+    const { bookId } = await params;
 
-  const summary = await getBookSummary(bookId);
-  if (!summary) {
-    return NextResponse.json({ error: "Buku tidak ditemukan" }, { status: 404 });
+    const summary = await getBookSummary(bookId);
+    if (!summary) {
+      return NextResponse.json({ error: "Buku tidak ditemukan" }, { status: 404 });
+    }
+
+    return NextResponse.json(summary);
+  } catch (err) {
+    console.error("GET ai/summary/[bookId] error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  return NextResponse.json(summary);
 }

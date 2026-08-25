@@ -21,10 +21,15 @@ export async function GET() {
     );
   }
 
-  const data = await computeReadingLevel(user.member.id);
+  try {
+    const data = await computeReadingLevel(user.member.id);
 
-  return NextResponse.json({
-    ...data,
-    allLevels: getAllLevels(),
-  });
+    return NextResponse.json({
+      ...data,
+      allLevels: getAllLevels(),
+    });
+  } catch (err) {
+    console.error("GET error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

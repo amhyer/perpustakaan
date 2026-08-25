@@ -10,11 +10,16 @@ export async function GET() {
   const { error } = await requireLibrarian();
   if (error) return error;
 
-  const assets = await db.asset.findMany({
-    include: { location: { select: { name: true, code: true } } },
-    orderBy: [{ category: "asc" }, { name: "asc" }],
-  });
-  return NextResponse.json(assets);
+  try {
+    const assets = await db.asset.findMany({
+      include: { location: { select: { name: true, code: true } } },
+      orderBy: [{ category: "asc" }, { name: "asc" }],
+    });
+    return NextResponse.json(assets);
+  } catch (err) {
+    console.error("GET assets error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 /**

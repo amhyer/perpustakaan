@@ -9,6 +9,11 @@ export async function GET() {
   const { error } = await requireLibrarian();
   if (error) return error;
 
-  const stats = await getBlockchainStats();
-  return NextResponse.json(stats);
+  try {
+    const stats = await getBlockchainStats();
+    return NextResponse.json(stats);
+  } catch (err) {
+    console.error("GET blockchain/stats error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

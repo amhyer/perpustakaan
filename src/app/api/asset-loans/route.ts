@@ -11,12 +11,18 @@ import { notify } from "@/lib/notification-service";
 export async function GET() {
   const { error } = await requireLibrarian();
   if (error) return error;
-  const loans = await db.assetLoan.findMany({
-    include: { asset: true, member: { select: { fullName: true, memberNumber: true } } },
-    orderBy: { loanDate: "desc" },
-    take: 200,
-  });
-  return NextResponse.json(loans);
+
+  try {
+    const loans = await db.assetLoan.findMany({
+      include: { asset: true, member: { select: { fullName: true, memberNumber: true } } },
+      orderBy: { loanDate: "desc" },
+      take: 200,
+    });
+    return NextResponse.json(loans);
+  } catch (err) {
+    console.error("GET asset-loans error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 /**

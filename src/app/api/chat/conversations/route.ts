@@ -13,9 +13,14 @@ export async function GET(req: Request) {
   const { user, error } = await requireAuth();
   if (error || !user) return error;
 
-  const { searchParams } = new URL(req.url);
-  const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10) || 20, 100);
+  try {
+    const { searchParams } = new URL(req.url);
+    const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10) || 20, 100);
 
-  const conversations = await getUserConversations(user.id, limit);
-  return NextResponse.json({ items: conversations });
+    const conversations = await getUserConversations(user.id, limit);
+    return NextResponse.json({ items: conversations });
+  } catch (err) {
+    console.error("GET chat/conversations error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

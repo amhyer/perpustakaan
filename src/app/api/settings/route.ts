@@ -28,29 +28,39 @@ const ALLOWED_SETTINGS_KEYS = new Set([
 export async function GET() {
   const { error } = await requireAuth();
   if (error) return error;
-  const settings = await db.setting.findMany();
-  const map: Record<string, string> = {};
-  for (const s of settings) map[s.key] = s.value;
-  return NextResponse.json(map);
+  try {
+    const settings = await db.setting.findMany();
+    const map: Record<string, string> = {};
+    for (const s of settings) map[s.key] = s.value;
+    return NextResponse.json(map);
+  } catch (err) {
+    console.error("GET settings error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 export async function PUT(req: Request) {
   const { user, error } = await requireFullLibrarian();
   if (error) return error;
 
-  const body = await req.json();
-  const changed: string[] = [];
-  for (const [key, value] of Object.entries(body)) {
-    if (!ALLOWED_SETTINGS_KEYS.has(key)) {
-      return NextResponse.json({ error: `Invalid setting key: ${key}` }, { status: 400 });
+  try {
+    const body = await req.json();
+    const changed: string[] = [];
+    for (const [key, value] of Object.entries(body)) {
+      if (!ALLOWED_SETTINGS_KEYS.has(key)) {
+        return NextResponse.json({ error: `Invalid setting key: ${key}` }, { status: 400 });
+      }
+      await db.setting.upsert({
+        where: { key },
+        update: { value: String(value) },
+        create: { key, value: String(value) },
+      });
+      changed.push(key);
     }
-    await db.setting.upsert({
-      where: { key },
-      update: { value: String(value) },
-      create: { key, value: String(value) },
-    });
-    changed.push(key);
+    await logAudit(user!.id, "SETTING_CHANGE", "Setting", undefined, changed.join(", "));
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("PUT settings error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-  await logAudit(user!.id, "SETTING_CHANGE", "Setting", undefined, changed.join(", "));
-  return NextResponse.json({ success: true });
 }

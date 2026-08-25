@@ -8,33 +8,38 @@ export async function GET() {
   const { error } = await requireFullLibrarian();
   if (error) return error;
 
-  // Auto-seed: ambil semua author unik dari Book
-  const books = await db.book.findMany({
-    select: { author: true },
-    distinct: ["author"],
-  });
-  const uniqueNames = books
-    .map((b) => b.author)
-    .filter((n) => n.trim().length > 0)
-    .map((n) => n.trim());
+  try {
+    // Auto-seed: ambil semua author unik dari Book
+    const books = await db.book.findMany({
+      select: { author: true },
+      distinct: ["author"],
+    });
+    const uniqueNames = books
+      .map((b) => b.author)
+      .filter((n) => n.trim().length > 0)
+      .map((n) => n.trim());
 
-  if (uniqueNames.length > 0) {
-    await db.$transaction(
-      uniqueNames.map((name) =>
-        db.author.upsert({
-          where: { name },
-          update: {},
-          create: { name },
-        })
-      )
-    );
+    if (uniqueNames.length > 0) {
+      await db.$transaction(
+        uniqueNames.map((name) =>
+          db.author.upsert({
+            where: { name },
+            update: {},
+            create: { name },
+          })
+        )
+      );
+    }
+
+    const authors = await db.author.findMany({
+      orderBy: { name: "asc" },
+    });
+
+    return NextResponse.json(authors);
+  } catch (err) {
+    console.error("GET authors error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  const authors = await db.author.findMany({
-    orderBy: { name: "asc" },
-  });
-
-  return NextResponse.json(authors);
 }
 
 // POST /api/authors — tambah pengarang baru ke master

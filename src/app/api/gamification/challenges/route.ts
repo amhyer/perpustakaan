@@ -15,7 +15,12 @@ export async function GET() {
   const { error } = await requireAuth();
   if (error) return error;
 
-  return NextResponse.json({
-    templates: CHALLENGE_TEMPLATES,
-  });
+  try {
+    return NextResponse.json({
+      templates: CHALLENGE_TEMPLATES,
+    });
+  } catch (err) {
+    console.error("GET error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

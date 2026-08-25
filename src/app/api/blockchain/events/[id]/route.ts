@@ -14,7 +14,12 @@ export async function GET(
   const { error } = await requireLibrarian();
   if (error) return error;
 
-  const { id } = await params;
-  const result = await verifyAuditEvent(id);
-  return NextResponse.json(result);
+  try {
+    const { id } = await params;
+    const result = await verifyAuditEvent(id);
+    return NextResponse.json(result);
+  } catch (err) {
+    console.error("GET blockchain/events/[id] error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
