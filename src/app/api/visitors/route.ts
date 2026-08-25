@@ -59,6 +59,7 @@ export async function POST(req: Request) {
     });
     return NextResponse.json(visitor, { status: 201 });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal" }, { status: 500 });
+    console.error("POST /api/visitors error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

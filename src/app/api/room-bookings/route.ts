@@ -114,6 +114,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(booking, { status: 201 });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal" }, { status: 500 });
+    console.error("POST /api/room-bookings error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

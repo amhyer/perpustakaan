@@ -1,4 +1,13 @@
 import { PrismaClient } from '@prisma/client'
+import { validateEnv } from '@/lib/env-validator'
+
+if (typeof window === 'undefined') {
+  try {
+    validateEnv()
+  } catch (err) {
+    console.error('Environment validation failed:', err)
+  }
+}
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined

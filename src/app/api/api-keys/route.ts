@@ -76,6 +76,7 @@ export async function POST(req: Request) {
       expiresAt: apiKey.expiresAt,
     });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal" }, { status: 500 });
+    console.error("POST /api/api-keys error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -26,7 +26,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     await logAudit(user!.id, "SETTING_CHANGE", "Asset", id, `Update aset`);
     return NextResponse.json(asset);
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal" }, { status: 500 });
+    console.error("PUT/DELETE /api/assets/[id] error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -39,6 +40,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     await logAudit(user!.id, "SETTING_CHANGE", "Asset", id, `Hapus aset`);
     return NextResponse.json({ success: true });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal" }, { status: 500 });
+    console.error("PUT/DELETE /api/assets/[id] error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

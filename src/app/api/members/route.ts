@@ -79,9 +79,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Format email tidak valid" }, { status: 400 });
     }
 
-    // Validasi password minimal 6 karakter dengan complexity (Tahap 16 #22)
-    if (password.length < 6) {
-      return NextResponse.json({ error: "Password minimal 6 karakter" }, { status: 400 });
+    // Validasi password minimal 8 karakter dengan complexity (Tahap 16 #22)
+    if (password.length < 8) {
+      return NextResponse.json({ error: "Password minimal 8 karakter" }, { status: 400 });
     }
     if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
       return NextResponse.json({ error: "Password harus mengandung huruf besar dan angka" }, { status: 400 });

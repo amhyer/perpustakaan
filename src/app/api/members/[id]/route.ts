@@ -84,6 +84,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         await db.user.update({ where: { id: member.userId }, data: { email: body.email.toLowerCase(), name: body.fullName || updated.fullName } });
       }
       if (body.password) {
+        if (body.password.length < 8) {
+          return NextResponse.json({ error: "Password minimal 8 karakter" }, { status: 400 });
+        }
         const hash = await hashPassword(body.password);
         await db.user.update({ where: { id: member.userId }, data: { passwordHash: hash } });
       }

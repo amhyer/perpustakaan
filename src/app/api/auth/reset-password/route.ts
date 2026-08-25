@@ -39,8 +39,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Token dan password baru wajib diisi" }, { status: 400 });
     }
 
-    if (newPassword.length < 6) {
-      return NextResponse.json({ error: "Password baru minimal 6 karakter" }, { status: 400 });
+    if (newPassword.length < 8) {
+      return NextResponse.json({ error: "Password baru minimal 8 karakter" }, { status: 400 });
     }
 
     if (newPassword.length > 128) {

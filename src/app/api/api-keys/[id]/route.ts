@@ -41,6 +41,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     await logAudit(user!.id, "SETTING_CHANGE", "ApiKey", id, `Update API key`);
     return NextResponse.json(updated);
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal" }, { status: 500 });
+    console.error("PATCH /api/api-keys/[id] error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

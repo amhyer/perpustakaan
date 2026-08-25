@@ -79,7 +79,7 @@ export async function POST(req: Request) {
       const text = await res.text();
       logger.warn("WS publish failed", { status: res.status, text });
       return NextResponse.json(
-        { error: "Failed to publish to WebSocket server", detail: text },
+        { error: "WebSocket publish failed" },
         { status: 502 }
       );
     }
@@ -89,7 +89,7 @@ export async function POST(req: Request) {
   } catch (err) {
     logger.error("WS publish error", { error: String(err) });
     return NextResponse.json(
-      { error: "WebSocket server unavailable", detail: String(err) },
+      { error: "WebSocket server unavailable" },
       { status: 503 }
     );
   }

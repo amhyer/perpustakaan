@@ -23,7 +23,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     await logAudit(user!.id, "SETTING_CHANGE", "LibraryRoom", id, `Update ruangan`);
     return NextResponse.json(room);
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal" }, { status: 500 });
+    console.error("PUT/DELETE /api/rooms/[id] error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -38,6 +39,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     await logAudit(user!.id, "SETTING_CHANGE", "LibraryRoom", id, `Nonaktifkan ruangan`);
     return NextResponse.json({ success: true });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal" }, { status: 500 });
+    console.error("PUT/DELETE /api/rooms/[id] error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

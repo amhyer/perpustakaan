@@ -49,6 +49,7 @@ export async function POST(req: Request) {
     await logAudit(user!.id, "SETTING_CHANGE", "Asset", asset.id, `Tambah aset: ${asset.name}`);
     return NextResponse.json(asset, { status: 201 });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal" }, { status: 500 });
+    console.error("POST /api/assets error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

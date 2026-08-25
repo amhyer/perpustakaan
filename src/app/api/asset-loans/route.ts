@@ -85,6 +85,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(loan, { status: 201 });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal" }, { status: 500 });
+    console.error("POST /api/asset-loans error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

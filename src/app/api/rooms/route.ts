@@ -69,6 +69,7 @@ export async function POST(req: Request) {
     await logAudit(user!.id, "SETTING_CHANGE", "LibraryRoom", room.id, `Buat ruangan: ${room.name}`);
     return NextResponse.json(room, { status: 201 });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal" }, { status: 500 });
+    console.error("POST /api/rooms error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

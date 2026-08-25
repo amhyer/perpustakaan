@@ -18,6 +18,16 @@ import { logger } from "@/lib/logger";
  * Returns: Alexa Response Format JSON
  */
 export async function POST(req: Request) {
+  const secret = process.env.VOICE_WEBHOOK_SECRET;
+  if (!secret) {
+    logger.warn("VOICE_WEBHOOK_SECRET is not set — allowing request without auth");
+  } else {
+    const apiKey = req.headers.get("x-api-key");
+    if (apiKey !== secret) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
   try {
     const body = await req.json();
     const request = body.request;
