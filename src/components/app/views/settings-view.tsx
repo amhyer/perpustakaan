@@ -70,6 +70,7 @@ import {
 
 import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 import { DefaultDashboardSelector } from "@/components/app/shared/default-dashboard-selector";
+import { FeaturedBookPicker } from "@/components/app/shared/featured-book-picker";
 
 import { useFetch } from "@/hooks/use-fetch";
 import { api } from "@/lib/api-client";
@@ -734,6 +735,8 @@ export function SettingsView() {
               </Button>
             </div>
           </Card>
+
+          <FeaturedBookPicker />
 
           {/* SECTION 1b: Toggle Gamifikasi (Tahap 8A) */}
           <Card className="p-4">

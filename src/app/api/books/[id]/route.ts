@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireAuth, requireLibrarian, requireFullLibrarian } from "@/lib/auth";
+import { requireAuth, requireLibrarian, requireFullLibrarian, isLibrarian } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { sanitizeReservationQueue } from "@/lib/privacy";
 
 async function findIsbnDuplicate(cleanedIsbn: string, excludeBookId?: string) {
   const withIsbn = await db.book.findMany({
@@ -12,7 +13,7 @@ async function findIsbnDuplicate(cleanedIsbn: string, excludeBookId?: string) {
 }
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireAuth();
+  const { user, error } = await requireAuth();
   if (error) return error;
   const { id } = await params;
 
@@ -30,7 +31,16 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
           },
         },
       },
-      reservations: { where: { status: { in: ["PENDING", "READY"] } }, include: { member: true }, orderBy: { queueOrder: "asc" } },
+      reservations: {
+        where: { status: { in: ["PENDING", "READY"] } },
+        select: {
+          id: true,
+          status: true,
+          queueOrder: true,
+          member: { select: { id: true, fullName: true, memberNumber: true, category: true } },
+        },
+        orderBy: { queueOrder: "asc" },
+      },
     },
   });
 
@@ -49,7 +59,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     take: 6,
   });
 
-  return NextResponse.json({ ...book, similarBooks });
+  const reservations = sanitizeReservationQueue(book.reservations, {
+    isStaff: isLibrarian(user!.role),
+    memberId: user!.member?.id,
+  });
+
+  return NextResponse.json({ ...book, reservations, similarBooks });
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {

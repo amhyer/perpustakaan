@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   BookOpen,
+  Clock,
   GraduationCap,
   Library,
   Loader2,
@@ -76,6 +77,16 @@ export function LoginScreen() {
 
   // Forgot password state
   const [forgotEmail, setForgotEmail] = useState("");
+  const [hoursLabel, setHoursLabel] = useState("Senin–Jumat 07.00–16.00");
+
+  useEffect(() => {
+    fetch("/api/public/hours")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.label) setHoursLabel(d.label);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleLogin = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -220,9 +231,15 @@ export function LoginScreen() {
           </div>
         </div>
 
-        <div className="relative z-10 text-xs text-primary-foreground/60">
-          &copy; {new Date().getFullYear()} Perpustakaan Jendela Ilmu. Dibuat dengan
-          dedikasi untuk literasi.
+        <div className="relative z-10 text-xs text-primary-foreground/60 space-y-1">
+          <p className="inline-flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5" />
+            {hoursLabel}
+          </p>
+          <p>
+            &copy; {new Date().getFullYear()} Perpustakaan Jendela Ilmu. Dibuat dengan
+            dedikasi untuk literasi.
+          </p>
         </div>
       </div>
 
@@ -341,6 +358,11 @@ export function LoginScreen() {
               <p className="mt-6 text-center text-xs text-muted-foreground">
                 Klik salah satu akun di atas untuk mengisi otomatis, lalu tekan{" "}
                 <span className="font-semibold text-foreground">Masuk</span>.
+                Atau{" "}
+                <a href="/katalog" className="text-primary font-medium hover:underline">
+                  telusuri katalog tanpa akun
+                </a>
+                .
               </p>
             </>
           )}

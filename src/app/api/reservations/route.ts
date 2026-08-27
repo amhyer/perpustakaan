@@ -17,7 +17,15 @@ export async function GET(req: Request) {
 
   const where: Record<string, unknown> = {};
   if (status) where.status = status;
-  if (mine === "1" && user!.member) where.memberId = user!.member.id;
+  // Guru/siswa hanya boleh melihat reservasi sendiri.
+  if (!isLibrarian(user!.role)) {
+    if (!user!.member) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    where.memberId = user!.member.id;
+  } else if (mine === "1" && user!.member) {
+    where.memberId = user!.member.id;
+  }
 
   // Mode pagination: return { data, total, page, pageSize }
   if (page !== null && !isNaN(page)) {

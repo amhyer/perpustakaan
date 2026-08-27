@@ -89,10 +89,10 @@ Lihat `/api-keys` UI untuk generate key.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/api/members` | LIBRARIAN | List anggota (query: `q`, `status`, `category`) |
-| POST | `/api/members` | LIBRARIAN | Tambah anggota |
-| GET | `/api/members/[id]` | LIBRARIAN | Detail anggota |
-| PUT | `/api/members/[id]` | LIBRARIAN | Update anggota |
+| GET | `/api/members` | LIBRARIAN / TEACHER | List anggota. Guru hanya siswa di `taughtClasses`. |
+| POST | `/api/members` | LIBRARIAN | Tambah anggota (`taughtClasses` untuk guru) |
+| GET | `/api/members/[id]` | Session | Detail; siswa hanya diri sendiri; guru juga siswa di kelas ajarnya |
+| PUT | `/api/members/[id]` | Session | Update; non-staf hanya profil sendiri (`taughtClasses` guru) |
 | DELETE | `/api/members/[id]` | FullLibrarian | Nonaktifkan anggota |
 | POST | `/api/members/import` | LIBRARIAN | Import CSV (max 500 baris) |
 
@@ -100,7 +100,7 @@ Lihat `/api-keys` UI untuk generate key.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/api/loans` | LIBRARIAN | List semua peminjaman |
+| GET | `/api/loans` | Session | List peminjaman (anggota hanya milik sendiri) |
 | POST | `/api/loans` | LIBRARIAN | Buat peminjaman baru |
 | GET | `/api/loans/[id]` | Session | Detail peminjaman |
 | PUT | `/api/loans/[id]/return` | LIBRARIAN | Kembalikan buku |
@@ -137,7 +137,7 @@ Lihat `/api-keys` UI untuk generate key.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/api/proposals` | Session | List usulan |
+| GET | `/api/proposals` | Session | List usulan (anggota hanya milik sendiri) |
 | POST | `/api/proposals` | Member | Ajukan buku |
 | PUT | `/api/proposals` | LIBRARIAN | Review usulan |
 | DELETE | `/api/proposals` | LIBRARIAN | Hapus usulan |
@@ -202,7 +202,8 @@ Lihat `/api-keys` UI untuk generate key.
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | GET | `/api/stats` | LIBRARIAN | Dashboard stats |
-| GET | `/api/reports/literacy` | LIBRARIAN | Laporan literasi |
+| GET | `/api/reports/literacy` | LIBRARIAN / TEACHER | Laporan literasi. Guru hanya kelas yang diajar. |
+| GET | `/api/dashboard/member` | TEACHER / STUDENT | Beranda anggota. Guru hanya siswa di `taughtClasses`. |
 | GET | `/api/executive` | LIBRARIAN | Dashboard eksekutif |
 
 ### Stocktaking (4 endpoint)
@@ -453,3 +454,4 @@ const data = await api.get("/api/books");
 ---
 
 *Dokumentasi ini auto-generated. Untuk update terbaru, baca langsung source code di `src/app/api/`.*
+te terbaru, baca langsung source code di `src/app/api/`.*

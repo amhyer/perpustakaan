@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireAuth, requireLibrarian } from "@/lib/auth";
-import { hashPassword } from "@/lib/auth";
+import { requireAuth, requireLibrarian, isLibrarian, hashPassword } from "@/lib/auth";
 import { COVER_COLORS } from "@/lib/constants";
+import { readTaughtClasses, serializeTaughtClasses, studentClassScope } from "@/lib/taught-classes";
+import { memberSearchOr } from "@/lib/search";
 
 export async function GET(req: Request) {
   const { user, error } = await requireAuth();
@@ -16,17 +17,19 @@ export async function GET(req: Request) {
   const page = pageParam ? parseInt(pageParam) : null;
   const pageSize = parseInt(searchParams.get("pageSize") || "12");
 
-  const where: Record<string, unknown> = {};
-  if (q) {
-    where.OR = [
-      { fullName: { contains: q } },
-      { memberNumber: { contains: q } },
-      { phone: { contains: q } },
-      { classGrade: { contains: q } },
-    ];
+  if (!isLibrarian(user!.role) && user!.role !== "TEACHER") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  const where: Record<string, unknown> = {};
+  if (q) where.OR = memberSearchOr(q);
   if (category) where.category = category;
   if (status) where.status = status;
+  if (user!.role === "TEACHER") {
+    where.category = "STUDENT";
+    if (!status) where.status = "ACTIVE";
+    Object.assign(where, studentClassScope(readTaughtClasses(user!.member)));
+  }
 
   const include = {
     user: { select: { email: true, role: true } },
@@ -62,7 +65,7 @@ export async function POST(req: Request) {
   if (error) return error;
 
   const body = await req.json();
-  const { email, password, name, role, fullName, memberNumber, category, gender, birthDate, phone, address, photo, classGrade, expiryDate } = body;
+  const { email, password, name, role, fullName, memberNumber, category, gender, birthDate, phone, address, photo, classGrade, taughtClasses, expiryDate } = body;
 
   if (!email || !password || !name || !fullName || !memberNumber) {
     return NextResponse.json({ error: "Email, password, nama, dan nomor anggota wajib diisi" }, { status: 400 });
@@ -110,6 +113,7 @@ export async function POST(req: Request) {
       address: address || null,
       photo: photo || null,
       classGrade: classGrade || null,
+      taughtClasses: userRole === "TEACHER" ? serializeTaughtClasses(taughtClasses) || null : null,
       expiryDate: expiryDate ? new Date(expiryDate) : null,
     },
     include: { user: { select: { email: true, role: true } } },

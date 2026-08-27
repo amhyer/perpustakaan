@@ -37,7 +37,7 @@ import { PageHeader, EmptyState } from "@/components/app/shared/page-header";
 import { StatCard } from "@/components/app/shared/stat-card";
 import { useFetch } from "@/hooks/use-fetch";
 import { useAppStore } from "@/store/use-app-store";
-import { AUDIT_ACTIONS } from "@/lib/audit";
+import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 import {
   ROLE_LABELS,
   formatDateShort,

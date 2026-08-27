@@ -36,6 +36,7 @@ import { Logo } from "@/components/app/logo";
 import { cn } from "@/lib/utils";
 import { useAppStore, type ViewKey, resolveDefaultDashboard } from "@/store/use-app-store";
 import { ROLE_LABELS } from "@/lib/constants";
+import { getMemberNavKeys, MEMBER_NAV_GROUPS } from "@/lib/role-access";
 
 interface NavItem {
   key: ViewKey;
@@ -83,7 +84,39 @@ const MEMBER_NAV: NavItem[] = [
   { key: "my-sessions", label: "Sesi Aktif", icon: Shield },
   { key: "announcements", label: "Pengumuman", icon: Megaphone },
   { key: "notifications", label: "Notifikasi", icon: Bell },
+  { key: "settings", label: "Pengaturan", icon: Settings },
 ];
+
+function SidebarLink({
+  item,
+  active,
+  onClick,
+}: {
+  item: NavItem;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const Icon = item.icon;
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all group",
+        active
+          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+          : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+      )}
+    >
+      <Icon
+        className={cn(
+          "h-[18px] w-[18px] shrink-0",
+          active ? "" : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground"
+        )}
+      />
+      {item.label}
+    </button>
+  );
+}
 
 export function Sidebar() {
   const { user, view, setView, sidebarOpen, setSidebarOpen } = useAppStore();
@@ -95,6 +128,8 @@ export function Sidebar() {
     setView(resolveDefaultDashboard(user));
   }
   // PUSTAKAWAN_JUNIOR tidak bisa akses Pengaturan & Dashboard Eksekutif — filter dari nav
+  // Guru vs siswa: menu self-service difilter dari role-access (bukan daftar pustakawan).
+  const allowedMemberKeys = new Set<string>(getMemberNavKeys(user?.role));
   const fullNav = isLibrarianRole
     ? LIBRARIAN_NAV.filter((item) => {
         if (user?.role === "PUSTAKAWAN_JUNIOR") {
@@ -102,7 +137,7 @@ export function Sidebar() {
         }
         return true;
       })
-    : MEMBER_NAV;
+    : MEMBER_NAV.filter((item) => allowedMemberKeys.has(item.key));
   const nav = fullNav;
   const activeKey = view.key;
 
@@ -156,33 +191,44 @@ export function Sidebar() {
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto scrollbar-thin px-3 py-4 space-y-1">
-          {nav.map((item) => {
-            const Icon = item.icon;
-            const active = activeKey === item.key;
-            return (
-              <button
-                key={item.key}
-                onClick={() => {
-                  setView(item.key);
-                  setSidebarOpen(false);
-                }}
-                className={cn(
-                  "w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all group",
-                  active
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                )}
-              >
-                <Icon
-                  className={cn(
-                    "h-[18px] w-[18px] shrink-0",
-                    active ? "" : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground"
-                  )}
+          {isLibrarianRole
+            ? nav.map((item) => (
+                <SidebarLink
+                  key={item.key}
+                  item={item}
+                  active={activeKey === item.key}
+                  onClick={() => {
+                    setView(item.key);
+                    setSidebarOpen(false);
+                  }}
                 />
-                {item.label}
-              </button>
-            );
-          })}
+              ))
+            : MEMBER_NAV_GROUPS.map((group) => {
+                const items = nav.filter((item) =>
+                  (group.keys as readonly string[]).includes(item.key)
+                );
+                if (items.length === 0) return null;
+                return (
+                  <div key={group.label} className="pb-3">
+                    <p className="px-3 pb-1.5 pt-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/45">
+                      {group.label}
+                    </p>
+                    <div className="space-y-1">
+                      {items.map((item) => (
+                        <SidebarLink
+                          key={item.key}
+                          item={item}
+                          active={activeKey === item.key}
+                          onClick={() => {
+                            setView(item.key);
+                            setSidebarOpen(false);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
         </nav>
 
         {/* Footer sidebar */}

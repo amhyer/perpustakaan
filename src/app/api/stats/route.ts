@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requireLibrarian } from "@/lib/auth";
 import { logger, startTimer } from "@/lib/logger";
 
 /**
@@ -13,7 +13,7 @@ import { logger, startTimer } from "@/lib/logger";
  * - Single query for trend instead of N queries in loop
  */
 export async function GET() {
-  const { error } = await requireAuth();
+  const { error } = await requireLibrarian();
   if (error) return error;
 
   const timer = startTimer("GET /api/stats");

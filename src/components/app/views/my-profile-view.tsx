@@ -10,9 +10,9 @@ import {
   Mail,
   Hash,
   CalendarDays,
-  Phone,
-  MapPin,
   GraduationCap,
+  Settings,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/layout/card";
@@ -54,6 +54,7 @@ interface MemberProfile {
   gender: string | null;
   birthDate: string | null;
   classGrade: string | null;
+  taughtClasses?: string | null;
   category: string;
   status: string;
   expiryDate: string | null;
@@ -61,15 +62,20 @@ interface MemberProfile {
   user: { id: string; email: string; role: string; name: string };
 }
 
-export function MyProfileView() {
-  const setView = useAppStore((s) => s.setView);
-
-  return <MyProfileContent />;
+export function MyProfileView({ variant = "profile" }: { variant?: "profile" | "settings" }) {
+  return <MyProfileContent variant={variant} />;
 }
 
-function MyProfileContent() {
+function MyProfileContent({ variant }: { variant: "profile" | "settings" }) {
   const user = useAppStore((s) => s.user);
   const setUser = useAppStore((s) => s.setUser);
+  const isTeacher = user?.role === "TEACHER";
+  const isSettings = variant === "settings";
+  const pageTitle = isSettings ? "Pengaturan" : "Profil Saya";
+  const pageDescription = isSettings
+    ? "Kelola profil dan kelas yang Anda ajar"
+    : "Kelola informasi akun Anda";
+  const PageIcon = isSettings ? Settings : User;
   const { data: profile, loading, error, refetch } = useFetch<MemberProfile>(
     user?.member ? `/api/members/${user.member.id}` : null,
     { deps: [user?.member?.id] }
@@ -82,6 +88,7 @@ function MyProfileContent() {
     gender: "",
     birthDate: "",
     classGrade: "",
+    taughtClasses: "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -99,6 +106,7 @@ function MyProfileContent() {
         gender: profile.gender || "",
         birthDate: profile.birthDate ? profile.birthDate.slice(0, 10) : "",
         classGrade: profile.classGrade || "",
+        taughtClasses: profile.taughtClasses || "",
       });
     }
   }, [profile]);
@@ -111,18 +119,29 @@ function MyProfileContent() {
     }
     setSaving(true);
     try {
-      const res = await api.put(`/api/members/${profile.id}`, {
+      await api.put(`/api/members/${profile.id}`, {
         fullName: form.fullName.trim(),
         phone: form.phone.trim() || null,
         address: form.address.trim() || null,
         gender: form.gender || null,
         birthDate: form.birthDate || null,
         classGrade: form.classGrade.trim() || null,
+        ...(isTeacher ? { taughtClasses: form.taughtClasses } : {}),
       });
       toast.success("Profil berhasil diperbarui.");
-      // Update store name if changed
-      if (user && form.fullName.trim() !== user.name) {
-        setUser({ ...user, name: form.fullName.trim() });
+      if (user) {
+        setUser({
+          ...user,
+          name: form.fullName.trim(),
+          member: user.member
+            ? {
+                ...user.member,
+                fullName: form.fullName.trim(),
+                classGrade: form.classGrade.trim() || null,
+                taughtClasses: isTeacher ? form.taughtClasses.trim() || null : user.member.taughtClasses,
+              }
+            : user.member,
+        });
       }
       refetch();
     } catch (e) {
@@ -164,7 +183,7 @@ function MyProfileContent() {
   if (loading) {
     return (
       <div>
-        <PageHeader title="Profil Saya" description="Kelola informasi akun Anda" icon={User} />
+        <PageHeader title={pageTitle} description={pageDescription} icon={PageIcon} />
         <div className="space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="h-20 rounded-lg bg-muted animate-pulse" />
@@ -177,7 +196,7 @@ function MyProfileContent() {
   if (error || !profile) {
     return (
       <div>
-        <PageHeader title="Profil Saya" description="Kelola informasi akun Anda" icon={User} />
+        <PageHeader title={pageTitle} description={pageDescription} icon={PageIcon} />
         <Card className="p-6 text-center text-sm text-destructive">
           {error || "Gagal memuat data profil."}
         </Card>
@@ -187,7 +206,7 @@ function MyProfileContent() {
 
   return (
     <div>
-      <PageHeader title="Profil Saya" description="Kelola informasi akun Anda" icon={User} />
+      <PageHeader title={pageTitle} description={pageDescription} icon={PageIcon} />
 
       {/* Account info (read-only) */}
       <Card className="p-5 mb-6">
@@ -285,15 +304,35 @@ function MyProfileContent() {
             />
           </div>
           <div>
-            <Label htmlFor="classGrade" className="text-xs">Kelas</Label>
+            <Label htmlFor="classGrade" className="text-xs">
+              {isTeacher ? "Mata Pelajaran" : "Kelas"}
+            </Label>
             <Input
               id="classGrade"
               value={form.classGrade}
               onChange={(e) => setForm({ ...form, classGrade: e.target.value })}
-              placeholder="contoh: XII IPA 1"
+              placeholder={isTeacher ? "contoh: Matematika" : "contoh: IX-A"}
               className="mt-1"
             />
           </div>
+          {isTeacher && (
+            <div className="sm:col-span-2">
+              <Label htmlFor="taughtClasses" className="text-xs flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5" />
+                Kelas yang Diajar
+              </Label>
+              <Input
+                id="taughtClasses"
+                value={form.taughtClasses}
+                onChange={(e) => setForm({ ...form, taughtClasses: e.target.value })}
+                placeholder="contoh: IX-A, IX-B"
+                className="mt-1"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Pisahkan dengan koma. Hanya siswa di kelas ini yang tampil di beranda Anda.
+              </p>
+            </div>
+          )}
           <div className="sm:col-span-2">
             <Label htmlFor="address" className="text-xs">Alamat</Label>
             <Input

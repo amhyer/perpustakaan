@@ -33,6 +33,7 @@ import { api } from "@/lib/api-client";
 import { useAppStore } from "@/store/use-app-store";
 
 import { BookCover } from "@/components/app/shared/book-cover";
+import { ShelfMap } from "@/components/app/shared/shelf-map";
 import { Spinner } from "@/components/app/shared/loading";
 
 import { Badge } from "@/components/ui/data-display/badge";
@@ -389,7 +390,9 @@ export function BookDetailView({ bookId }: { bookId: string }) {
             author={book.author}
             color={book.coverColor}
             coverImage={book.coverImage}
+            isbn={book.isbn}
             size="lg"
+            tilt
           />
           {/* Quick stats */}
           <Card className="p-4 space-y-2">
@@ -590,6 +593,10 @@ export function BookDetailView({ bookId }: { bookId: string }) {
               />
             </CardContent>
           </Card>
+
+          {book.location && (
+            <ShelfMap code={book.location.code} name={book.location.name} />
+          )}
 
           {/* Synopsis */}
           {book.synopsis && (

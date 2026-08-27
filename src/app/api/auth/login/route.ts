@@ -103,6 +103,7 @@ export async function POST(req: Request) {
             category: member.category,
             photo: member.photo,
             classGrade: member.classGrade,
+            taughtClasses: member.taughtClasses ?? null,
           }
         : null,
       defaultDashboard: pref.defaultDashboard,

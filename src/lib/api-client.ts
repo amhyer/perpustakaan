@@ -13,6 +13,7 @@ export interface CurrentUser {
     category: string;
     photo: string | null;
     classGrade: string | null;
+    taughtClasses?: string | null;
   } | null;
   /** View yang dipilih user sebagai default (Sprint 4 — Fix #9). 'default' = auto-route. */
   defaultDashboard: string;

@@ -110,6 +110,7 @@ export async function POST(req: Request) {
             category: user.member.category,
             photo: user.member.photo,
             classGrade: user.member.classGrade,
+            taughtClasses: user.member.taughtClasses ?? null,
           }
         : null,
       defaultDashboard: pref.defaultDashboard,

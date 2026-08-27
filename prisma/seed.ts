@@ -77,7 +77,7 @@ async function main() {
     role: string,
     memberNumber: string,
     category: string,
-    extra: { classGrade?: string; phone?: string; address?: string; gender?: string }
+    extra: { classGrade?: string; taughtClasses?: string; phone?: string; address?: string; gender?: string }
   ) => {
     const user = await db.user.create({
       data: { email, passwordHash: password, name, role },
@@ -93,6 +93,7 @@ async function main() {
         phone: extra.phone,
         address: extra.address,
         classGrade: extra.classGrade,
+        taughtClasses: extra.taughtClasses ?? null,
         joinDate: new Date("2024-01-15"),
         expiryDate: new Date("2028-12-31"),
       },
@@ -117,7 +118,7 @@ async function main() {
     "TEACHER",
     "GUR-001",
     "TEACHER",
-    { classGrade: "Matematika", phone: "081234500001", gender: "L" }
+    { classGrade: "Matematika", taughtClasses: "IX-A", phone: "081234500001", gender: "L" }
   );
   const guru2 = await createUser(
     "siti@jendelailmu.sch.id",

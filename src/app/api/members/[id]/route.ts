@@ -2,15 +2,29 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth, requireFullLibrarian, isLibrarian } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth";
+import { readTaughtClasses, serializeTaughtClasses, studentInTaughtClasses } from "@/lib/taught-classes";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { user, error } = await requireAuth();
   if (error) return error;
   const { id } = await params;
 
-  // Non-librarians can only view their own profile
+  // Non-staf: profil sendiri. Guru boleh lihat siswa di kelas yang diajar.
   if (!isLibrarian(user!.role) && user!.member?.id !== id) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (user!.role !== "TEACHER") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const target = await db.member.findUnique({
+      where: { id },
+      select: { category: true, classGrade: true },
+    });
+    if (
+      !target ||
+      target.category !== "STUDENT" ||
+      !studentInTaughtClasses(target.classGrade, readTaughtClasses(user!.member))
+    ) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
 
   const member = await db.member.findUnique({
@@ -55,6 +69,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (body.address !== undefined) data.address = body.address;
   if (body.photo !== undefined) data.photo = body.photo;
   if (body.classGrade !== undefined) data.classGrade = body.classGrade;
+  if (body.taughtClasses !== undefined && (isLibrarianRole || member.category === "TEACHER")) {
+    data.taughtClasses = serializeTaughtClasses(body.taughtClasses) || null;
+  }
   if (body.gender !== undefined) data.gender = body.gender;
   if (body.birthDate !== undefined) data.birthDate = body.birthDate ? new Date(body.birthDate) : null;
   // expiryDate hanya bisa diedit oleh pustakawan (Tahap 16 #4) — anggota tidak boleh set sendiri

@@ -207,6 +207,11 @@ const CONTENT: Record<EmptyStateContext, Partial<Record<UserRole, EmptyStateCont
       title: "Tidak ada buku terlambat 🎉",
       description: "Semua anggota mengembalikan buku tepat waktu. Pertahankan!",
     },
+    TEACHER: {
+      icon: BookOpen,
+      title: "Tidak ada siswa terlambat",
+      description: "Semua siswa mengembalikan buku tepat waktu. Tidak ada yang perlu ditindaklanjuti.",
+    },
   },
   "no-classmates": {
     STUDENT: {
@@ -232,7 +237,8 @@ const CONTENT: Record<EmptyStateContext, Partial<Record<UserRole, EmptyStateCont
     TEACHER: {
       icon: Search,
       title: "Belum ada data kelas",
-      description: "Pantau aktivitas siswa di kelas yang Anda ajar di sini.",
+      description: "Atur kelas yang Anda ajar di Pengaturan, lalu pantau aktivitas siswa di sini.",
+      primaryAction: { label: "Buka Pengaturan", view: "settings" },
     },
   },
   "no-top-members": {

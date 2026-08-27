@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireAuth, requireLibrarian } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { parsePagination, parseSort, paginatedResponse, parseList } from "@/lib/query-helpers";
+import { bookSearchOr } from "@/lib/search";
 import { logger, startTimer } from "@/lib/logger";
 
 /** Cari buku dengan ISBN ternormalisasi (tanpa tanda pisah/spasi). */
@@ -33,22 +34,16 @@ export async function GET(req: Request) {
   const availableOnly = searchParams.get("availableOnly") === "true";
 
   // Pagination
-  const pagination = parsePagination(searchParams, { defaultPageSize: 12, maxPageSize: 100 });
+  const pagination = parsePagination(searchParams, { defaultPageSize: 12, maxPageSize: 200 });
 
-  // Sort
-  const sort = parseSort(searchParams, ALLOWED_SORT_FIELDS, { field: "title", order: "asc" });
+  // Sort — "newest" alias ke tahun terbit menurun
+  const sortParams = new URLSearchParams(searchParams);
+  if (sortParams.get("sort") === "newest") sortParams.set("sort", "year-desc");
+  const sort = parseSort(sortParams, ALLOWED_SORT_FIELDS, { field: "title", order: "asc" });
 
   // Build where clause
   const where: Record<string, unknown> = {};
-  if (q) {
-    where.OR = [
-      { title: { contains: q } },
-      { author: { contains: q } },
-      { publisher: { contains: q } },
-      { isbn: { contains: q } },
-      { subject: { contains: q } },
-    ];
-  }
+  if (q) where.OR = bookSearchOr(q);
   if (categoryIds.length === 1) where.categoryId = categoryIds[0];
   else if (categoryIds.length > 1) where.categoryId = { in: categoryIds };
   if (locationIds.length === 1) where.locationId = locationIds[0];

@@ -22,8 +22,17 @@ export async function GET(req: Request) {
 
   const where: Record<string, unknown> = {};
   if (status) where.status = status;
-  if (memberId) where.memberId = memberId;
-  if (mine === "1" && user!.member) where.memberId = user!.member.id;
+  // Guru/siswa hanya boleh melihat pinjaman sendiri.
+  if (!isLibrarian(user!.role)) {
+    if (!user!.member) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    where.memberId = user!.member.id;
+  } else if (mine === "1" && user!.member) {
+    where.memberId = user!.member.id;
+  } else if (memberId) {
+    where.memberId = memberId;
+  }
   if (overdue === "1") {
     where.status = { in: ["LOANED", "OVERDUE"] };
     where.dueDate = { lt: new Date() };

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth, requireLibrarian } from "@/lib/auth";
+import { canAccessAllProposals } from "@/lib/role-access";
 
 export async function GET(req: Request) {
   const { user, error } = await requireAuth();
@@ -15,7 +16,15 @@ export async function GET(req: Request) {
 
   const where: Record<string, unknown> = {};
   if (status) where.status = status;
-  if (mine === "1" && user!.member) where.memberId = user!.member.id;
+  // Anggota (guru/siswa) hanya boleh melihat usulan sendiri — cegah IDOR.
+  if (!canAccessAllProposals(user!.role)) {
+    if (!user!.member) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    where.memberId = user!.member.id;
+  } else if (mine === "1" && user!.member) {
+    where.memberId = user!.member.id;
+  }
 
   // Mode pagination: return { data, total, page, pageSize }
   if (page !== null && !isNaN(page)) {

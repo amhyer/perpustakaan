@@ -50,4 +50,10 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Unit test tidak butuh pipeline Tailwind/PostCSS.
+  css: {
+    postcss: {
+      plugins: [],
+    },
+  },
 });

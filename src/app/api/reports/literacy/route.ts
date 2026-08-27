@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
+import { canAccessLiteracyReport } from "@/lib/role-access";
+import { classGradeMatchValues, readTaughtClasses, resolveTeacherClassFilter } from "@/lib/taught-classes";
 
 // GET /api/reports/literacy?classGrade=X&startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
 // Laporan literasi untuk GLS/Akreditasi: buku dibaca per siswa per kelas
 export async function GET(req: Request) {
-  const { error } = await requireAuth();
+  const { user, error } = await requireAuth();
   if (error) return error;
+  if (!canAccessLiteracyReport(user!.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { searchParams } = new URL(req.url);
   const classGrade = searchParams.get("classGrade") || "";
@@ -33,7 +38,14 @@ export async function GET(req: Request) {
     category: "STUDENT",
     status: "ACTIVE",
   };
-  if (classGrade) memberWhere.classGrade = classGrade;
+  let scopedClasses: string[] | null = null;
+  if (user!.role === "TEACHER") {
+    const taught = readTaughtClasses(user!.member);
+    scopedClasses = resolveTeacherClassFilter(taught, classGrade);
+    memberWhere.classGrade = { in: classGradeMatchValues(scopedClasses) };
+  } else if (classGrade) {
+    memberWhere.classGrade = { in: classGradeMatchValues([classGrade]) };
+  }
 
   // Ambil semua member siswa (filtered by class)
   const members = await db.member.findMany({
@@ -154,7 +166,7 @@ export async function GET(req: Request) {
     totalBooksRead: activeStudents.reduce((sum, s) => sum + s.booksRead, 0),
     totalActiveStudents: activeStudents.length,
     filter: {
-      classGrade: classGrade || "Semua Kelas",
+      classGrade: classGrade || (scopedClasses ? scopedClasses.join(", ") || "Kelas belum diatur" : "Semua Kelas"),
       startDate: startDate || null,
       endDate: endDate || null,
     },

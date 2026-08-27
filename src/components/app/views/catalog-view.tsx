@@ -21,6 +21,8 @@ import { useAppStore } from "@/store/use-app-store";
 import { BookCard, type BookWithDetails } from "@/components/app/shared/book-card";
 import { EmptyState, PageHeader } from "@/components/app/shared/page-header";
 import { LoadingGrid } from "@/components/app/shared/loading";
+import { FeaturedHero } from "@/components/app/shared/featured-hero";
+import { ShelfRow } from "@/components/app/shared/shelf-row";
 
 import { Button } from "@/components/ui/form/button";
 import { Card } from "@/components/ui/layout/card";
@@ -75,7 +77,8 @@ export function CatalogView() {
   const [sort, setSort] = useState<SortKey>("title-asc");
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
-  const pageSize = 12;
+  const browsing = !searchQuery && !categoryId && !locationId && !year && !digitalOnly && !availableOnly;
+  const pageSize = browsing ? 200 : 12;
 
   // Debounce 300ms
   useEffect(() => {
@@ -89,6 +92,8 @@ export function CatalogView() {
   // Fetch filters options
   const { data: categories } = useFetch<Category[]>("/api/categories");
   const { data: locations } = useFetch<Location[]>("/api/locations");
+  const { data: featuredPayload } = useFetch<{ featured: BookWithDetails | null }>("/api/public/featured");
+  const isLibrarian = user?.role === "LIBRARIAN" || user?.role === "PUSTAKAWAN_JUNIOR";
 
   // Build books URL with pagination
   const booksUrl = useMemo(() => {
@@ -99,19 +104,23 @@ export function CatalogView() {
     if (year) params.set("year", year);
     if (digitalOnly) params.set("source", "SIBI");
     if (availableOnly) params.set("availableOnly", "true");
-    params.set("sort", sort);
+    params.set("sort", sort === "newest" ? "year-desc" : sort);
     params.set("page", String(page));
     params.set("pageSize", String(pageSize));
     const qs = params.toString();
     return `/api/books${qs ? `?${qs}` : ""}`;
-  }, [searchQuery, categoryId, locationId, year, digitalOnly, availableOnly, sort, page]);
+  }, [searchQuery, categoryId, locationId, year, digitalOnly, availableOnly, sort, page, pageSize]);
 
-  const { data: booksResp, loading, error } = useFetch<{ data: BookWithDetails[]; total: number; page: number; pageSize: number; totalPages: number }>(
-    booksUrl,
-    { deps: [booksUrl] }
-  );
+  const { data: booksResp, loading, error } = useFetch<{
+    data: BookWithDetails[];
+    total?: number;
+    page?: number;
+    pageSize?: number;
+    totalPages?: number;
+    pagination?: { total: number; page: number; pageSize: number; totalPages: number };
+  }>(booksUrl, { deps: [booksUrl] });
   const books = booksResp?.data ?? [];
-  const totalPages = booksResp?.totalPages ?? 1;
+  const totalPages = booksResp?.pagination?.totalPages ?? booksResp?.totalPages ?? 1;
 
   // Client-side sort (skip for popular — API already sorts)
   const sortedBooks = useMemo(() => {
@@ -140,8 +149,10 @@ export function CatalogView() {
     setLocationId("");
     setYear("");
     setDigitalOnly(false);
+    setAvailableOnly(false);
     setSearchInput("");
     setSearchQuery("");
+    setPage(1);
     toast.success("Filter telah direset");
   }
 
@@ -155,8 +166,19 @@ export function CatalogView() {
   async function handleExportCSV() {
     setExporting(true);
     try {
-      const all = await api.get<BookWithDetails[]>("/api/books?limit=10000");
-      if (!all || all.length === 0) {
+      const all: BookWithDetails[] = [];
+      let exportPage = 1;
+      let exportPages = 1;
+      do {
+        const res = await api.get<{
+          data?: BookWithDetails[];
+          pagination?: { totalPages: number };
+        }>(`/api/books?page=${exportPage}&pageSize=100`);
+        all.push(...(res.data ?? []));
+        exportPages = res.pagination?.totalPages ?? 1;
+        exportPage += 1;
+      } while (exportPage <= exportPages);
+      if (all.length === 0) {
         toast.info("Tidak ada buku untuk diekspor");
         return;
       }
@@ -206,11 +228,13 @@ export function CatalogView() {
         icon={BookOpen}
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={exporting} className="gap-2">
-              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              Export CSV
-            </Button>
-            {(user?.role === "LIBRARIAN" || user?.role === "PUSTAKAWAN_JUNIOR") && (
+            {isLibrarian && (
+              <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={exporting} className="gap-2">
+                {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                Export CSV
+              </Button>
+            )}
+            {isLibrarian && (
               <Button onClick={() => setView("book-form")} size="sm">
                 <Plus className="h-4 w-4" />
                 Tambah Buku
@@ -418,11 +442,50 @@ export function CatalogView() {
         />
       ) : (
         <>
+          {browsing ? (
+            <div className="space-y-8">
+              {featuredPayload?.featured && (
+                <FeaturedHero
+                  book={{
+                    ...featuredPayload.featured,
+                    available:
+                      featuredPayload.featured.available ??
+                      featuredPayload.featured.items?.filter((i) => i.status === "AVAILABLE").length ??
+                      0,
+                  }}
+                  onOpen={(id) => setView("book-detail", { id })}
+                />
+              )}
+              {Array.from(
+                sortedBooks.reduce((map, book) => {
+                  const key = book.category?.name || "Lainnya";
+                  const list = map.get(key) ?? [];
+                  list.push(book);
+                  map.set(key, list);
+                  return map;
+                }, new Map<string, BookWithDetails[]>())
+              ).map(([name, books]) => (
+                <ShelfRow
+                  key={name}
+                  title={name}
+                  books={books}
+                  onSeeAll={() => {
+                    const cat = categories?.find((c) => c.name === name);
+                    if (cat) {
+                      setCategoryId(cat.id);
+                      setPage(1);
+                    }
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {sortedBooks.map((book) => (
               <BookCard key={book.id} book={book} />
             ))}
           </div>
+          )}
           {/* Pagination (Tahap 16 #26) */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-6">

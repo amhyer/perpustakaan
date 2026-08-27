@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, LogOut, Menu, Search, Shield, User as UserIcon } from "lucide-react";
+import { Bell, LogOut, Menu, Search, Settings, Shield, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/form/button";
 import { Input } from "@/components/ui/form/input";
 import {
@@ -148,6 +148,11 @@ export function Header() {
             {user?.member && (
               <DropdownMenuItem onClick={() => setView("my-card")}>
                 <UserIcon className="h-4 w-4 mr-2" /> Kartu Anggota
+              </DropdownMenuItem>
+            )}
+            {user?.role === "TEACHER" && (
+              <DropdownMenuItem onClick={() => setView("settings")}>
+                <Settings className="h-4 w-4 mr-2" /> Pengaturan
               </DropdownMenuItem>
             )}
             <DropdownMenuItem onClick={() => setView("my-sessions")}>

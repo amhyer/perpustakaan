@@ -122,6 +122,9 @@ export default function Page() {
       case "fines":
         return <FinesView />;
       case "settings":
+        if (user.role === "TEACHER") {
+          return <MyProfileView variant="settings" />;
+        }
         return <SettingsView />;
       case "rooms":
         return <RoomsView />;
@@ -142,7 +145,11 @@ export default function Page() {
       case "notifications":
         return <NotificationsView />;
       case "my-dashboard":
-        return <MyDashboardView variant={view.dashboardVariant} />;
+        return (
+          <MyDashboardView
+            variant={user.role === "TEACHER" ? "teacher" : "student"}
+          />
+        );
       case "my-loans":
         return <MyLoansView />;
       case "my-card":
@@ -166,6 +173,13 @@ export default function Page() {
       case "rewards-management":
         return <RewardsManagementView />;
       default:
+        if (user.role === "TEACHER" || user.role === "STUDENT") {
+          return (
+            <MyDashboardView
+              variant={user.role === "TEACHER" ? "teacher" : "student"}
+            />
+          );
+        }
         return <DashboardView />;
     }
   };

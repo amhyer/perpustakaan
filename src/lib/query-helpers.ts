@@ -23,10 +23,12 @@ export function parsePagination(
   options: { defaultPageSize?: number; maxPageSize?: number } = {}
 ): PaginationParams {
   const { defaultPageSize = 20, maxPageSize = 100 } = options;
-  const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+  const rawPage = parseInt(searchParams.get("page") || "1", 10);
+  const rawSize = parseInt(searchParams.get("pageSize") || String(defaultPageSize), 10);
+  const page = Math.max(1, Number.isFinite(rawPage) ? rawPage : 1);
   const pageSize = Math.min(
     maxPageSize,
-    Math.max(1, parseInt(searchParams.get("pageSize") || String(defaultPageSize)))
+    Math.max(1, Number.isFinite(rawSize) ? rawSize : defaultPageSize)
   );
   return { page, pageSize, offset: (page - 1) * pageSize };
 }

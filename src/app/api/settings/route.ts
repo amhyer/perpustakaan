@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth, requireFullLibrarian } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { isExposedSettingKey } from "@/lib/privacy";
 
 const ALLOWED_SETTINGS_KEYS = new Set([
   "library_name", "head_librarian", "library_address", "card_back_text",
@@ -20,6 +21,7 @@ const ALLOWED_SETTINGS_KEYS = new Set([
   "email_from_name", "email_reply_to",
   // Operasional
   "library_opens_at", "library_closes_at", "library_open_days",
+  "featured_book_id",
   "max_loan_extension_days",
   // Kiosk
   "kiosk_enabled", "kiosk_welcome_message",
@@ -30,7 +32,11 @@ export async function GET() {
   if (error) return error;
   const settings = await db.setting.findMany();
   const map: Record<string, string> = {};
-  for (const s of settings) map[s.key] = s.value;
+  for (const s of settings) {
+    // Daftar bacaan guru disimpan di Setting, tapi bukan konfigurasi publik.
+    if (!isExposedSettingKey(s.key)) continue;
+    map[s.key] = s.value;
+  }
   return NextResponse.json(map);
 }
 

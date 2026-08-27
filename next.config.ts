@@ -62,8 +62,17 @@ const nextConfig: NextConfig = {
   // ===== React =====
   reactStrictMode: true, // Enable untuk catch bugs di development
 
+  // Prisma + node:sqlite must stay on the server runtime.
+  serverExternalPackages: ["@prisma/client", "@prisma/driver-adapter-utils"],
+
   // ===== Dev settings =====
-  allowedDevOrigins: ["127.0.0.1", "localhost", "21.0.2.100"],
+  allowedDevOrigins: [
+    "127.0.0.1",
+    "localhost",
+    "21.0.2.100",
+    "*.e2b.app",
+    "*.e2b.dev",
+  ],
 
   // ===== Experimental features =====
   experimental: {
@@ -85,10 +94,13 @@ const nextConfig: NextConfig = {
       { key: "X-DNS-Prefetch-Control", value: "on" },
       { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
       { key: "X-Content-Type-Options", value: "nosniff" },
-      { key: "X-Frame-Options", value: "DENY" },
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-      { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+      { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=()" },
     ];
+    // Jangan set X-Frame-Options di development — live preview di-iframe.
+    if (process.env.NODE_ENV === "production") {
+      securityHeaders.push({ key: "X-Frame-Options", value: "DENY" });
+    }
 
     return [
       // Apply ke semua routes
