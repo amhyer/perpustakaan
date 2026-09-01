@@ -63,9 +63,11 @@ export async function sendPushToSubscription(
 
   try {
     // Dynamic import untuk avoid loading web-push kalau tidak dipakai
+    // Use variable path to prevent Turbopack from statically resolving at build time
+    const mod = "web-push";
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     // @ts-ignore - web-push module not installed
-    const webpush = await import("web-push").catch(() => null);
+    const webpush = await import(/* webpackIgnore: true */ mod).catch(() => null);
     if (!webpush) {
       logger.warn("web-push not installed, skipping push");
       return false;

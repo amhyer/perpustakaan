@@ -18,7 +18,41 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
-import { createHmac, timingSafeEqual } from "crypto";
+// Note: Using Web Crypto API (Edge-compatible) instead of Node.js 'crypto'
+// Node.js crypto is not available in Edge Runtime.
+const subtle = globalThis.crypto?.subtle;
+
+/**
+ * HMAC-SHA256 using Web Crypto API (Edge-compatible).
+ * Equivalent to Node.js: createHmac('sha256', secret).update(data).digest('hex')
+ */
+async function hmacSha256Hex(secret: string, data: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await subtle.sign("HMAC", key, encoder.encode(data));
+  return Array.from(new Uint8Array(signature))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/**
+ * Constant-time string comparison (Edge-compatible).
+ * Equivalent to Node.js: timingSafeEqual(a, b)
+ */
+function timingSafeEqual(a: Buffer, b: Buffer): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a[i]! ^ b[i]!;
+  }
+  return result === 0;
+}
 
 // ===== Config =====
 
@@ -165,13 +199,13 @@ function getCsrfSecret(): string {
   return process.env.CSRF_SECRET || process.env.JWT_SECRET || "fallback-secret-change-me";
 }
 
-function verifyCsrfSignature(cookieValue: string): string | null {
+async function verifyCsrfSignature(cookieValue: string): Promise<string | null> {
   const dotIndex = cookieValue.lastIndexOf(".");
   if (dotIndex === -1) return null;
   const token = cookieValue.substring(0, dotIndex);
   const signature = cookieValue.substring(dotIndex + 1);
   const secret = getCsrfSecret();
-  const expected = createHmac("sha256", secret).update(token).digest("hex");
+  const expected = await hmacSha256Hex(secret, token);
   if (expected.length !== signature.length) return null;
   try {
     if (!timingSafeEqual(Buffer.from(expected), Buffer.from(signature))) return null;
@@ -185,7 +219,7 @@ function verifyCsrfSignature(cookieValue: string): string | null {
  * Validate CSRF token for mutating API requests.
  * Double-submit cookie pattern: compare cookie value with header.
  */
-function validateCsrf(req: NextRequest): boolean {
+async function validateCsrf(req: NextRequest): Promise<boolean> {
   const method = req.method.toUpperCase();
   if (method === "GET" || method === "HEAD" || method === "OPTIONS") return true;
 
@@ -198,7 +232,7 @@ function validateCsrf(req: NextRequest): boolean {
 
   if (!cookieVal || !headerToken) return false;
 
-  const cookieToken = verifyCsrfSignature(cookieVal);
+  const cookieToken = await verifyCsrfSignature(cookieVal);
   if (!cookieToken) return false;
 
   try {
@@ -237,7 +271,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // CSRF validation for mutating API requests
-  if (!validateCsrf(req)) {
+  if (!(await validateCsrf(req))) {
     logger.warn("CSRF validation failed", {
       pathname,
       method: req.method,
