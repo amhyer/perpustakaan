@@ -86,7 +86,7 @@
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^14.0.2",
     "vaul": "^1.1.2",
-    "web-vitals": "^4.2.4",
+    "web-vitals": "^6.2.1",
     "ws": "^8.21.3",
     "zod": "^4.4.3",
     "zustand": "^5.0.15"
