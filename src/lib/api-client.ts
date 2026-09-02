@@ -51,11 +51,13 @@ async function request<T>(
 ): Promise<T> {
   const method = (options?.method || "GET").toUpperCase();
 
-  // Build headers — include CSRF token for mutating requests
+  // Build headers — only set Content-Type for requests with a body
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     ...(options?.headers as Record<string, string> || {}),
   };
+  if (method !== "GET" && method !== "HEAD") {
+    headers["Content-Type"] = "application/json";
+  }
 
   if (!CSRF_EXEMPT_METHODS.has(method)) {
     const csrfToken = getCsrfToken();
@@ -74,7 +76,7 @@ async function request<T>(
     try {
       const data = await res.json();
       message = data.error || data.message || message;
-      } catch (e) {
+    } catch (e) {
       console.error("[api-client] Gagal parse error response:", e);
     }
     throw new Error(message);

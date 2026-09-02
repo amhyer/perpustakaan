@@ -2,11 +2,21 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: Request) {
   const { user, error } = await requireAuth();
   if (error) return error;
 
   try {
+    const { searchParams } = new URL(req.url);
+    const countOnly = searchParams.get("count");
+
+    if (countOnly === "1") {
+      const unread = await db.notification.count({
+        where: { userId: user!.id, isRead: false },
+      });
+      return NextResponse.json({ unread });
+    }
+
     const notifications = await db.notification.findMany({
       where: { userId: user!.id },
       orderBy: { createdAt: "desc" },
@@ -21,7 +31,7 @@ export async function GET() {
 
 // Hitung yang belum dibaca
 export async function HEAD() {
-  return NextResponse.json({});
+  return new NextResponse(null, { status: 200 });
 }
 
 export async function POST(req: Request) {
