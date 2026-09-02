@@ -69,9 +69,13 @@ export async function clearSessionCookie() {
 export async function getCurrentUser() {
   const session = await getSession();
   if (!session) return null;
+
   const user = await db.user.findUnique({
     where: { id: session.userId },
-    include: { member: true },
+    include: {
+      member: true,
+      preference: { select: { defaultDashboard: true } },
+    },
   });
   if (!user) return null;
 
@@ -95,9 +99,13 @@ export async function getCurrentUser() {
 
   if (user.member && user.member.status !== "ACTIVE") return null;
 
-  // Ambil preferensi default dashboard (Sprint 4 — Fix #9). Lazy create
-  // jika belum ada — idempotent, aman dipanggil tiap request.
-  const pref = await getOrCreateUserPreference(user.id);
+  // Lazy-create preference if not exists (only write when missing)
+  const defaultDashboard = user.preference?.defaultDashboard || "default";
+  if (!user.preference) {
+    await db.userPreference.create({
+      data: { userId: user.id, defaultDashboard: "default" },
+    });
+  }
 
   return {
     id: user.id,
@@ -105,7 +113,7 @@ export async function getCurrentUser() {
     name: user.name,
     role: user.role,
     member: user.member,
-    defaultDashboard: pref.defaultDashboard,
+    defaultDashboard,
   };
 }
 

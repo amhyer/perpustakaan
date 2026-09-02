@@ -18,17 +18,56 @@ export interface CurrentUser {
   defaultDashboard: string;
 }
 
+/**
+ * Read CSRF token from cookie (ji_csrf).
+ * Cookie format: token.signature — we need the token part.
+ */
+function getCsrfToken(): string | null {
+  if (typeof document === "undefined") return null;
+  const cookies = document.cookie.split(";");
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split("=");
+    if (name === "ji_csrf" && value) {
+      try {
+        const decoded = decodeURIComponent(value);
+        const dotIndex = decoded.lastIndexOf(".");
+        if (dotIndex > 0) {
+          return decoded.substring(0, dotIndex);
+        }
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+// CSRF-exempt methods (safe methods don't need CSRF)
+const CSRF_EXEMPT_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
 async function request<T>(
   url: string,
   options?: RequestInit
 ): Promise<T> {
+  const method = (options?.method || "GET").toUpperCase();
+
+  // Build headers — include CSRF token for mutating requests
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options?.headers as Record<string, string> || {}),
+  };
+
+  if (!CSRF_EXEMPT_METHODS.has(method)) {
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      headers["x-csrf-token"] = csrfToken;
+    }
+  }
+
   const res = await fetch(url, {
     ...options,
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options?.headers || {}),
-    },
+    headers,
   });
   if (!res.ok) {
     let message = `Request gagal (${res.status})`;

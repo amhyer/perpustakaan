@@ -7,14 +7,28 @@
  * Untuk multi-instance production, ganti dengan Redis-backed limiter
  * (mis. @upstash/ratelimit) — interface tetap sama.
  *
+ * WARNING: Rate limits ini HANYA berlaku per-instance. Jika deploy ke
+ * multi-instance (Render free tier, serverless, containers), attacker bisa
+ * distribute request untuk bypass limit. Untuk production multi-instance,
+ * gunakan Redis/Upstash.
+ *
  * Cara pakai:
- *   const { success, remaining, reset } = await rateLimit({
+ *   const { success, remaining, reset } = rateLimit({
  *     key: `login:${ip}`,
  *     limit: 5,
  *     windowMs: 60_000,
  *   });
  *   if (!success) return NextResponse.json({ error: "..." }, { status: 429 });
  */
+
+// Startup warning for multi-instance awareness
+if (process.env.NODE_ENV === "production") {
+  console.warn(
+    "[rate-limit] Menggunakan in-memory rate limiting. " +
+    "Ini HANYA berlaku per-instance. Untuk production multi-instance, " +
+    "migrasi ke Redis/Upstash (lihat @upstash/ratelimit)."
+  );
+}
 
 interface RateLimitEntry {
   count: number;

@@ -249,17 +249,27 @@ async function validateCsrf(req: NextRequest): Promise<boolean> {
 
 /**
  * Get client IP from NextRequest (Edge-compatible).
+ *
+ * SECURITY: Headers (X-Forwarded-For, X-Real-IP, CF-Connecting-IP) are only
+ * trusted when TRUST_PROXY=true. Without this, an attacker can spoof their IP
+ * via fake headers to bypass rate limits (brute-force login from different IPs).
+ *
+ * Must match the logic in src/lib/rate-limit.ts:getClientIdentifier() for consistency.
  */
 function getClientIp(req: NextRequest): string {
-  const forwarded = req.headers.get("x-forwarded-for");
-  if (forwarded) {
-    return forwarded.split(",")[0].trim();
+  if (process.env.TRUST_PROXY === "true") {
+    const forwarded = req.headers.get("x-forwarded-for");
+    if (forwarded) {
+      return forwarded.split(",")[0].trim();
+    }
+    const realIp = req.headers.get("x-real-ip");
+    if (realIp) return realIp.trim();
   }
-  const realIp = req.headers.get("x-real-ip");
-  if (realIp) return realIp.trim();
-  // Fallback: Cloudflare, Vercel, etc.
-  const cfIp = req.headers.get("cf-connecting-ip");
-  if (cfIp) return cfIp.trim();
+  // Fallback: CF-Connecting-IP only trusted behind Cloudflare (requires proxy)
+  if (process.env.TRUST_PROXY === "true") {
+    const cfIp = req.headers.get("cf-connecting-ip");
+    if (cfIp) return cfIp.trim();
+  }
   return "unknown";
 }
 
