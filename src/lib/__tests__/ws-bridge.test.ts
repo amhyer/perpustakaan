@@ -7,6 +7,11 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
+// Set env var BEFORE module import (Vitest hoists imports)
+vi.hoisted(() => {
+  process.env.WS_WEBHOOK_SECRET = "test-secret";
+});
+
 vi.mock("../db", () => ({ db: {} }));
 vi.mock("../logger", () => ({
   logger: {

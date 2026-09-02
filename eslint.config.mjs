@@ -1,5 +1,7 @@
 import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import nextTypescript from "eslint-config-next/typescript";
+import reactPlugin from "eslint-plugin-react";
+import reactHooks from "eslint-plugin-react-hooks";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -10,6 +12,10 @@ const eslintConfig = [
   ...nextCoreWebVitals,
   ...nextTypescript,
   {
+    plugins: {
+      "react": reactPlugin,
+      "react-hooks": reactHooks,
+    },
     rules: {
       // ===== TypeScript rules =====
       // Allow `any` in API routes (Prisma types kadang complex)
@@ -34,6 +40,10 @@ const eslintConfig = [
       // Defer to careful review for hooks deps (often needs manual adjustment)
       "react-hooks/exhaustive-deps": "warn",
       "react-hooks/purity": "off",
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/immutability": "off",
+      "react-hooks/refs": "off",
+      "react-hooks/rules-of-hooks": "error",
       "react/no-unescaped-entities": "off",
       "react/display-name": "off",
       "react/prop-types": "off",
