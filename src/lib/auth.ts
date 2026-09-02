@@ -67,54 +67,59 @@ export async function clearSessionCookie() {
 }
 
 export async function getCurrentUser() {
-  const session = await getSession();
-  if (!session) return null;
+  try {
+    const session = await getSession();
+    if (!session) return null;
 
-  const user = await db.user.findUnique({
-    where: { id: session.userId },
-    include: {
-      member: true,
-      preference: { select: { defaultDashboard: true } },
-    },
-  });
-  if (!user) return null;
-
-  // Auto-deactivate expired members (Tahap 16 #4 — expiryDate gated)
-  // Pengecualian: LIBRARIAN & PUSTAKAWAN_JUNIOR TIDAK PERNAH auto-deactivate
-  // (cegah deadlock: semua akun staf terkunci bersamaan, tidak ada yang bisa login)
-  if (
-    user.member &&
-    user.member.status === "ACTIVE" &&
-    user.member.expiryDate &&
-    (user.role === "TEACHER" || user.role === "STUDENT")
-  ) {
-    if (new Date(user.member.expiryDate) < new Date()) {
-      await db.member.update({
-        where: { id: user.member.id },
-        data: { status: "INACTIVE" },
-      });
-      user.member.status = "INACTIVE";
-    }
-  }
-
-  if (user.member && user.member.status !== "ACTIVE") return null;
-
-  // Lazy-create preference if not exists (only write when missing)
-  const defaultDashboard = user.preference?.defaultDashboard || "default";
-  if (!user.preference) {
-    await db.userPreference.create({
-      data: { userId: user.id, defaultDashboard: "default" },
+    const user = await db.user.findUnique({
+      where: { id: session.userId },
+      include: {
+        member: true,
+        preference: { select: { defaultDashboard: true } },
+      },
     });
-  }
+    if (!user) return null;
 
-  return {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-    member: user.member,
-    defaultDashboard,
-  };
+    // Auto-deactivate expired members (Tahap 16 #4 — expiryDate gated)
+    // Pengecualian: LIBRARIAN & PUSTAKAWAN_JUNIOR TIDAK PERNAH auto-deactivate
+    // (cegah deadlock: semua akun staf terkunci bersamaan, tidak ada yang bisa login)
+    if (
+      user.member &&
+      user.member.status === "ACTIVE" &&
+      user.member.expiryDate &&
+      (user.role === "TEACHER" || user.role === "STUDENT")
+    ) {
+      if (new Date(user.member.expiryDate) < new Date()) {
+        await db.member.update({
+          where: { id: user.member.id },
+          data: { status: "INACTIVE" },
+        });
+        user.member.status = "INACTIVE";
+      }
+    }
+
+    if (user.member && user.member.status !== "ACTIVE") return null;
+
+    // Lazy-create preference if not exists (only write when missing)
+    const defaultDashboard = user.preference?.defaultDashboard || "default";
+    if (!user.preference) {
+      await db.userPreference.create({
+        data: { userId: user.id, defaultDashboard: "default" },
+      });
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      member: user.member,
+      defaultDashboard,
+    };
+  } catch (err) {
+    console.error("[auth] getCurrentUser error:", err);
+    return null;
+  }
 }
 
 /**

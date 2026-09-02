@@ -3,10 +3,10 @@ import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 
 export async function GET(req: Request) {
-  const { user, error } = await requireAuth();
-  if (error) return error;
-
   try {
+    const { user, error } = await requireAuth();
+    if (error) return error;
+
     const { searchParams } = new URL(req.url);
     const countOnly = searchParams.get("count");
 
@@ -24,7 +24,7 @@ export async function GET(req: Request) {
     });
     return NextResponse.json(notifications);
   } catch (err) {
-    console.error("GET error:", err);
+    console.error("[/api/notifications] GET error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
