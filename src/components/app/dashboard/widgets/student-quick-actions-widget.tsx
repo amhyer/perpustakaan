@@ -74,6 +74,7 @@ export function StudentQuickActionsWidget({
 }: StudentQuickActionsWidgetProps) {
   const [data, setData] = useState<StudentDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     api
@@ -83,17 +84,7 @@ export function StudentQuickActionsWidget({
         setLoading(false);
       })
       .catch(() => {
-        // Mock fallback
-        setData({
-          loans: { active: 2, overdue: 0, dueSoon: 1 },
-          points: { balance: 145, earned: 220, nextRewardThreshold: 200, progress: 72.5 },
-          streak: { current: 7, best: 14 },
-          recommendations: [
-            { id: "1", title: "Laskar Pelangi", author: "Andrea Hirata", coverColor: "#1e3a5f" },
-            { id: "2", title: "Bumi Manusia", author: "Pramoedya A.T.", coverColor: "#dc2626" },
-            { id: "3", title: "Ayat-Ayat Cinta", author: "Habiburrahman", coverColor: "#059669" },
-          ],
-        });
+        setError(true);
         setLoading(false);
       });
   }, []);
@@ -116,7 +107,7 @@ export function StudentQuickActionsWidget({
     );
   }
 
-  if (!data) return null;
+  if (error || !data) return null;
 
   return (
     <Card>

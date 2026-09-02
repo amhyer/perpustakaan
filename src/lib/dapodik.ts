@@ -137,7 +137,8 @@ export async function syncFromDapodik(
 ): Promise<SyncResult> {
   const start = Date.now();
   const mode = options.mode || "INCREMENTAL";
-  const defaultPassword = options.defaultPassword || "password123";
+  const defaultPassword =
+    options.defaultPassword || process.env.DAPODIK_DEFAULT_PASSWORD || "changeme-first-login";
   const sendWelcome = options.sendWelcome ?? false;
 
   const result: SyncResult = {

@@ -70,6 +70,7 @@ export function AchievementShowcaseWidget() {
   const [tab, setTab] = useState<TabType>("overview");
   const [data, setData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -77,7 +78,11 @@ export function AchievementShowcaseWidget() {
       api.get<any>("/api/gamification/streak-calendar?days=7").catch(() => null),
       api.get<any>("/api/notifications/preferences").catch(() => null),
     ]).then(([levelData, streakData]) => {
-      // Mock consolidated data (would come from a dedicated API in production)
+      if (!levelData && !streakData) {
+        setError(true);
+        setLoading(false);
+        return;
+      }
       setData({
         level: levelData || {
           name: "Kutu Buku",
@@ -89,21 +94,19 @@ export function AchievementShowcaseWidget() {
         },
         streak: streakData
           ? { current: streakData.currentStreak, longest: streakData.longestStreak }
-          : { current: 5, longest: 12 },
-        certificates: [
-          { id: "c1", title: "Kutu Buku", emoji: "📚", slug: "books-10-budi-2024" },
-          { id: "c2", title: "Streak 7 Hari", emoji: "🔥", slug: "streak-7-budi-2024" },
-        ],
-        activeChallenges: [
-          { id: "ch1", title: "Marathon Membaca", type: "BOOK_COUNT", progress: 60 },
-        ],
-        points: 250,
+          : { current: 0, longest: 0 },
+        certificates: [],
+        activeChallenges: [],
+        points: 0,
       });
+      setLoading(false);
+    }).catch(() => {
+      setError(true);
       setLoading(false);
     });
   }, []);
 
-  if (loading || !data) {
+  if (loading || error) {
     return (
       <Card>
         <CardHeader>
@@ -119,6 +122,8 @@ export function AchievementShowcaseWidget() {
       </Card>
     );
   }
+
+  if (!data) return null;
 
   return (
     <Card>

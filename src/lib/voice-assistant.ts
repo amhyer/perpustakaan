@@ -18,7 +18,7 @@
  * - Query ke database
  * - Format response (SSML untuk voice)
  *
- * Untuk saat ini: stub functions + utility untuk intent detection.
+ * Webhook endpoints aktif untuk Alexa/Google fulfillment.
  * Real production perlu setup di Alexa Developer Console / Actions Console.
  */
 

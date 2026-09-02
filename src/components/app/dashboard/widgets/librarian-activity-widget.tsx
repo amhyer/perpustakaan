@@ -58,9 +58,9 @@ interface LibrarianStats {
 export function LibrarianActivityWidget() {
   const [stats, setStats] = useState<LibrarianStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    // Graceful: try API, fallback to mock data on error
     api
       .get<LibrarianStats>("/api/dashboard/librarian-stats")
       .then((data) => {
@@ -68,40 +68,12 @@ export function LibrarianActivityWidget() {
         setLoading(false);
       })
       .catch(() => {
-        // Mock fallback for offline/sandbox environments
-        setStats({
-          today: {
-            loansCreated: 24,
-            returns: 18,
-            newMembers: 3,
-            overdueCount: 5,
-            pendingApprovals: 7,
-          },
-          weekly: {
-            loansThisWeek: 142,
-            loansLastWeek: 128,
-            trendPercent: 10.9,
-          },
-          alerts: [
-            {
-              type: "critical",
-              title: "5 buku terlambat",
-              description: "Lebih dari 3 hari, perlu ditagih",
-              action: "Lihat",
-            },
-            {
-              type: "warning",
-              title: "7 klaim menunggu approval",
-              description: "Klaim hadiah siswa perlu direview",
-              action: "Review",
-            },
-          ],
-        });
+        setError(true);
         setLoading(false);
       });
   }, []);
 
-  if (loading) {
+  if (loading || error) {
     return (
       <Card>
         <CardHeader>

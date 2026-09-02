@@ -49,6 +49,7 @@ export function ClassLeaderboardWidget() {
   const user = useAppStore((s) => s.user);
   const [data, setData] = useState<LeaderboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     // Need classGrade - get from user.member
@@ -75,23 +76,12 @@ export function ClassLeaderboardWidget() {
         setLoading(false);
       })
       .catch(() => {
-        // Mock fallback
-        setData({
-          classGrade: "10-A",
-          leaderboard: [
-            { rank: 1, memberId: "m1", fullName: "Siti Aminah", memberNumber: "1001", photo: null, classGrade: "10-A", booksRead: 32 },
-            { rank: 2, memberId: "m2", fullName: "Budi Santoso", memberNumber: "1002", photo: null, classGrade: "10-A", booksRead: 28 },
-            { rank: 3, memberId: "m3", fullName: "Andi Wijaya", memberNumber: "1003", photo: null, classGrade: "10-A", booksRead: 25 },
-            { rank: 4, memberId: "m4", fullName: "Dewi Lestari", memberNumber: "1004", photo: null, classGrade: "10-A", booksRead: 20 },
-            { rank: 5, memberId: "m5", fullName: "Rudi Hermawan", memberNumber: "1005", photo: null, classGrade: "10-A", booksRead: 18 },
-          ],
-          total: 32,
-        });
+        setError(true);
         setLoading(false);
       });
   }, [user?.member?.id]);
 
-  if (loading) {
+  if (loading || error) {
     return (
       <Card>
         <CardHeader>

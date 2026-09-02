@@ -40,6 +40,7 @@ interface CalendarData {
 export function StreakCalendarWidget() {
   const [data, setData] = useState<CalendarData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     api
@@ -49,28 +50,12 @@ export function StreakCalendarWidget() {
         setLoading(false);
       })
       .catch(() => {
-        // Mock fallback: 5-day streak with activity
-        const today = new Date();
-        const days: DayData[] = [];
-        for (let i = 29; i >= 0; i--) {
-          const d = new Date(today);
-          d.setDate(today.getDate() - i);
-          const dateStr = d.toISOString().split("T")[0];
-          const hasActivity = i < 5; // 5-day current streak
-          days.push({ date: dateStr, hasActivity, points: hasActivity ? 5 : 0 });
-        }
-        setData({
-          days,
-          currentStreak: 5,
-          longestStreak: 12,
-          totalActiveDays: 18,
-          totalPoints: 90,
-        });
+        setError(true);
         setLoading(false);
       });
   }, []);
 
-  if (loading) {
+  if (loading || error) {
     return (
       <Card>
         <CardHeader>

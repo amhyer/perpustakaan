@@ -76,6 +76,7 @@ const ICON_MAP: Record<string, typeof Sprout> = {
 export function ReadingLevelWidget() {
   const [data, setData] = useState<LevelData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     api
@@ -85,37 +86,12 @@ export function ReadingLevelWidget() {
         setLoading(false);
       })
       .catch(() => {
-        // Mock fallback
-        setData({
-          booksRead: 23,
-          level: {
-            id: "kutu-buku",
-            name: "Kutu Buku",
-            emoji: "📚",
-            color: "emerald",
-            bgClass: "bg-emerald-50",
-            textClass: "text-emerald-700",
-            borderClass: "border-emerald-300",
-            description: "Hampir tidak bisa lepas dari buku",
-            pointMultiplier: 1.2,
-            perks: ["+20% poin", "Pinjam 5 buku", "Akses e-book"],
-          },
-          next: {
-            id: "kolektor",
-            name: "Kolektor",
-            emoji: "🏆",
-          },
-          progressPercent: 34,
-          booksToNext: 27,
-          rank: 12,
-          rankInClass: 3,
-          classGrade: "10-A",
-        });
+        setError(true);
         setLoading(false);
       });
   }, []);
 
-  if (loading) {
+  if (loading || error) {
     return (
       <Card>
         <CardHeader>
