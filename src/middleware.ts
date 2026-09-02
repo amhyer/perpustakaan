@@ -187,6 +187,7 @@ const CSRF_EXEMPT_PATHS = [
   /^\/api\/voice\//,
   /^\/api\/csrf-token/,
   /^\/api\/health/,
+  /^\/api\/analytics\//,
 ];
 
 // Request size limits

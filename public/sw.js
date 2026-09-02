@@ -16,7 +16,7 @@
  * - Asset precaching
  */
 
-const VERSION = "jendela-ilmu-v2";
+const VERSION = "jendela-ilmu-v3";
 const STATIC_CACHE = `${VERSION}-static`;
 const PAGE_CACHE = `${VERSION}-pages`;
 const API_CACHE = `${VERSION}-api`;
@@ -160,6 +160,7 @@ async function handleNavigation(request) {
 }
 
 async function handleApi(request) {
+  const url = new URL(request.url);
   // For library reads, use stale-while-revalidate
   if (
     request.method === "GET" &&
