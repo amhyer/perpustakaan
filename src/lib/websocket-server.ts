@@ -456,7 +456,7 @@ function setupWebhook(server: ReturnType<typeof createServer>) {
     if (req.url === "/webhook" && req.method === "POST") {
       // Check secret
       const authHeader = req.headers.authorization;
-      const expectedAuth = `Bearer ${process.env.WS_WEBHOOK_SECRET || "ws-internal-secret"}`;
+      const expectedAuth = `Bearer ${(() => { const s = process.env.WS_WEBHOOK_SECRET; if (!s) throw new Error("WS_WEBHOOK_SECRET harus diset"); return s; })()}`;
       if (authHeader !== expectedAuth) {
         res.writeHead(401);
         res.end("Unauthorized");

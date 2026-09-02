@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { generateCsrfToken, signCsrfToken } from "@/lib/csrf";
 
 const CSRF_COOKIE_NAME = "ji_csrf";
-const CSRF_SECRET = process.env.CSRF_SECRET || process.env.JWT_SECRET || "fallback-secret-change-me";
+const CSRF_SECRET = (() => {
+  const s = process.env.CSRF_SECRET || process.env.JWT_SECRET;
+  if (!s) throw new Error("CSRF_SECRET atau JWT_SECRET harus diset di environment variables");
+  return s;
+})();
 
 export async function GET() {
   const token = generateCsrfToken();

@@ -62,7 +62,11 @@ export async function POST(req: Request) {
     });
 
     // Kirim email
-    const resetUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3001"}/reset-password?token=${plainToken}`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL;
+    if (!appUrl) {
+      return NextResponse.json({ error: "NEXT_PUBLIC_APP_URL atau NEXTAUTH_URL belum dikonfigurasi" }, { status: 500 });
+    }
+    const resetUrl = `${appUrl}/reset-password?token=${plainToken}`;
     const template = emailTemplates.passwordReset({
       name: user.member?.fullName || user.name,
       resetUrl,

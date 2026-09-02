@@ -7,7 +7,11 @@ import { generateCsrfToken, signCsrfToken } from "@/lib/csrf";
 import crypto from "crypto";
 
 const CSRF_COOKIE_NAME = "ji_csrf";
-const CSRF_SECRET = process.env.CSRF_SECRET || process.env.JWT_SECRET || "fallback-secret-change-me";
+const CSRF_SECRET = (() => {
+  const s = process.env.CSRF_SECRET || process.env.JWT_SECRET;
+  if (!s) throw new Error("CSRF_SECRET atau JWT_SECRET harus diset di environment variables");
+  return s;
+})();
 
 export async function POST(req: Request) {
   // Rate limit by IP: max 5 attempt / menit (anti brute-force)

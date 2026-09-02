@@ -12,7 +12,11 @@ import { eventBus, EVENTS, type EventType } from "@/lib/event-bus";
 import { logger } from "@/lib/logger";
 
 const WS_PORT = process.env.WS_PORT || "3003";
-const WS_SECRET = process.env.WS_WEBHOOK_SECRET || "ws-internal-secret";
+const WS_SECRET = (() => {
+  const s = process.env.WS_WEBHOOK_SECRET;
+  if (!s) throw new Error("WS_WEBHOOK_SECRET harus diset di environment variables");
+  return s;
+})();
 
 let isListening = false;
 

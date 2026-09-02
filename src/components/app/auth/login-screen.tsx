@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   BookOpen,
@@ -22,32 +22,17 @@ import { api, type CurrentUser } from "@/lib/api-client";
 import { useAppStore } from "@/store/use-app-store";
 import { toast } from "sonner";
 
-const DEMO_ACCOUNTS = [
-  {
-    role: "Pustakawan",
-    icon: Library,
-    email: "pustakawan@jendelailmu.sch.id",
-    password: "password123",
-    desc: "Akses penuh kelola perpustakaan",
-    color: "text-emerald-600",
-  },
-  {
-    role: "Guru",
-    icon: GraduationCap,
-    email: "budi@jendelailmu.sch.id",
-    password: "password123",
-    desc: "Pinjam & ajukan buku untuk kelas",
-    color: "text-amber-600",
-  },
-  {
-    role: "Siswa",
-    icon: BookOpen,
-    email: "andini@jendelailmu.sch.id",
-    password: "password123",
-    desc: "Cari & pinjam buku, lihat kartu digital",
-    color: "text-sky-600",
-  },
-];
+interface DemoAccount {
+  role: string;
+  email: string;
+  password: string;
+}
+
+const DEMO_ICONS: Record<string, { icon: typeof Library; desc: string; color: string }> = {
+  Pustakawan: { icon: Library, desc: "Akses penuh kelola perpustakaan", color: "text-emerald-600" },
+  Guru: { icon: GraduationCap, desc: "Pinjam & ajukan buku untuk kelas", color: "text-amber-600" },
+  Siswa: { icon: BookOpen, desc: "Cari & pinjam buku, lihat kartu digital", color: "text-sky-600" },
+};
 
 type LoginMode = "LOGIN" | "2FA" | "FORGOT_PASSWORD";
 
@@ -64,6 +49,22 @@ function isTwoFactorResponse(x: unknown): x is TwoFactorResponse {
 export function LoginScreen() {
   const setUser = useAppStore((s) => s.setUser);
   const [mode, setMode] = useState<LoginMode>("LOGIN");
+
+  // Demo accounts (fetched from API in development only)
+  const [demoAccounts, setDemoAccounts] = useState<(DemoAccount & { icon: typeof Library; desc: string; color: string })[]>([]);
+
+  useEffect(() => {
+    fetch("/api/auth/demo-accounts")
+      .then((r) => r.json())
+      .then((data) => {
+        const accounts = (data.accounts || []).map((acc: DemoAccount) => ({
+          ...acc,
+          ...DEMO_ICONS[acc.role],
+        }));
+        setDemoAccounts(accounts);
+      })
+      .catch(() => {});
+  }, []);
 
   // Login state
   const [email, setEmail] = useState("");
@@ -311,7 +312,7 @@ export function LoginScreen() {
               </div>
 
               <div className="space-y-2">
-                {DEMO_ACCOUNTS.map((acc) => {
+                {demoAccounts.map((acc) => {
                   const Icon = acc.icon;
                   return (
                     <button

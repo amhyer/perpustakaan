@@ -59,7 +59,10 @@ export async function POST(req: Request) {
   }
 
   const wsPort = process.env.WS_PORT || "3003";
-  const wsSecret = process.env.WS_WEBHOOK_SECRET || "ws-internal-secret";
+  const wsSecret = process.env.WS_WEBHOOK_SECRET;
+  if (!wsSecret) {
+    return NextResponse.json({ error: "WS_WEBHOOK_SECRET belum dikonfigurasi" }, { status: 500 });
+  }
 
   try {
     const res = await fetch(`http://localhost:${wsPort}/webhook`, {

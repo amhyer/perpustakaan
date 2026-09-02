@@ -32,7 +32,7 @@ export function Header() {
     api
       .get<{ unread: number }>(`/api/notifications?count=1`)
       .then((r) => setNotifCount(r.unread))
-      .catch(() => {});
+      .catch((err) => console.error("[header] Gagal ambil notifikasi:", err));
   }, [user, view.key]);
 
   const handleLogout = async () => {

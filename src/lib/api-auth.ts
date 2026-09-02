@@ -62,7 +62,7 @@ export async function verifyApiKey(req: Request): Promise<ApiKeyContext | null> 
   db.apiKey.update({
     where: { id: apiKey.id },
     data: { lastUsedAt: new Date() },
-  }).catch(() => {});
+  }).catch((err) => console.error("[api-auth] Gagal update lastUsed:", err));
 
   return {
     keyId: apiKey.id,

@@ -190,14 +190,14 @@ export async function POST(req: Request) {
         where: { name: author.trim() },
         update: {},
         create: { name: author.trim() },
-      }).catch(() => {});
+      }).catch((err) => console.error("[books] Gagal upsert author:", err));
     }
     if (publisher?.trim()) {
       await db.publisher.upsert({
         where: { name: publisher.trim() },
         update: {},
         create: { name: publisher.trim() },
-      }).catch(() => {});
+      }).catch((err) => console.error("[books] Gagal upsert publisher:", err));
     }
 
     // Buat eksemplar

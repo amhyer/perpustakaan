@@ -73,7 +73,11 @@ export function verifyCsrfToken(
  * Falls back to JWT_SECRET if CSRF_SECRET not set.
  */
 function getCsrfSecret(): string {
-  return process.env.CSRF_SECRET || process.env.JWT_SECRET || "fallback-secret-change-me";
+  const secret = process.env.CSRF_SECRET || process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("CSRF_SECRET atau JWT_SECRET harus diset di environment variables");
+  }
+  return secret;
 }
 
 /**

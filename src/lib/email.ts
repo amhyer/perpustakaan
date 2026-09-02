@@ -110,7 +110,11 @@ export async function sendEmail(options: SendEmailOptions): Promise<EmailResult>
 
 const LIBRARY_NAME = "Perpustakaan Jendela Ilmu";
 const PRIMARY_COLOR = "#1e3a5f";
-const LOGO_URL = `${process.env.NEXTAUTH_URL || "http://localhost:3001"}/logo.svg`;
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL;
+if (!APP_URL) {
+  console.warn("[email] NEXT_PUBLIC_APP_URL atau NEXTAUTH_URL belum diset — link di email akan kosong");
+}
+const LOGO_URL = `${APP_URL || ""}/logo.svg`;
 
 function baseTemplate(title: string, content: string): string {
   return `
@@ -201,7 +205,7 @@ export const emailTemplates = {
         </div>
         <p>Segera kembalikan atau perpanjang pinjaman untuk menghindari denda keterlambatan.</p>
         <p style="text-align:center;margin:32px 0;">
-          <a href="${process.env.NEXTAUTH_URL || "http://localhost:3001"}/my-loans" style="display:inline-block;background-color:${PRIMARY_COLOR};color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:6px;font-weight:600;">Lihat Pinjaman Saya</a>
+          <a href="${APP_URL}/my-loans" style="display:inline-block;background-color:${PRIMARY_COLOR};color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:6px;font-weight:600;">Lihat Pinjaman Saya</a>
         </p>
       `
     );
@@ -223,7 +227,7 @@ export const emailTemplates = {
         </div>
         <p>Denda akan terus bertambah selama buku belum dikembalikan. Mohon segera kembalikan ke perpustakaan.</p>
         <p style="text-align:center;margin:32px 0;">
-          <a href="${process.env.NEXTAUTH_URL || "http://localhost:3001"}/my-loans" style="display:inline-block;background-color:#a04040;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:6px;font-weight:600;">Lihat Pinjaman Saya</a>
+          <a href="${APP_URL}/my-loans" style="display:inline-block;background-color:#a04040;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:6px;font-weight:600;">Lihat Pinjaman Saya</a>
         </p>
       `
     );
@@ -250,7 +254,7 @@ export const emailTemplates = {
         </div>
         <p style="color:#a04040;">⚠ Harap ganti password Anda setelah login pertama.</p>
         <p style="text-align:center;margin:32px 0;">
-          <a href="${process.env.NEXTAUTH_URL || "http://localhost:3001"}" style="display:inline-block;background-color:${PRIMARY_COLOR};color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:6px;font-weight:600;">Login Sekarang</a>
+          <a href="${APP_URL}" style="display:inline-block;background-color:${PRIMARY_COLOR};color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:6px;font-weight:600;">Login Sekarang</a>
         </p>
       `
     );
@@ -297,11 +301,11 @@ export const emailTemplates = {
           💰 Saldo poin Anda saat ini: <strong style="color:${PRIMARY_COLOR};">${totalBalance} poin</strong>
         </p>
         <p style="text-align:center;margin:32px 0;">
-          <a href="${process.env.NEXTAUTH_URL || "http://localhost:3001"}/rewards" style="display:inline-block;background-color:${PRIMARY_COLOR};color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:6px;font-weight:600;">Tukar Poin Sekarang</a>
+          <a href="${APP_URL}/rewards" style="display:inline-block;background-color:${PRIMARY_COLOR};color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:6px;font-weight:600;">Tukar Poin Sekarang</a>
         </p>
       `
     );
-    const text = `Selamat ${name}!\n\n+${amount} poin dari: ${description}\n\nSaldo: ${totalBalance} poin\n\nTukar: ${process.env.NEXTAUTH_URL || "http://localhost:3001"}/rewards`;
+    const text = `Selamat ${name}!\n\n+${amount} poin dari: ${description}\n\nSaldo: ${totalBalance} poin\n\nTukar: ${APP_URL}/rewards`;
     return { subject, html, text };
   },
 
@@ -334,11 +338,11 @@ export const emailTemplates = {
           <li>Atau scan QR code dari email ini</li>
         </ol>
         <p style="text-align:center;margin:32px 0;">
-          <a href="${process.env.NEXTAUTH_URL || "http://localhost:3001"}/my-redemptions" style="display:inline-block;background-color:${PRIMARY_COLOR};color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:6px;font-weight:600;">Lihat Klaim Saya</a>
+          <a href="${APP_URL}/my-redemptions" style="display:inline-block;background-color:${PRIMARY_COLOR};color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:6px;font-weight:600;">Lihat Klaim Saya</a>
         </p>
       `
     );
-    const text = `Klaim Disetujui!\n\n${rewardName}\nKode: ${pickupCode}\n\nDatang ke perpus dan tunjukkan kode ke pustakawan.\n\nCek: ${process.env.NEXTAUTH_URL || "http://localhost:3001"}/my-redemptions`;
+    const text = `Klaim Disetujui!\n\n${rewardName}\nKode: ${pickupCode}\n\nDatang ke perpus dan tunjukkan kode ke pustakawan.\n\nCek: ${APP_URL}/my-redemptions`;
     return { subject, html, text };
   },
 
@@ -366,11 +370,11 @@ export const emailTemplates = {
           💚 Poin Anda sudah <strong>dikembalikan otomatis</strong>. Silakan coba hadiah lain di katalog.
         </p>
         <p style="text-align:center;margin:32px 0;">
-          <a href="${process.env.NEXTAUTH_URL || "http://localhost:3001"}/rewards" style="display:inline-block;background-color:${PRIMARY_COLOR};color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:6px;font-weight:600;">Lihat Katalog</a>
+          <a href="${APP_URL}/rewards" style="display:inline-block;background-color:${PRIMARY_COLOR};color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:6px;font-weight:600;">Lihat Katalog</a>
         </p>
       `
     );
-    const text = `Klaim Ditolak\n\n${rewardName}\nAlasan: ${reason}\n\nPoin sudah dikembalikan.\n\nCek: ${process.env.NEXTAUTH_URL || "http://localhost:3001"}/rewards`;
+    const text = `Klaim Ditolak\n\n${rewardName}\nAlasan: ${reason}\n\nPoin sudah dikembalikan.\n\nCek: ${APP_URL}/rewards`;
     return { subject, html, text };
   },
 };

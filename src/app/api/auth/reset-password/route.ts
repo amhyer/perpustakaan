@@ -98,7 +98,7 @@ export async function POST(req: Request) {
       text: template.text,
       category: "RESET_PASSWORD",
       relatedId: resetToken.userId,
-    }).catch(() => {});
+    }).catch((err) => console.error("[reset-password] Gagal kirim email:", err));
 
     return NextResponse.json({
       success: true,

@@ -29,6 +29,10 @@ interface WhatsAppResult {
 }
 
 const FONNTE_API_URL = "https://api.fonnte.com/send";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL;
+if (!APP_URL) {
+  console.warn("[whatsapp] NEXT_PUBLIC_APP_URL atau NEXTAUTH_URL belum diset — link di pesan akan kosong");
+}
 
 /**
  * Normalisasi nomor HP ke format Fonnte (628xxx).
@@ -164,7 +168,7 @@ Buku yang sedang Anda pinjam akan jatuh tempo ${due}.
 
 Segera kembalikan atau perpanjang pinjaman untuk menghindari denda.
 
-Cek pinjaman: ${process.env.NEXTAUTH_URL || "http://localhost:3001"}/my-loans
+Cek pinjaman: ${APP_URL}/my-loans
 
 — Perpustakaan Jendela Ilmu`;
   },
@@ -182,7 +186,7 @@ Buku berikut sudah *terlambat ${daysOverdue} hari* dari tanggal jatuh tempo.
 
 Denda akan terus bertambah. Mohon segera kembalikan.
 
-Cek pinjaman: ${process.env.NEXTAUTH_URL || "http://localhost:3001"}/my-loans
+Cek pinjaman: ${APP_URL}/my-loans
 
 — Perpustakaan Jendela Ilmu`;
   },
@@ -212,7 +216,7 @@ Buku di *wishlist* Anda kini tersedia!
 📖 *${bookTitle}*
 
 Cepat pinjam sebelum kehabisan. Cek katalog:
-${process.env.NEXTAUTH_URL || "http://localhost:3001"}/catalog
+${APP_URL}/catalog
 
 — Perpustakaan Jendela Ilmu`;
   },
@@ -231,7 +235,7 @@ Sekarang Anda bisa:
 ✅ Buat wishlist
 ✅ Terima notifikasi jatuh tempo via WA
 
-Login: ${process.env.NEXTAUTH_URL || "http://localhost:3001"}
+Login: ${APP_URL}
 
 — Perpustakaan Jendela Ilmu
 "Membuka Jendela Ilmu untuk Semua"`;
@@ -269,7 +273,7 @@ Selamat! Anda baru saja mendapat poin:
 💰 Saldo poin Anda: *${totalBalance}*
 
 Tukar poin dengan hadiah menarik di katalog:
-${process.env.NEXTAUTH_URL || "http://localhost:3001"}/rewards
+${APP_URL}/rewards
 
 — Perpustakaan Jendela Ilmu`;
   },
@@ -290,7 +294,7 @@ Klaim hadiah Anda telah *DISETUJUI* oleh pustakawan!
 
 Datang ke perpustakaan dan tunjukkan kode di atas ke pustakawan untuk mengambil hadiah.
 
-Cek status klaim: ${process.env.NEXTAUTH_URL || "http://localhost:3001"}/my-redemptions
+Cek status klaim: ${APP_URL}/my-redemptions
 
 — Perpustakaan Jendela Ilmu`;
   },
@@ -312,7 +316,7 @@ Maaf, klaim hadiah Anda *DITOLAK*.
 💰 Poin Anda sudah dikembalikan secara otomatis.
 
 Coba lagi dengan hadiah lain di katalog:
-${process.env.NEXTAUTH_URL || "http://localhost:3001"}/rewards
+${APP_URL}/rewards
 
 — Perpustakaan Jendela Ilmu`;
   },
@@ -331,7 +335,7 @@ Selamat! Hadiah Anda sudah diterima:
 
 Semoga bermanfaat! Terus kumpulkan poin dengan membaca buku di perpustakaan kami. 📚
 
-Cek saldo: ${process.env.NEXTAUTH_URL || "http://localhost:3001"}/rewards
+Cek saldo: ${APP_URL}/rewards
 
 — Perpustakaan Jendela Ilmu`;
   },
@@ -359,7 +363,7 @@ Bagaimana minggu ini? Yuk kita intip:
 ${weekPoints >= 50 ? "🔥 Hebat! Kamu pembaca aktif minggu ini." : weekPoints > 0 ? "💪 Terus tingkatkan, yuk!" : "📖 Yuk mulai baca buku minggu depan!"}
 
 Cek katalog hadiah:
-${process.env.NEXTAUTH_URL || "http://localhost:3001"}/rewards
+${APP_URL}/rewards
 
 — Perpustakaan Jendela Ilmu`;
   },
@@ -382,7 +386,7 @@ Anda排名第 *${rank}* pembaca terbaik bulan ini:
 
 Terus baca, terus menginspirasi! 📖
 
-${process.env.NEXTAUTH_URL || "http://localhost:3001"}/rewards
+${APP_URL}/rewards
 
 — Perpustakaan Jendela Ilmu`;
   },
@@ -403,7 +407,7 @@ Minggu ini, perpustakaan mencatat:
 Terus dorong siswa untuk gemar membaca! 💪
 
 Cek aktivitas siswa:
-${process.env.NEXTAUTH_URL || "http://localhost:3001"}/reports
+${APP_URL}/reports
 
 — Perpustakaan Jendela Ilmu`;
   },

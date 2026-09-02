@@ -137,7 +137,7 @@ export async function POST(req: Request) {
             text: tpl.text,
             category: "WELCOME",
             relatedId: m.memberNumber,
-          }).catch(() => {});
+            }).catch((err) => console.error("[member-import] Gagal kirim WhatsApp:", err));
 
           // WhatsApp (jika ada nomor)
           if (m.phone) {
@@ -147,7 +147,7 @@ export async function POST(req: Request) {
               message: waTpl,
               category: "WELCOME",
               relatedId: m.memberNumber,
-            }).catch(() => {});
+          }).catch((err) => console.error("[member-import] Gagal kirim email:", err));
           }
         })
       ).then((results) => {
