@@ -175,6 +175,7 @@ function DashboardViewContent() {
         icon={AlertTriangle}
         title="Gagal memuat dashboard"
         description={error ?? "Data statistik tidak tersedia."}
+        action={{ label: "Coba Lagi", onClick: refetch }}
       />
     );
   }
