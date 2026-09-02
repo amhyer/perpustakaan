@@ -156,7 +156,8 @@ function getExportHistory(): ExportHistoryEntry[] {
   try {
     const stored = localStorage.getItem(HISTORY_KEY);
     return stored ? (JSON.parse(stored) as ExportHistoryEntry[]) : [];
-  } catch {
+  } catch (e) {
+    console.error("Failed to parse export history:", e);
     return [];
   }
 }
@@ -165,8 +166,8 @@ function saveExportHistory(history: ExportHistoryEntry[]): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY)));
-  } catch {
-    // ignore
+  } catch (e) {
+    console.error("Failed to save export history:", e);
   }
 }
 

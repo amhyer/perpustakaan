@@ -38,8 +38,8 @@ export function Header() {
   const handleLogout = async () => {
     try {
       await api.post("/api/auth/logout");
-    } catch {
-      // ignore
+    } catch (e) {
+      console.error("Failed to logout:", e);
     }
     setUser(null);
     toast.success("Anda telah keluar. Sampai jumpa!");

@@ -22,7 +22,7 @@ export async function reportClientError(
         },
       }),
     });
-  } catch {
-    // Silent fail
+  } catch (e) {
+    console.error("[client-error] Gagal kirim error report:", e);
   }
 }

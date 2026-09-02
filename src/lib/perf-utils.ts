@@ -77,8 +77,8 @@ export function perfMark(name: string): void {
   if (typeof performance !== "undefined" && performance.mark) {
     try {
       performance.mark(name);
-    } catch {
-      // ignore
+    } catch (e) {
+      console.warn("[perf-utils] Gagal buat performance mark:", e);
     }
   }
 }

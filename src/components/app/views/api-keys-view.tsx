@@ -232,7 +232,7 @@ export function ApiKeysView() {
             <div className="space-y-2">
               {keys.map((k) => {
                 let scopes: string[] = [];
-                try { scopes = JSON.parse(k.scopes); } catch { scopes = []; }
+                try { scopes = JSON.parse(k.scopes); } catch (e) { console.error("Failed to parse API key scopes:", e); scopes = []; }
                 return (
                   <div
                     key={k.id}

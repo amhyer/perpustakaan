@@ -17,8 +17,8 @@ export async function POST(req: Request) {
   let body: { batchSize?: number; difficulty?: number } = {};
   try {
     body = await req.json().catch(() => ({}));
-  } catch {
-    // empty body OK
+  } catch (e) {
+    console.error("[blockchain-seal] Gagal parse body request:", e);
   }
 
   const result = await sealBlock({

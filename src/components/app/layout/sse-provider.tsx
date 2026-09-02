@@ -76,7 +76,8 @@ function useNotificationCount() {
     try {
       const r = await api.get<{ unread: number }>("/api/notifications?action=count");
       return r;
-    } catch {
+    } catch (e) {
+      console.error("Failed to fetch notification count:", e);
       return { unread: 0 };
     }
   };

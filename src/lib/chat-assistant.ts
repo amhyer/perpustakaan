@@ -211,8 +211,8 @@ export async function checkFAQ(message: string, locale = "id"): Promise<FAQMatch
         for (const v of variations) {
           if (lower.includes(v.toLowerCase())) return faq;
         }
-      } catch {
-        // ignore
+      } catch (e) {
+        logger.warn("Gagal parse FAQ variations", { error: String(e) });
       }
     }
 
@@ -657,8 +657,8 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
       },
     });
     userMessageId = saved.id;
-  } catch {
-    // ignore
+  } catch (e) {
+    logger.warn("Gagal simpan user message", { error: String(e) });
   }
 
   // 6. Check FAQ cache
@@ -689,8 +689,8 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
           updatedAt: new Date(),
         },
       });
-    } catch {
-      // ignore
+    } catch (e) {
+      logger.warn("Gagal simpan FAQ response", { error: String(e) });
     }
 
     return {
@@ -727,8 +727,8 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
         content: m.content,
       }))
     );
-  } catch {
-    // ignore
+  } catch (e) {
+    logger.warn("Gagal ambil riwayat chat", { error: String(e) });
   }
   history.push({ role: "user", content: input.message });
 
@@ -781,8 +781,8 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
         updatedAt: new Date(),
       },
     });
-  } catch {
-    // ignore
+  } catch (e) {
+    logger.warn("Gagal simpan assistant message", { error: String(e) });
   }
 
   // 11. Determine escalation
@@ -796,8 +796,8 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
         where: { id: conversationId! },
         data: { escalated: true, escalatedAt: new Date() },
       });
-    } catch {
-      // ignore
+    } catch (e) {
+      logger.warn("Gagal update status eskalasi", { error: String(e) });
     }
   }
 
@@ -920,7 +920,8 @@ export async function getUserConversations(userId: string, limit = 20): Promise<
       createdAt: c.createdAt.toISOString(),
       updatedAt: c.updatedAt.toISOString(),
     }));
-  } catch {
+  } catch (e) {
+    logger.warn("Gagal ambil daftar percakapan", { error: String(e) });
     return [];
   }
 }
@@ -957,7 +958,8 @@ export async function getConversationMessages(conversationId: string): Promise<M
       ...m,
       createdAt: m.createdAt.toISOString(),
     }));
-  } catch {
+  } catch (e) {
+    logger.warn("Gagal ambil pesan percakapan", { error: String(e) });
     return [];
   }
 }
@@ -978,7 +980,8 @@ export async function saveFeedback(
       data: { isHelpful, feedbackNote: note },
     });
     return true;
-  } catch {
+  } catch (e) {
+    logger.warn("Gagal simpan feedback chat", { error: String(e) });
     return false;
   }
 }
@@ -998,7 +1001,8 @@ export async function saveConversationRating(
       data: { userRating: rating, userFeedback: feedback },
     });
     return true;
-  } catch {
+  } catch (e) {
+    logger.warn("Gagal simpan rating percakapan", { error: String(e) });
     return false;
   }
 }

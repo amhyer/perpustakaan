@@ -66,8 +66,8 @@ export async function GET(req: Request) {
           await fs.unlink(filePath);
           deletedCount++;
         }
-      } catch {
-        // skip file yang gagal di-stat
+      } catch (e) {
+        console.error("[cron-backup] Gagal memproses file backup saat rotasi:", e);
       }
     }
 

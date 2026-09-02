@@ -61,8 +61,8 @@ export async function GET(req: Request) {
             createdAt: stat.mtime.toISOString(),
             ageDays: Math.floor(ageMs / 86400000),
           });
-        } catch {
-          // skip
+        } catch (e) {
+          logger.error("[backup] Gagal membaca info file backup:", { error: String(e) });
         }
       }
 
@@ -167,8 +167,8 @@ export async function POST(req: Request) {
           await fs.unlink(filePath);
           deleted++;
         }
-      } catch {
-        // skip
+      } catch (e) {
+        logger.error("[backup] Gagal menghapus backup lama:", { error: String(e) });
       }
     }
 

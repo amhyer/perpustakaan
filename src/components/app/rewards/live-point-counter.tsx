@@ -38,8 +38,8 @@ export function LivePointCounter({
     try {
       const data = await api.get<{ balance: number }>("/api/points/me");
       setBalance(data.balance);
-    } catch {
-      // silent
+    } catch (e) {
+      console.error("Failed to fetch point balance:", e);
     } finally {
       if (!silent) setLoading(false);
     }

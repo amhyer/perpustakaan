@@ -302,7 +302,8 @@ export function ChatAssistant({ position = "bottom-right", autoOpen = false }: C
       if (!res.ok) return;
       const data = await res.json();
       return data.items || [];
-    } catch {
+    } catch (e) {
+      console.error("Failed to load chat history:", e);
       return [];
     }
   }, []);
@@ -329,7 +330,8 @@ export function ChatAssistant({ position = "bottom-right", autoOpen = false }: C
       setSubmittedRating(false);
       setEscalated(false);
       return true;
-    } catch {
+    } catch (e) {
+      console.error("Failed to load conversation:", e);
       return false;
     }
   }, []);
@@ -428,8 +430,8 @@ export function ChatAssistant({ position = "bottom-right", autoOpen = false }: C
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ isHelpful }),
         });
-      } catch {
-        // ignore
+      } catch (e) {
+        console.error("Failed to submit feedback:", e);
       }
     },
     []
@@ -452,7 +454,8 @@ export function ChatAssistant({ position = "bottom-right", autoOpen = false }: C
         });
         setShowRating(false);
         setSubmittedRating(true);
-      } catch {
+      } catch (e) {
+        console.error("Failed to submit rating:", e);
         setShowRating(false);
       }
     },

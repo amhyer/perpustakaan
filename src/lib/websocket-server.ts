@@ -159,7 +159,8 @@ async function authenticateAsync(req: IncomingMessage): Promise<ChannelAuth | nu
       role: (result.payload.role as string) || "STUDENT",
       name: (result.payload.name as string) || "User",
     };
-  } catch {
+  } catch (e) {
+    logger.warn("Gagal autentikasi WebSocket async", { error: String(e) });
     return null;
   }
 }
@@ -659,8 +660,8 @@ function startHeartbeat(wss: any) {
       client.isAlive = false;
       try {
         client.ping();
-      } catch {
-        // ignore
+      } catch (e) {
+        logger.warn("Gagal kirim ping WebSocket", { error: String(e) });
       }
     }
   }, HEARTBEAT_INTERVAL);

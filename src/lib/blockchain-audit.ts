@@ -256,7 +256,8 @@ export async function getLastBlock(): Promise<{
           timestamp: last.timestamp.toISOString(),
         }
       : null;
-  } catch {
+  } catch (e) {
+    logger.warn("Gagal ambil block terakhir", { error: String(e) });
     return null;
   }
 }
@@ -267,7 +268,8 @@ export async function getLastBlock(): Promise<{
 export async function getPendingEventCount(): Promise<number> {
   try {
     return await db.auditLog.count({ where: { blockId: null } });
-  } catch {
+  } catch (e) {
+    logger.warn("Gagal hitung event pending", { error: String(e) });
     return 0;
   }
 }
@@ -606,7 +608,8 @@ export async function getBlockchainStats(): Promise<BlockchainStats> {
 
     cache.set(cacheKey, stats, CACHE_TTL_MS);
     return stats;
-  } catch {
+  } catch (e) {
+    logger.warn("Gagal ambil statistik blockchain", { error: String(e) });
     return {
       totalBlocks: 0,
       totalEvents: 0,
@@ -678,7 +681,8 @@ export async function getBlockDetails(
         createdAt: e.createdAt.toISOString(),
       })),
     };
-  } catch {
+  } catch (e) {
+    logger.warn("Gagal ambil detail block", { error: String(e) });
     return null;
   }
 }
@@ -714,7 +718,8 @@ export async function getBlocks(limit = 20, offset = 0): Promise<
       ...b,
       timestamp: b.timestamp.toISOString(),
     }));
-  } catch {
+  } catch (e) {
+    logger.warn("Gagal ambil daftar block", { error: String(e) });
     return [];
   }
 }

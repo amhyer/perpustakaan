@@ -198,8 +198,8 @@ function FinesViewContent() {
         try {
           await api.put(`/api/loans/${loan.id}/pay-fine`, {});
           paid++;
-        } catch {
-          // skip individual failures
+        } catch (e) {
+          console.error("Failed to mark fine as paid:", e);
         }
       }
       toast.success(`${paid} denda ditandai lunas untuk ${payAllTarget.memberName}.`);

@@ -76,7 +76,8 @@ function EBookReaderContent() {
       a.target = "_blank";
       a.click();
       toast.success("Download dimulai");
-    } catch {
+    } catch (e) {
+      console.error("Failed to download ebook:", e);
       toast.error("Gagal download");
     }
   };

@@ -133,14 +133,14 @@ export function PdfViewer({
       };
 
       // Cancel previous render
-      // @ts-ignore
+      // @ts-expect-error — PDF.js private _pdfRenderTask property on canvas
       if (canvas._pdfRenderTask) {
-        // @ts-ignore
+        // @ts-expect-error — PDF.js private _pdfRenderTask property on canvas
         canvas._pdfRenderTask.cancel();
       }
 
       const task = page.render(renderContext);
-      // @ts-ignore
+      // @ts-expect-error — PDF.js private _pdfRenderTask property on canvas
       canvas._pdfRenderTask = task;
       await task.promise;
     } catch (err) {

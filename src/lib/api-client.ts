@@ -74,8 +74,8 @@ async function request<T>(
     try {
       const data = await res.json();
       message = data.error || data.message || message;
-    } catch {
-      // ignore
+      } catch (e) {
+      console.error("[api-client] Gagal parse error response:", e);
     }
     throw new Error(message);
   }

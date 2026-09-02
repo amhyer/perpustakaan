@@ -106,7 +106,8 @@ function adjustColor(hex: string, percent: number): string {
     const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00ff) + Math.round((255 * percent) / 100)));
     const b = Math.min(255, Math.max(0, (num & 0x0000ff) + Math.round((255 * percent) / 100)));
     return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
-  } catch {
+  } catch (e) {
+    console.error("Failed to lighten hex color:", e);
     return hex;
   }
 }

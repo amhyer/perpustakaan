@@ -285,8 +285,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     if (wsRef.current) {
       try {
         wsRef.current.close();
-      } catch {
-        // ignore
+      } catch (e) {
+        console.error("Failed to close WebSocket on reconnect:", e);
       }
     }
     reconnectAttemptsRef.current = 0;
@@ -307,8 +307,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       setStatus("closing");
       try {
         wsRef.current.close();
-      } catch {
-        // ignore
+      } catch (e) {
+        console.error("Failed to close WebSocket on disconnect:", e);
       }
     }
   }, []);

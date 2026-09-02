@@ -130,8 +130,8 @@ export function RFIDSimulator() {
       try {
         audioContextRef.current = new (window.AudioContext ||
           (window as any).webkitAudioContext)();
-      } catch {
-        // Audio not supported
+      } catch (e) {
+        console.error("Failed to initialize AudioContext:", e);
       }
     }
   }, []);
@@ -152,8 +152,8 @@ export function RFIDSimulator() {
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration / 1000);
         oscillator.start(ctx.currentTime);
         oscillator.stop(ctx.currentTime + duration / 1000);
-      } catch {
-        // ignore
+      } catch (e) {
+        console.error("Failed to play beep sound:", e);
       }
     },
     [beepEnabled]

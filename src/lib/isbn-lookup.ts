@@ -102,7 +102,8 @@ export async function downloadAndSaveCover(imageUrl: string): Promise<string | n
     const filename = generateUniqueFileName(`cover-${Date.now()}${ext}`);
     await fs.writeFile(path.join(COVERS_DIR, filename), buffer);
     return `${COVERS_URL_PREFIX}/${filename}`;
-  } catch {
+  } catch (e) {
+    console.error("[isbn-lookup] Gagal download cover buku:", e);
     return null;
   }
 }
@@ -143,7 +144,8 @@ async function fetchOpenLibrary(isbn: string): Promise<ISBNNormalizedData | null
       isbn,
       coverImageUrl,
     };
-  } catch {
+  } catch (e) {
+    console.error("[isbn-lookup] Gagal fetch dari Open Library:", e);
     return null;
   }
 }
@@ -183,7 +185,8 @@ async function fetchGoogleBooks(isbn: string): Promise<ISBNNormalizedData | null
       isbn,
       coverImageUrl,
     };
-  } catch {
+  } catch (e) {
+    console.error("[isbn-lookup] Gagal fetch dari Google Books:", e);
     return null;
   }
 }

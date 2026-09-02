@@ -68,8 +68,8 @@ export function RFIDDashboard() {
       ]);
       setStats(statsRes);
       setReaders(readersRes.items || []);
-    } catch {
-      // silent
+    } catch (e) {
+      console.error("Failed to load RFID stats:", e);
     } finally {
       setLoading(false);
     }

@@ -154,7 +154,8 @@ export async function getReaderStatus(readerCode: string): Promise<ReaderStatus 
       batteryLevel: reader.batteryLevel,
       todayEventCount: reader._count.events,
     };
-  } catch {
+  } catch (e) {
+    logger.warn("Gagal ambil status reader", { error: String(e) });
     return null;
   }
 }
@@ -187,7 +188,8 @@ export async function getAllReaders(): Promise<ReaderStatus[]> {
       batteryLevel: r.batteryLevel,
       todayEventCount: r._count.events,
     }));
-  } catch {
+  } catch (e) {
+    logger.warn("Gagal ambil daftar reader", { error: String(e) });
     return [];
   }
 }
@@ -240,7 +242,8 @@ export async function lookupCard(uid: string): Promise<CardInfo | null> {
       expiresAt: card.expiresAt?.toISOString() || null,
       isExpired,
     };
-  } catch {
+  } catch (e) {
+    logger.warn("Gagal lookup kartu RFID", { error: String(e) });
     return null;
   }
 }
@@ -277,7 +280,8 @@ export async function lookupBookTag(tagUid: string): Promise<BookInfo | null> {
       author: tag.bookItem.book.author,
       status: tag.bookItem.status,
     };
-  } catch {
+  } catch (e) {
+    logger.warn("Gagal lookup tag buku", { error: String(e) });
     return null;
   }
 }
@@ -545,8 +549,8 @@ async function processEvent(input: ProcessEventInput): Promise<RFIDResponse> {
           purpose: "Baca",
         },
       });
-    } catch {
-      // ignore
+    } catch (e) {
+      logger.warn("Gagal catat visitor", { error: String(e) });
     }
 
     // Broadcast
@@ -847,7 +851,8 @@ export async function getRFIDStats(): Promise<RFIDStats> {
       },
       topMembers,
     };
-  } catch {
+  } catch (e) {
+    logger.warn("Gagal ambil statistik RFID", { error: String(e) });
     return {
       today: { totalScans: 0, checkIns: 0, checkouts: 0, uniqueMembers: 0, denied: 0 },
       readers: { online: 0, offline: 0, total: 0 },
@@ -913,7 +918,8 @@ export async function getEventLog(limit = 50, filters?: {
       readerCode: e.reader.code,
       isDebounced: e.isDebounced,
     }));
-  } catch {
+  } catch (e) {
+    logger.warn("Gagal ambil log event RFID", { error: String(e) });
     return [];
   }
 }

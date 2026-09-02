@@ -23,7 +23,8 @@ export function useQrScanner(
         scannerRef.current.stop().then(() => {
           scannerRef.current?.clear();
           scannerRef.current = null;
-        }).catch(() => {
+        }).catch((e) => {
+          console.error("Failed to stop QR scanner:", e);
           scannerRef.current = null;
         });
       }
@@ -44,8 +45,8 @@ export function useQrScanner(
             // Ignore per-frame errors
           }
         );
-      } catch {
-        // Camera not available — user can use manual input
+      } catch (e) {
+        console.error("Failed to start QR scanner:", e);
       }
     };
     startScanner();
@@ -55,7 +56,8 @@ export function useQrScanner(
         scannerRef.current.stop().then(() => {
           scannerRef.current?.clear();
           scannerRef.current = null;
-        }).catch(() => {
+        }).catch((e) => {
+          console.error("Failed to stop QR scanner on cleanup:", e);
           scannerRef.current = null;
         });
       }

@@ -666,8 +666,8 @@ export function Sidebar() {
       if (stored) {
         setOpenGroups(JSON.parse(stored));
       }
-    } catch {
-      // ignore
+    } catch (e) {
+      console.error("Failed to load sidebar state:", e);
     }
   }, []);
 
@@ -675,8 +675,8 @@ export function Sidebar() {
     setOpenGroups(next);
     try {
       localStorage.setItem("sidebar-open-groups", JSON.stringify(next));
-    } catch {
-      // ignore
+    } catch (e) {
+      console.error("Failed to save sidebar state:", e);
     }
   };
 

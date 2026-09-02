@@ -311,7 +311,8 @@ export function BookFormView({ bookId }: { bookId?: string }) {
       try {
         const u = new URL(sourceUrl);
         if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("invalid");
-      } catch {
+      } catch (e) {
+        console.error("Invalid ebook URL:", e);
         setSaving(false);
         toast.error("URL buku digital tidak valid (harus http/https)");
         return;

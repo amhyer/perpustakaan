@@ -59,8 +59,8 @@ export async function GET(req: NextRequest) {
         eventBus.unsubscribe(subId);
         try {
           controller.close();
-        } catch {
-          // Already closed
+        } catch (e) {
+          logger.error("[events-stream] Gagal menutup controller SSE:", { error: String(e) });
         }
         logger.debug("SSE connection closed", { userId, subId });
       };

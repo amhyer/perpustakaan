@@ -637,7 +637,8 @@ function CirculationViewContent() {
       const res = await api.get<{ loan: Loan }>(`/api/loans/active-by-item-code?itemCode=${encodeURIComponent(code)}`);
       toast.error("Eksemplar ini sedang dipinjam");
       setBorrowBarcodeInput("");
-    } catch {
+    } catch (e) {
+      console.error("Failed to find active loan:", e);
       // Item not found as active loan — check if it exists as available book item
       try {
         const booksRes = await api.get<{ id: string; title: string; author: string; coverColor: string; coverImage: string | null; items: { id: string; status: string; itemCode: string; condition: string }[] }[]>(`/api/books?q=${encodeURIComponent(code)}&limit=5`);
@@ -662,7 +663,8 @@ function CirculationViewContent() {
         setBorrowScannedBooks((prev) => [...prev, found!]);
         toast.success(`"${found.title}" ditambahkan`);
         setBorrowBarcodeInput("");
-      } catch {
+      } catch (e) {
+        console.error("Failed to search for book item:", e);
         toast.error("Gagal mencari eksemplar");
         setBorrowBarcodeInput("");
       }

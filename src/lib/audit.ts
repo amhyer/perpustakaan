@@ -57,7 +57,7 @@ export async function logAudit(
     await db.auditLog.create({
       data: { userId, action, entityType, entityId: entityId ?? null, detail: detail ?? null },
     });
-  } catch {
-    // Silently fail — audit logging should never block the main operation
+  } catch (e) {
+    console.error("[audit] Gagal simpan log audit:", e);
   }
 }

@@ -626,8 +626,8 @@ export async function seedCuratedLists(): Promise<number> {
     try {
       await createReadingList(librarian.id, list);
       created++;
-    } catch {
-      // Skip if duplicate
+    } catch (e) {
+      console.error("[reading-lists] Gagal buat reading list curate:", e);
     }
   }
   return created;

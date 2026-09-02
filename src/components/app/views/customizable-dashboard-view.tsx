@@ -111,7 +111,8 @@ export function CustomizableDashboardView() {
     if (stored) {
       try {
         setLayout(JSON.parse(stored));
-      } catch {
+      } catch (e) {
+        console.error("Failed to parse dashboard layout:", e);
         setLayout(DEFAULT_LAYOUT);
       }
     }

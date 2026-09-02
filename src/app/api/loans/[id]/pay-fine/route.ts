@@ -28,7 +28,7 @@ export async function PUT(
     }
 
     let body: { amount?: number } = {};
-    try { body = await req.json(); } catch { /* ignore */ }
+    try { body = await req.json(); } catch (e) { console.error("[loans-pay-fine] Gagal parse body:", e); }
 
     const remaining = loan.fineAmount - loan.finePaid;
     const payAmount = body.amount && body.amount > 0 ? Math.min(body.amount, remaining) : remaining;

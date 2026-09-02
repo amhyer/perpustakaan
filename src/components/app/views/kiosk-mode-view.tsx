@@ -118,7 +118,7 @@ export function KioskModeView() {
         } else if (parsed.no) {
           memberNumber = parsed.no;
         }
-      } catch {
+      } catch (e) {
         // Not JSON — treat as member number or item code
         if (phase === "scan-member") {
           memberNumber = text.trim();
@@ -305,7 +305,8 @@ export function KioskModeView() {
       await api.post("/api/auth/login", { email: user!.email, password: exitPassword });
       toast.success("Keluar dari Mode Kios");
       setView("circulation");
-    } catch {
+    } catch (e) {
+      console.error("Failed to verify kiosk exit password:", e);
       setExitError("Password salah. Coba lagi.");
     } finally {
       setExitLoading(false);

@@ -200,7 +200,8 @@ function ApprovalQueueTab() {
       try {
         await api.post(`/api/redemptions/admin/${id}/approve`, {});
         success++;
-      } catch {
+      } catch (e) {
+        console.error("Failed to approve redemption:", e);
         failed++;
       }
     }
@@ -227,8 +228,8 @@ function ApprovalQueueTab() {
       try {
         await api.post(`/api/redemptions/admin/${id}/reject`, { reason });
         success++;
-      } catch {
-        // continue
+      } catch (e) {
+        console.error("Failed to reject redemption:", e);
       }
     }
     toast.success(`${success} klaim ditolak & poin di-refund`);
@@ -451,7 +452,8 @@ function CatalogAdminTab() {
     try {
       const data = await api.get<{ items: any[] }>("/api/rewards?pageSize=60");
       setItems(data.items);
-    } catch {
+    } catch (e) {
+      console.error("Failed to load reward catalog:", e);
       setItems([]);
     } finally {
       setLoading(false);

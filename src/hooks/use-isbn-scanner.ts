@@ -170,8 +170,8 @@ export function useIsbnScanner(options: UseIsbnScannerOptions): UseIsbnScannerRe
           onScanRef.current(data);
 
           if (autoStop) {
-            scanner.stop().catch(() => {
-              // ignore
+            scanner.stop().catch((e) => {
+              console.error("Failed to stop scanner after scan:", e);
             });
           }
         },
@@ -193,8 +193,8 @@ export function useIsbnScanner(options: UseIsbnScannerOptions): UseIsbnScannerRe
       try {
         await scannerRef.current.stop();
         await scannerRef.current.clear();
-      } catch {
-        // ignore
+      } catch (e) {
+        console.error("Failed to stop ISBN scanner:", e);
       }
       scannerRef.current = null;
     }
@@ -220,8 +220,8 @@ export function useIsbnScanner(options: UseIsbnScannerOptions): UseIsbnScannerRe
     return () => {
       // Cleanup on unmount
       if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {
-          // ignore
+        scannerRef.current.stop().catch((e) => {
+          console.error("Failed to stop scanner on cleanup:", e);
         });
         scannerRef.current = null;
       }

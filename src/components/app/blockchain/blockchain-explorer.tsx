@@ -106,8 +106,8 @@ export function BlockchainExplorer() {
       ]);
       setStats(statsRes);
       setBlocks(blocksRes.items || []);
-    } catch {
-      // ignore
+    } catch (e) {
+      console.error("Failed to load blockchain stats:", e);
     } finally {
       setLoading(false);
     }
@@ -126,7 +126,8 @@ export function BlockchainExplorer() {
       const res = await fetch("/api/blockchain/verify");
       const data: VerificationResult = await res.json();
       setVerification(data);
-    } catch {
+    } catch (e) {
+      console.error("Failed to verify blockchain:", e);
       setVerification({
         valid: false,
         totalBlocks: 0,
@@ -154,8 +155,8 @@ export function BlockchainExplorer() {
       if (data.success) {
         await load();
       }
-    } catch {
-      // ignore
+    } catch (e) {
+      console.error("Failed to seal block:", e);
     } finally {
       setSealing(false);
     }
@@ -168,7 +169,8 @@ export function BlockchainExplorer() {
       const res = await fetch(`/api/blockchain/blocks?index=${index}`);
       const data: BlockDetails = await res.json();
       setSelectedBlock(data);
-    } catch {
+    } catch (e) {
+      console.error("Failed to load block details:", e);
       setSelectedBlock(null);
     } finally {
       setLoadingBlock(false);

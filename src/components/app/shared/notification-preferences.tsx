@@ -102,8 +102,8 @@ export function NotificationPreferences() {
           const parsed = JSON.parse(stored);
           setPrefs({ ...DEFAULT_PREFS, ...parsed });
         }
-      } catch {
-        // ignore
+      } catch (e) {
+        console.error("Failed to load notification preferences from storage:", e);
       }
     }
 
@@ -143,14 +143,14 @@ export function NotificationPreferences() {
     try {
       // Save to API
       await api.put("/api/notifications/preferences", { preferences: prefs });
-    } catch {
-      // ignore
+    } catch (e) {
+      console.error("Failed to save notification preferences to API:", e);
     }
     // Always save to localStorage
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
-    } catch {
-      // ignore
+    } catch (e) {
+      console.error("Failed to save notification preferences to storage:", e);
     }
     setSaving(false);
     setSaved(true);

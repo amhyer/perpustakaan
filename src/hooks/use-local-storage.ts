@@ -47,7 +47,9 @@ export function useLocalStorage<T>(
       if (e.key !== key || e.newValue === null) return;
       try {
         setValue(JSON.parse(e.newValue) as T);
-      } catch {}
+      } catch (e) {
+        console.error("Failed to parse storage event value:", e);
+      }
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);

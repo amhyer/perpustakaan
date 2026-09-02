@@ -50,8 +50,8 @@ export function useFetch<T>(url: string | null, options: UseFetchOptions = {}): 
           try {
             const j = await res.json();
             msg = j.error || j.message || msg;
-          } catch {
-            // ignore
+          } catch (e) {
+            console.error("Failed to parse error response:", e);
           }
           throw new Error(msg);
         }
